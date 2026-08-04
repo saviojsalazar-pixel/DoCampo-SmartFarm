@@ -13,6 +13,7 @@
     main{max-width:760px;margin:auto}.welcome{background:white;border:1px solid #ffffff80;border-radius:22px;padding:21px;box-shadow:0 14px 36px #173b2814;margin-bottom:18px}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--green);font-weight:800}.welcome h2{font-size:23px;line-height:1.15;margin:7px 0}.welcome p{margin:0;color:var(--muted);font-size:14px;line-height:1.5}
     .section-title{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#526259;margin:22px 4px 10px;font-weight:850}.grid{display:grid;grid-template-columns:1fr;gap:12px}.card{display:flex;align-items:center;gap:15px;text-decoration:none;color:inherit;background:white;border:1px solid var(--line);border-radius:18px;padding:17px;box-shadow:0 8px 22px #173b280c;transition:.18s}.card:active{transform:scale(.985);background:var(--mint)}.icon{width:52px;height:52px;flex:none;border-radius:15px;display:grid;place-items:center;background:var(--mint);color:var(--green)}.icon svg{width:27px;height:27px}.card h3{font-size:16px;margin:0 0 4px}.card p{font-size:12.5px;color:var(--muted);margin:0;line-height:1.35}.arrow{margin-left:auto;color:var(--green);font-size:24px}.future{opacity:.63}.future .icon{background:#edf1ee;color:#718078}.tag{display:inline-block;margin-top:6px;padding:3px 7px;border-radius:99px;background:#edf1ee;color:#67746c;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
     footer{text-align:center;color:#718078;font-size:11px;margin-top:26px;line-height:1.5}.status{display:inline-flex;align-items:center;gap:6px}.dot{width:7px;height:7px;border-radius:50%;background:#31a66a}
+    .modal{position:fixed;inset:0;z-index:1000;background:#082d2188;display:grid;place-items:center;padding:18px}.modal.hidden{display:none}.modal-box{width:min(540px,100%);max-height:90vh;overflow:auto;background:white;border-radius:22px;padding:20px;box-shadow:0 24px 70px #001d1555}.modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.modal-head h2{margin:0;font-size:20px}.close{border:0;background:#edf4ef;border-radius:50%;width:38px;height:38px;font-size:23px;color:var(--deep)}.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}.summary-box{padding:14px;border:1px solid var(--line);border-radius:14px;background:#f8fbf9}.summary-box strong{display:block;font-size:22px;color:var(--green)}.summary-box span{font-size:11px;color:var(--muted)}.actions{display:grid;gap:10px}.action-btn{border:0;border-radius:13px;padding:13px 15px;font-weight:750;font-size:14px;text-align:left}.primary{background:var(--green);color:white}.secondary{background:#eaf7f0;color:var(--deep)}.cloud{background:#f2f4f3;color:#68756e}.cloud small{display:block;font-weight:500;margin-top:3px}.hidden-file{display:none}.data-note{font-size:12px;line-height:1.45;color:var(--muted);margin:13px 0 0}
     @media(min-width:650px){.grid{grid-template-columns:1fr 1fr}.top{padding-bottom:38px}.welcome{padding:26px}.shell{padding-left:28px;padding-right:28px}}
   </style>
 </head>
@@ -50,10 +51,40 @@
         <div class="card future"><span class="icon">◫</span><span><h3>Análise foliar</h3><p>Interpretação automática e histórico por talhão.</p><span class="tag">Em breve</span></span></div>
         <div class="card future"><span class="icon">⌁</span><span><h3>Recomendações agronômicas</h3><p>Adubação, calagem, gessagem, herbicidas e via solo.</p><span class="tag">Em breve</span></span></div>
         <div class="card future"><span class="icon">☂</span><span><h3>Meteorologia</h3><p>Chuva, sensores e condições de campo.</p><span class="tag">Em breve</span></span></div>
-        <div class="card future"><span class="icon">▦</span><span><h3>Propriedades e histórico</h3><p>Base única de clientes, fazendas e talhões.</p><span class="tag">Planejado</span></span></div>
+        <button type="button" class="card" id="openDataCenter" style="width:100%;text-align:left"><span class="icon">▦</span><span><h3>Dados salvos e sincronização</h3><p>Veja o que está armazenado e transfira os dados entre os celulares.</p><span class="tag">Disponível</span></span><span class="arrow">›</span></button>
       </div>
-      <footer><span class="status"><span class="dot"></span> Ferramentas disponíveis offline</span><br>Do Campo Agronegócios • Versão 1.2</footer>
+      <footer><span class="status"><span class="dot"></span> Ferramentas disponíveis offline</span><br>Do Campo Agronegócios • Versão 1.3</footer>
     </main>
   </div>
+  <div id="dataModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="dataTitle">
+    <div class="modal-box">
+      <div class="modal-head"><div><div class="eyebrow">Central de dados</div><h2 id="dataTitle">Dados deste aparelho</h2></div><button class="close" id="closeDataCenter" aria-label="Fechar">×</button></div>
+      <div class="summary-grid">
+        <div class="summary-box"><strong id="sumFarms">0</strong><span>propriedades cadastradas</span></div>
+        <div class="summary-box"><strong id="sumProducts">0</strong><span>produtos personalizados</span></div>
+        <div class="summary-box"><strong id="sumVisits">0</strong><span>avaliações no checklist</span></div>
+        <div class="summary-box"><strong id="sumRecommendations">0</strong><span>recomendações no histórico</span></div>
+      </div>
+      <div class="actions">
+        <button class="action-btn primary" id="exportBackup">Exportar backup para o outro celular</button>
+        <button class="action-btn secondary" id="importBackup">Importar backup recebido</button>
+        <input class="hidden-file" id="backupFile" type="file" accept="application/json,.json">
+        <button class="action-btn cloud" id="cloudSync">Sincronizar online<small>A nuvem ainda precisa ser configurada para os dois aparelhos.</small></button>
+      </div>
+      <p class="data-note">O backup transfere fazendas, talhões, produtos, avaliações e histórico. A importação substitui e incorpora os dados presentes no arquivo.</p>
+    </div>
+  </div>
+  <script src="app-shell.js"></script>
+  <script>
+    const modal=document.getElementById('dataModal');
+    function refreshSummary(){const s=DoCampoCentral.summary();sumFarms.textContent=s.farms;sumProducts.textContent=s.products;sumVisits.textContent=s.visits;sumRecommendations.textContent=s.recommendations}
+    openDataCenter.onclick=()=>{refreshSummary();modal.classList.remove('hidden')};
+    closeDataCenter.onclick=()=>modal.classList.add('hidden');
+    modal.onclick=e=>{if(e.target===modal)modal.classList.add('hidden')};
+    exportBackup.onclick=()=>DoCampoCentral.exportBackup();
+    importBackup.onclick=()=>backupFile.click();
+    backupFile.onchange=()=>{if(backupFile.files[0])DoCampoCentral.importBackup(backupFile.files[0])};
+    cloudSync.onclick=()=>alert('A sincronização automática online ainda precisa da configuração segura do banco de dados. O backup já permite transferir os dados entre os dois celulares.');
+  </script>
 </body>
 </html>

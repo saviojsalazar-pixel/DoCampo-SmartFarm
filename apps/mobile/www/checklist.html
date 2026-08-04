@@ -6,11 +6,13 @@
     <title>Ficha de Campo - Do Campo Agronegócios</title>
     <!-- Tailwind CSS -->
     <script src="vendor/tailwind/tailwindcss.js"></script>
+    <link href="vendor/fontawesome/css/all.min.css" rel="stylesheet">
     <!-- jsPDF and AutoTable Libraries for PDF Generation -->
     <script src="vendor/pdf/jspdf.umd.min.js"></script>
     <script src="vendor/pdf/jspdf.plugin.autotable.min.js"></script>
     <script src="shared-data.js"></script>
     <script src="native-pdf.js"></script>
+    <script src="app-shell.js"></script>
     
     <script>
         tailwind.config = {
@@ -1812,12 +1814,7 @@
             const totalAvaliados = listaAvaliacoes.length;
 
             // Header compacto
-            doc.setFillColor(25, 125, 55);
-            doc.roundedRect(14, 6, 12, 12, 2.5, 2.5, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(15);
-            doc.text("DC", 20, 14, { align: 'center' });
+            if (logoChecklist) doc.addImage(logoChecklist, 'PNG', 14, 5, 12, 12, undefined, 'FAST');
 
             doc.setTextColor(27, 94, 32);
             doc.setFont('helvetica', 'bold');
@@ -1926,12 +1923,7 @@
                 doc.setPage(i);
 
                 if (i > 1) {
-                    doc.setFillColor(25, 125, 55);
-                    doc.roundedRect(14, 6, 9, 9, 2, 2, 'F');
-                    doc.setTextColor(255, 255, 255);
-                    doc.setFont('helvetica', 'bold');
-                    doc.setFontSize(11);
-                    doc.text("DC", 18.5, 12.2, { align: 'center' });
+                    if (logoChecklist) doc.addImage(logoChecklist, 'PNG', 14, 5, 9, 9, undefined, 'FAST');
 
                     doc.setTextColor(27, 94, 32);
                     doc.setFontSize(10);
@@ -1962,13 +1954,6 @@
                 doc.text(`Página ${i} de ${pageCount}`, 283, pageHeight - 5, { align: 'right' });
             }
 
-            if (logoChecklist) {
-                const total = doc.getNumberOfPages();
-                for (let pagina = 1; pagina <= total; pagina++) {
-                    doc.setPage(pagina);
-                    doc.addImage(logoChecklist, 'PNG', 14, 5, 18, 18, undefined, 'FAST');
-                }
-            }
             const dataFormatada = document.getElementById('dataAvaliacao').value;
             const nomeFazendaLimpo = fazendaNome.replace(/[^a-zA-Z0-9]/g, '_');
             const nomeArquivo = `Relatorio_Campo_${nomeFazendaLimpo}_${dataFormatada}.pdf`;
