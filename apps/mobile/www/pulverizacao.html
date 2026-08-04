@@ -11,7 +11,10 @@
 
     <!-- html2pdf.js for Client-side PDF Generation -->
     <script src="vendor/pdf/html2pdf.bundle.min.js"></script>
+    <script src="supabase-config.js"></script>
+    <script src="unified-db.js"></script>
     <script src="shared-data.js"></script>
+    <script src="sync-engine.js"></script>
     <script src="native-pdf.js"></script>
     <script src="app-shell.js"></script>
 
@@ -2890,6 +2893,14 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
 
             history.unshift(entry);
             localStorage.setItem('agri_recommendations_history', JSON.stringify(history.slice(0, 20)));
+            if (window.DoCampoDB) window.DoCampoDB.upsert('recommendations', {
+                code: recIdVal,
+                recommendationType: 'pulverizacao',
+                status: 'emitida',
+                immutable: true,
+                issuedAt: new Date().toISOString(),
+                snapshot: JSON.parse(JSON.stringify(entry))
+            });
 
             let currentSeq = getNextSequenceNumber();
             let expectedCode = '#DC-' + String(currentSeq).padStart(4, '0');

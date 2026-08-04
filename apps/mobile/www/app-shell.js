@@ -32,7 +32,7 @@
       'docampo_pragasCustomizadas','docampo_doencasCustomizadas','docampo_matoCustomizados',
       'docampo_acoesCustomizadas','docampo_listaAvaliacoes','agri_custom_farms',
       'agri_custom_products','agri_deleted_farms','agri_deleted_products',
-      'agri_recommendations_history','agri_rec_seq_counter'
+      'agri_recommendations_history','agri_rec_seq_counter','docampo_unified_db_v1','docampo_current_user'
     ];
     const data = {};
     keys.forEach(key => { const value = localStorage.getItem(key); if (value !== null) data[key] = value; });

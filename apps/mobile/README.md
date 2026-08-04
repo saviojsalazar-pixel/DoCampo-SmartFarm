@@ -6,13 +6,17 @@ Aplicativo Android híbrido com uma central de acesso aos módulos da Do Campo A
 
 - Checklist de lavoura
 - Recomendação técnica de pulverização
+- Interpretação de análise de solo
+- Banco local unificado, fila e conflitos
+- Login e sincronização autenticada pelo Supabase
 - Espaços preparados para novos módulos
 
 ## Funcionamento offline
 
 - Interface, fontes, ícones e bibliotecas de PDF incluídos no APK.
 - Checklist e geração do relatório funcionam sem internet.
-- O módulo de recomendação funciona como rascunho profissional offline, com cálculos operacionais automáticos bloqueados para revisão do responsável habilitado.
+- Cadastros, checklist, recomendações, análises e PDFs permanecem disponíveis sem internet.
+- A internet é necessária apenas para o primeiro login e para sincronizar os aparelhos.
 
 ## Identificação Android
 

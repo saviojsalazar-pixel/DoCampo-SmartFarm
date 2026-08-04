@@ -10,7 +10,10 @@
     <!-- jsPDF and AutoTable Libraries for PDF Generation -->
     <script src="vendor/pdf/jspdf.umd.min.js"></script>
     <script src="vendor/pdf/jspdf.plugin.autotable.min.js"></script>
+    <script src="supabase-config.js"></script>
+    <script src="unified-db.js"></script>
     <script src="shared-data.js"></script>
+    <script src="sync-engine.js"></script>
     <script src="native-pdf.js"></script>
     <script src="app-shell.js"></script>
     
@@ -722,6 +725,12 @@
 
         async function initFirebase() {
             carregarTudoDoLocalStorage();
+            if (localStorage.getItem('docampo_start_new_visit') === '1') {
+                localStorage.removeItem('docampo_start_new_visit');
+                localStorage.removeItem('docampo_current_visit_id');
+                listaAvaliacoes = [];
+                localStorage.setItem('docampo_listaAvaliacoes', '[]');
+            }
             carregarFazendas();
             carregarSelectGerenciarFazendas();
             atualizarDatalistFazendas();
@@ -879,6 +888,18 @@
 
         function salvarAvaliacoes() {
             try { localStorage.setItem('docampo_listaAvaliacoes', JSON.stringify(listaAvaliacoes)); } catch (e) {}
+            if (window.DoCampoDB) {
+                let draftId = localStorage.getItem('docampo_current_visit_id');
+                const visit = window.DoCampoDB.upsert('visits', {
+                    id: draftId || undefined,
+                    status: 'em_andamento',
+                    producerName: document.getElementById('nomeProprietario')?.value || '',
+                    farmName: document.getElementById('fazenda')?.value || '',
+                    visitDate: document.getElementById('dataAvaliacao')?.value || '',
+                    checklist: JSON.parse(JSON.stringify(listaAvaliacoes))
+                });
+                localStorage.setItem('docampo_current_visit_id', visit.id);
+            }
             salvarAvaliacoesFirestore();
         }
 
@@ -1524,6 +1545,7 @@
                 'Iniciar Nova Visita',
                 'Deseja apagar as informações da visita anterior e iniciar um novo relatório do zero? Esta ação irá limpar a lista de avaliações salvas.',
                 () => {
+                    try { localStorage.removeItem('docampo_current_visit_id'); } catch(e){}
                     listaAvaliacoes = [];
                     salvarAvaliacoes();
                     renderizarTabela();

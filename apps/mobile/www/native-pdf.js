@@ -21,6 +21,7 @@
       const cap = window.Capacitor;
       const filesystem = cap && cap.Plugins && cap.Plugins.Filesystem;
       const share = cap && cap.Plugins && cap.Plugins.Share;
+      if (window.DoCampoDB) window.DoCampoDB.addDocument({ name: nome, title: titulo || 'Relatório Do Campo', generatedAt: new Date().toISOString(), localOnly: true, snapshot: { name: nome, title: titulo || 'Relatório Do Campo' } });
 
       if (!cap || !cap.isNativePlatform || !cap.isNativePlatform() || !filesystem || !share) {
         baixarNoNavegador('data:application/pdf;base64,' + base64, nome);
