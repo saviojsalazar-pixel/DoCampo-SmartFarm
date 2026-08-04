@@ -11,6 +11,7 @@
     <!-- jsPDF and AutoTable Libraries for PDF Generation -->
     <script src="vendor/pdf/jspdf.umd.min.js"></script>
     <script src="vendor/pdf/jspdf.plugin.autotable.min.js"></script>
+    <script src="native-pdf.js"></script>
     
     <script>
         tailwind.config = {
@@ -834,7 +835,7 @@
         }
 
         // GERADOR DE RELATÓRIO PDF
-        function gerarPDF() {
+        async function gerarPDF() {
             if (listaAvaliacoes.length === 0) {
                 exibirToast("Adicione pelo menos um talhão antes de gerar o PDF!", "bg-amber-600");
                 return;
@@ -1042,9 +1043,18 @@
 
             const dataFormatada = document.getElementById('dataAvaliacao').value;
             const nomeFazendaLimpo = fazendaNome.replace(/[^a-zA-Z0-9]/g, '_');
-            doc.save(`Relatorio_Campo_${nomeFazendaLimpo}_${dataFormatada}.pdf`);
-            
-            exibirToast("PDF gerado com sucesso!", "bg-green-700");
+            const nomeArquivo = `Relatorio_Campo_${nomeFazendaLimpo}_${dataFormatada}.pdf`;
+            try {
+                await window.DoCampoPDF.salvarECompartilhar(
+                    doc.output('datauristring'),
+                    nomeArquivo,
+                    'Checklist de lavoura Do Campo'
+                );
+                exibirToast("Escolha onde salvar ou enviar o PDF", "bg-green-700");
+            } catch (erro) {
+                console.error('Erro ao salvar ou compartilhar checklist:', erro);
+                exibirToast("Não foi possível abrir o compartilhamento do PDF", "bg-red-700");
+            }
         }
 
         // Função auxiliar para bloco de assinaturas no PDF
