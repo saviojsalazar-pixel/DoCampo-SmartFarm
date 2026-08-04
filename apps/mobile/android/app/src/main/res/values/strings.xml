@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Do Campo SmartFarm</string>
+    <string name="title_activity_main">Do Campo SmartFarm</string>
+    <string name="package_name">br.com.docampo.smartfarm</string>
+    <string name="custom_url_scheme">br.com.docampo.smartfarm</string>
+</resources>

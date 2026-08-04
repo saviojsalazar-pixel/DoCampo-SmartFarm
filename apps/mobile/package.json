@@ -1,0 +1,16 @@
+{
+  "name": "do-campo-smartfarm",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "android": "cap open android",
+    "sync": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "7.4.3",
+    "@capacitor/core": "7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "7.4.3"
+  }
+}

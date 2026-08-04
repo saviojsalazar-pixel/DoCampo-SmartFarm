@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ficha de Campo - Do Campo Agronegócios</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- jsPDF and AutoTable Libraries for PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        agro: {
+                            light: '#e8f5e9',
+                            DEFAULT: '#4caf50',
+                            dark: '#2e7d32',
+                            deep: '#1b5e20'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .checkbox-label { 
+            display: flex; 
+            align-items: center; 
+            padding: 0.75rem; 
+            border: 1px solid #d1d5db; 
+            border-radius: 0.5rem; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            background-color: white; 
+            height: 100%; 
+            user-select: none;
+            font-size: 0.875rem;
+        }
+        .checkbox-label:hover { 
+            background-color: #f3f4f6; 
+            border-color: #9ca3af;
+        }
+        input[type="checkbox"]:checked + .checkbox-label { 
+            background-color: #e8f5e9; 
+            border-color: #4caf50; 
+            color: #2e7d32; 
+            font-weight: 600; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        input[type="checkbox"] { 
+            display: none; 
+        }
+        
+        /* Modal Toast Animation */
+        @keyframes slideIn {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-toast {
+            animation: slideIn 0.3s forwards;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans antialiased min-h-screen p-3 md:p-8">
+    <a href="index.html" class="fixed bottom-5 left-5 z-50 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-sm px-4 py-3 rounded-full shadow-xl border border-emerald-600 no-print" aria-label="Voltar para o início">← Início</a>
+
+    <div class="max-w-5xl mx-auto space-y-6">
+        
+        <!-- Toast Notification Area -->
+        <div id="toast" class="fixed top-4 right-4 z-50 hidden bg-green-700 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-toast">
+            <i class="fas fa-check-circle text-xl"></i>
+            <span id="toastMessage">Operação realizada com sucesso!</span>
+        </div>
+
+        <!-- Main Card Header -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+            <div class="bg-gradient-to-r from-gray-900 via-gray-800 to-green-950 text-white p-6 md:p-8 text-center border-b-4 border-agro-dark relative">
+                <div class="inline-flex items-center justify-center p-2 bg-white rounded-2xl mb-3 shadow-lg border border-green-200">
+                    <img src="assets/logo.png" alt="Logo Do Campo Agronegócios" class="w-16 h-16 object-contain rounded-xl">
+                </div>
+                <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">Do Campo Agronegócios</h1>
+                <p class="text-sm md:text-base mt-1 text-green-200 font-medium">Ficha de Avaliação de Talhões & Relatório Técnico</p>
+            </div>
+
+            <form id="monitoramentoForm" class="p-6 md:p-8 space-y-8">
+                <!-- 0. Cadastrar Nova Propriedade e Talhões -->
+                <div class="bg-gradient-to-r from-emerald-50 to-green-50/80 rounded-2xl p-4 md:p-5 border border-emerald-200/80 shadow-sm transition-all space-y-4">
+                    <div class="flex items-center justify-between cursor-pointer" onclick="togglePainelNovaFazenda()">
+                        <div class="flex items-center gap-2 text-agro-dark font-bold text-base md:text-lg">
+                            <i class="fas fa-plus-circle text-agro text-xl"></i>
+                            <span>Cadastrar Nova Propriedade / Talhões</span>
+                        </div>
+                        <span id="iconTogglePainel" class="text-agro font-bold text-xs bg-white px-3 py-1.5 rounded-full shadow-sm border border-emerald-200 flex items-center gap-1 hover:bg-emerald-50 transition">
+                            <i class="fas fa-chevron-down"></i> <span id="textTogglePainel">Abrir Cadastro</span>
+                        </span>
+                    </div>
+
+                    <div id="painelNovaFazenda" class="hidden space-y-4 pt-3 border-t border-emerald-200/60">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome da Propriedade / Fazenda *</label>
+                                <div class="relative">
+                                    <input type="text" id="novoNomeFazenda" list="listaFazendasExistentes" placeholder="Ex: Fazenda Bela Vista" class="w-full p-3 pl-9 border border-gray-300 rounded-xl focus:ring-2 focus:ring-agro outline-none bg-white text-sm">
+                                    <i class="fas fa-building text-gray-400 absolute left-3 top-3.5 text-sm"></i>
+                                </div>
+                                <datalist id="listaFazendasExistentes"></datalist>
+                                <p class="text-[11px] text-gray-500 mt-1">Digite uma nova propriedade ou escolha uma existente para incluir mais talhões.</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome do Talhão *</label>
+                                <div class="flex gap-2">
+                                    <div class="relative flex-1">
+                                        <input type="text" id="novoNomeTalhao" placeholder="Ex: 1.1 Lavoura Nova" class="w-full p-3 pl-9 border border-gray-300 rounded-xl focus:ring-2 focus:ring-agro outline-none bg-white text-sm" onkeypress="if(event.key==='Enter'){event.preventDefault(); adicionarTalhaoListaPreCad();}">
+                                        <i class="fas fa-vector-square text-gray-400 absolute left-3 top-3.5 text-sm"></i>
+                                    </div>
+                                    <button type="button" onclick="adicionarTalhaoListaPreCad()" class="bg-agro hover:bg-agro-dark text-white font-bold px-4 rounded-xl shadow transition flex items-center gap-1 text-sm">
+                                        <i class="fas fa-plus"></i> <span class="hidden sm:inline">Incluir</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lista de talhões a adicionar -->
+                        <div id="containerTalhoesTemp" class="hidden space-y-2 bg-white p-3 rounded-xl border border-emerald-100 shadow-inner">
+                            <span class="text-xs font-bold text-gray-600 block uppercase">Talhões a serem cadastrados:</span>
+                            <div id="listaTalhoesTemp" class="flex flex-wrap gap-2"></div>
+                        </div>
+
+                        <div class="flex justify-end gap-2 pt-2 border-t border-emerald-100">
+                            <button type="button" onclick="cancelarCadastroFazenda()" class="px-4 py-2 text-xs font-bold text-gray-600 bg-gray-200 hover:bg-gray-300 rounded-xl transition">
+                                Cancelar
+                            </button>
+                            <button type="button" onclick="salvarNovaFazendaETalhoes()" class="px-5 py-2.5 text-xs font-bold text-white bg-agro-dark hover:bg-agro-deep rounded-xl shadow transition flex items-center gap-2">
+                                <i class="fas fa-save"></i> Salvar Propriedade e Talhões
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1. Identificação -->
+                <div class="space-y-4">
+                    <h2 class="text-xl font-bold text-agro-dark flex items-center border-b pb-2">
+                        <i class="fas fa-map-marker-alt text-agro mr-2"></i> 1. Identificação da Visita
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Data da Visita *</label>
+                            <input type="date" id="dataAvaliacao" required class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-agro outline-none transition bg-gray-50 focus:bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Fazenda / Propriedade *</label>
+                            <select id="fazenda" required class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-agro outline-none transition bg-white shadow-sm">
+                                <option value="">-- Selecione a Fazenda --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Talhão *</label>
+                            <select id="talhao" required disabled class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-agro outline-none transition bg-white shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed">
+                                <option value="">-- Escolha a Fazenda primeiro --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Monitoramento Técnico -->
+                <div class="space-y-6">
+                    <h2 class="text-xl font-bold text-agro-dark flex items-center border-b pb-2">
+                        <i class="fas fa-bug text-agro mr-2"></i> 2. Monitoramento Fitossanitário
+                    </h2>
+                    
+                    <!-- Pragas -->
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide flex items-center gap-2">
+                            <i class="fas fa-spider text-amber-600"></i> Pragas Identificadas
+                        </h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <label><input type="checkbox" name="pragas" value="Livre de Pragas" onchange="limparOutros(this, 'pragas')"><span class="checkbox-label"><i class="fas fa-shield-alt text-green-500 mr-2"></i>Livre de Pragas</span></label>
+                            <label><input type="checkbox" name="pragas" value="Bicho Mineiro"><span class="checkbox-label"><i class="fas fa-bug text-amber-600 mr-2"></i>Bicho Mineiro</span></label>
+                            <label><input type="checkbox" name="pragas" value="Broca"><span class="checkbox-label"><i class="fas fa-bug text-amber-600 mr-2"></i>Broca</span></label>
+                            <label><input type="checkbox" name="pragas" value="Ácaro"><span class="checkbox-label"><i class="fas fa-bug text-amber-600 mr-2"></i>Ácaro</span></label>
+                            <label><input type="checkbox" name="pragas" value="Cochonilha"><span class="checkbox-label"><i class="fas fa-bug text-amber-600 mr-2"></i>Cochonilha</span></label>
+                            <label><input type="checkbox" name="pragas" value="Cigarra"><span class="checkbox-label"><i class="fas fa-bug text-amber-600 mr-2"></i>Cigarra</span></label>
+                            <label><input type="checkbox" name="pragas" value="Quiromiza"><span class="checkbox-label"><i class="fas fa-bug text-amber-600 mr-2"></i>Quiromiza</span></label>
+                            <label><input type="checkbox" name="pragas" value="Nematoide"><span class="checkbox-label"><i class="fas fa-bug text-amber-600 mr-2"></i>Nematoide</span></label>
+                        </div>
+                    </div>
+
+                    <!-- Doenças -->
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide flex items-center gap-2">
+                            <i class="fas fa-disease text-red-500"></i> Doenças Identificadas
+                        </h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <label><input type="checkbox" name="doencas" value="Livre de Doenças" onchange="limparOutros(this, 'doencas')"><span class="checkbox-label"><i class="fas fa-shield-alt text-green-500 mr-2"></i>Livre de Doenças</span></label>
+                            <label><input type="checkbox" name="doencas" value="Cercospora"><span class="checkbox-label"><i class="fas fa-virus text-red-500 mr-2"></i>Cercospora</span></label>
+                            <label><input type="checkbox" name="doencas" value="Phoma"><span class="checkbox-label"><i class="fas fa-virus text-red-500 mr-2"></i>Phoma</span></label>
+                            <label><input type="checkbox" name="doencas" value="Ferrugem"><span class="checkbox-label"><i class="fas fa-virus text-red-500 mr-2"></i>Ferrugem</span></label>
+                            <label><input type="checkbox" name="doencas" value="Bactéria"><span class="checkbox-label"><i class="fas fa-virus text-red-500 mr-2"></i>Bactéria</span></label>
+                            <label><input type="checkbox" name="doencas" value="Doenças da Raiz"><span class="checkbox-label"><i class="fas fa-virus text-red-500 mr-2"></i>Doenças da Raiz</span></label>
+                        </div>
+                    </div>
+
+                    <!-- Mato / Plantas Daninhas com desenhos de mato -->
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide flex items-center gap-2">
+                            <svg class="w-5 h-5 text-emerald-600 inline-block" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M2 20h20v2H2z" />
+                                <path d="M5 20c1-5 3-10 6-12c-1.5 4-2 8-3 12z" />
+                                <path d="M10 20c1.5-4 3.5-8 7-9c-2 4-2.5 6.5-3.5 9z" />
+                            </svg>
+                            Situação do Mato
+                        </h3>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <!-- Livre de Mato -->
+                            <label>
+                                <input type="checkbox" name="mato" value="Livre de Mato" onchange="limparOutros(this, 'mato')">
+                                <span class="checkbox-label flex items-center gap-2">
+                                    <svg class="w-6 h-6 text-green-600 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="#e8f5e9" />
+                                        <path d="m9 12 2 2 4-4" stroke="#2e7d32" stroke-width="2.5" />
+                                    </svg>
+                                    <span>Livre de Mato</span>
+                                </span>
+                            </label>
+
+                            <!-- Mato Baixo -->
+                            <label>
+                                <input type="checkbox" name="mato" value="Mato Baixo">
+                                <span class="checkbox-label flex items-center gap-2">
+                                    <svg class="w-6 h-6 text-emerald-600 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M3 20h18v2H3z" />
+                                        <path d="M6 20c0.8-2.5 1.8-5 3.5-6c-0.8 2.5-1.2 4.2-1.8 6z" />
+                                        <path d="M11 20c0.5-2.2 1.5-4.2 3.2-5.2c-0.8 2.2-1.2 3.8-1.8 5.2z" />
+                                        <path d="M16 20c0.8-1.8 2-3.5 3.8-4.2c-0.8 1.8-1.2 3-1.8 4.2z" />
+                                    </svg>
+                                    <span>Mato Baixo</span>
+                                </span>
+                            </label>
+
+                            <!-- Mato Médio -->
+                            <label>
+                                <input type="checkbox" name="mato" value="Mato Médio">
+                                <span class="checkbox-label flex items-center gap-2">
+                                    <svg class="w-6 h-6 text-amber-600 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M2 20h20v2H2z" />
+                                        <path d="M5 20c1-4.5 3-9 6-11c-1.5 3.8-2 7.2-3 11z" />
+                                        <path d="M10 20c1.5-3.8 3.5-7.5 7-8.5c-2 3.8-2.5 6-3.5 8.5z" />
+                                        <path d="M15 20c1-2.8 3-5.5 6-7.2c-1.5 2.8-2 5-2.5 7.2z" />
+                                    </svg>
+                                    <span>Mato Médio</span>
+                                </span>
+                            </label>
+
+                            <!-- Mato Alto -->
+                            <label>
+                                <input type="checkbox" name="mato" value="Mato Alto">
+                                <span class="checkbox-label flex items-center gap-2">
+                                    <svg class="w-6 h-6 text-red-600 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M2 20h20v2H2z" />
+                                        <path d="M4 20c1-5.5 3.5-12 7.5-15c-1.8 4.8-2.8 9.5-4 15z" />
+                                        <path d="M9 20c1.8-4.8 4.5-10 8.5-12c-2.2 4.8-3.2 8.5-4.2 12z" />
+                                        <path d="M14 20c1.2-3.8 3.8-7.5 6.5-9.5c-1.8 3.8-2.2 6.5-3.2 9.5z" />
+                                        <circle cx="11.5" cy="4" r="1.2" fill="#dc2626" />
+                                        <circle cx="17.5" cy="7" r="1" fill="#dc2626" />
+                                    </svg>
+                                    <span>Mato Alto</span>
+                                </span>
+                            </label>
+
+                            <!-- Mato na Linha -->
+                            <label>
+                                <input type="checkbox" name="mato" value="Mato na Linha">
+                                <span class="checkbox-label flex items-center gap-2">
+                                    <svg class="w-6 h-6 text-orange-600 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M2 13h20v1.5H2z" opacity="0.3" />
+                                        <path d="M2 20h20v2H2z" />
+                                        <path d="M5 20c0.8-2.8 1.8-5.5 3.8-6.5c-0.8 2.8-1.2 4.8-1.8 6.5z" />
+                                        <path d="M11 20c1-3.5 2.8-6.5 5.5-7.5c-1.2 3.5-1.8 5.5-2.2 7.5z" />
+                                        <path d="M16 20c0.8-2 2.2-4 3.8-5c-0.8 2.0-1.2 3.2-1.8 5z" />
+                                    </svg>
+                                    <span>Mato na Linha</span>
+                                </span>
+                            </label>
+
+                            <!-- Cipó -->
+                            <label>
+                                <input type="checkbox" name="mato" value="Cipó">
+                                <span class="checkbox-label flex items-center gap-2">
+                                    <svg class="w-6 h-6 text-purple-600 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 20 C 7 15, 7 8, 11 11 C 15 14, 15 7, 19 3" />
+                                        <path d="M6 14 C 4 11, 5 9, 7 10" fill="currentColor" opacity="0.6" />
+                                        <path d="M12 10 C 10 7, 11 5, 13 6" fill="currentColor" opacity="0.6" />
+                                        <path d="M16 6 C 14 3, 15 1, 17 2" fill="currentColor" opacity="0.6" />
+                                    </svg>
+                                    <span>Cipó</span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Indicações de Manejo -->
+                <div class="space-y-4">
+                    <h2 class="text-xl font-bold text-agro-dark flex items-center border-b pb-2">
+                        <i class="fas fa-clipboard-list text-agro mr-2"></i> 3. Recomendações e Indicações de Ação
+                    </h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <label><input type="checkbox" name="indicacoes" value="Análise de Solo"><span class="checkbox-label">Análise de Solo</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="Calagem"><span class="checkbox-label">Calagem</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="1ª Adubação"><span class="checkbox-label">1ª Adubação</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="2ª Adubação"><span class="checkbox-label">2ª Adubação</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="3ª Adubação"><span class="checkbox-label">3ª Adubação</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="4ª Adubação"><span class="checkbox-label">4ª Adubação</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="Capina"><span class="checkbox-label">Capina</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="Roçada"><span class="checkbox-label">Roçada</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="Trilhação"><span class="checkbox-label">Trilhação</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="Herbicida Pós"><span class="checkbox-label">Herbicida Pós</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="Herbicida Pré"><span class="checkbox-label">Herbicida Pré</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="Herbicida Pós+Pré"><span class="checkbox-label">Herbicida Pós+Pré</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="Retirar Cipó"><span class="checkbox-label">Retirar Cipó</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="Pulverização"><span class="checkbox-label">Pulverização</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="Via Solo"><span class="checkbox-label">Via Solo</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="Desbrota"><span class="checkbox-label">Desbrota</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="Esqueletamento"><span class="checkbox-label">Esqueletamento</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="Recepa"><span class="checkbox-label">Recepa</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="Arrancar"><span class="checkbox-label">Arrancar</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="Decote"><span class="checkbox-label">Decote</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="Colheita"><span class="checkbox-label">Colheita</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="Plantio"><span class="checkbox-label">Plantio</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="Replantio"><span class="checkbox-label">Replantio</span></label>
+                    </div>
+                </div>
+
+                <!-- Observações -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Observações do Campo:</label>
+                    <textarea id="observacoes" rows="2" placeholder="Digite detalhes adicionais sobre este talhão..." class="w-full p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-agro transition shadow-sm"></textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold py-4 rounded-xl shadow-lg transition flex items-center justify-center text-base">
+                    <i class="fas fa-plus-circle text-xl mr-2"></i> Adicionar Talhão à Lista
+                </button>
+            </form>
+        </div>
+
+        <!-- Resumo das Avaliações Cadastradas -->
+        <div id="containerLista" class="bg-white rounded-2xl shadow-xl overflow-hidden hidden border border-gray-100">
+            <div class="bg-gray-800 text-white p-5 flex flex-wrap justify-between items-center gap-3">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-list-check text-green-400 text-2xl"></i>
+                    <div>
+                        <h2 class="text-lg font-bold">Resumo dos Talhões Avaliados</h2>
+                        <p class="text-xs text-gray-300" id="subtituloFazenda">Fazenda selecionada</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs uppercase tracking-wider bg-gray-700 px-3 py-1.5 rounded-lg border border-gray-600">Avaliados:</span>
+                    <span id="contadorAvaliacoes" class="bg-green-500 text-gray-950 font-extrabold px-3 py-1 rounded-lg text-base">0</span>
+                </div>
+            </div>
+
+            <div class="p-4 overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead>
+                        <tr class="bg-gray-100 text-gray-700 uppercase text-xs font-bold border-b">
+                            <th class="p-3">Talhão</th>
+                            <th class="p-3">Pragas</th>
+                            <th class="p-3">Doenças</th>
+                            <th class="p-3">Mato</th>
+                            <th class="p-3">Indicações</th>
+                            <th class="p-3">Obs</th>
+                            <th class="p-3 text-center">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaCorpo" class="divide-y divide-gray-200"></tbody>
+                </table>
+            </div>
+
+            <!-- Seleção do Engenheiro Agrônomo Responsável -->
+            <div class="p-5 border-t border-gray-100 bg-white space-y-3">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fas fa-user-check text-emerald-600"></i> Engenheiro Agrônomo Responsável <span class="text-red-500">*</span>
+                    </h3>
+                    <div id="badge-conjunta" class="hidden text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5 border border-emerald-300">
+                        <i class="fas fa-users text-emerald-600"></i> Assinatura Conjunta (2 Agrônomos)
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500">Clique nos cards para selecionar individualmente ou ambos para assinatura em conjunto no relatório.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="cardsAgronomos">
+                    <!-- Card 01 - Dr. Glaucio -->
+                    <div id="card-agronomo-01" onclick="toggleAgronomo('01')" class="agronomo-card cursor-pointer p-4 rounded-xl border-2 transition-all relative flex flex-col justify-between bg-emerald-50/50 border-emerald-500 shadow-sm">
+                        <div class="flex items-start justify-between mb-2">
+                            <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-md">01</span>
+                            <div id="check-agronomo-01" class="text-emerald-600 text-lg">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-sm md:text-base">Dr. Glaucio Luciano Araujo</h4>
+                            <p class="text-xs font-mono text-gray-500 mt-1">CREA: MG0000254008D</p>
+                            <p class="text-xs font-mono text-gray-500">CFTA: 7926903620</p>
+                        </div>
+                    </div>
+
+                    <!-- Card 02 - M.Sc. Sávio -->
+                    <div id="card-agronomo-02" onclick="toggleAgronomo('02')" class="agronomo-card cursor-pointer p-4 rounded-xl border transition-all relative flex flex-col justify-between bg-white border-gray-200 hover:border-gray-300 opacity-60">
+                        <div class="flex items-start justify-between mb-2">
+                            <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-md">02</span>
+                            <div id="check-agronomo-02" class="text-emerald-600 text-lg hidden">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-sm md:text-base">M.Sc. Sávio José Souza Salazar</h4>
+                            <p class="text-xs font-mono text-gray-500 mt-1">CREA: MG142362346-0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-5 bg-gray-50 border-t flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-2 text-xs text-gray-600">
+                    <input type="checkbox" id="incluirNaoAvaliados" class="rounded border-gray-300 text-agro focus:ring-agro" checked style="display:inline-block; height:1rem; width:1rem;">
+                    <label for="incluirNaoAvaliados" class="cursor-pointer font-medium">Incluir talhões não avaliados no relatório final PDF</label>
+                </div>
+                
+                <div class="flex flex-wrap w-full md:w-auto gap-3">
+                    <button onclick="exportarCSV()" class="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-5 rounded-xl shadow transition flex items-center justify-center gap-2 text-sm">
+                        <i class="fas fa-file-excel"></i> Exportar CSV
+                    </button>
+                    <button onclick="gerarPDF()" class="flex-1 md:flex-none bg-gradient-to-r from-agro-dark to-green-800 hover:from-green-900 hover:to-agro-deep text-white font-bold py-3 px-6 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm">
+                        <i class="fas fa-file-pdf text-red-300 text-lg"></i> Gerar Relatório PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Mapeamento completo dos talhões atualizado com base no PDF "Dados_fazendas.pdf"
+        const talhoesPorFazenda = {
+            "Fazenda Santa Apolinária": [
+                "1. Brotos", "2. Acima do Secador", "3. Abaixo do Secador", "4. Canto da Mata"
+            ],
+            "Fazenda Flávia Adriana Elvira": [
+                "1.1 Realeza (esquerda)", "1.2 Realeza (direita)", "2.1 BR (direita)", "2.2 BR (esquerda)", 
+                "3.1 Recanto Recepa do Alto", "3.2 Recanto Zé Carlos Velha", "3.3 Recanto Recepa de Baixo", 
+                "3.4 Recanto Zé Carlos Nova", "3.5 Recanto Fiete", "3.6 Recanto Leo Fortão", "4.1 Alto Peão", 
+                "5.1 Gameleira Velha", "5.2 Gameleira Nova", "5.3 Gameleira Plantio", "6.1 Viturino Nascentes", 
+                "6.2 Viturino Lav. das Pedras", "6.3 Viturino Lav. Velha"
+            ],
+            "Fazenda Alcantilado-São Francisco": [
+                "1.1 Fazenda", "2.1 Joselito Piloto", "3.1 Regiane Tavares", "3.2 Luciana Lopes", "3.3 Fazenda", 
+                "3.4 João Martins", "4.1 Jorge Gumeiro", "4.2 Jorge Gumeiro", "5.1 Jerusa Tavares", "6.1 Angelica Flores", 
+                "6.2 Fazenda", "6.3 Jerusa Tavares", "6.4 Viviane Flores", "6.5 Sonia Tavares", "6.6 Afonso Tavares", 
+                "6.7 Joselito Piloto", "7.1 José Flores", "7.2 Fazenda", "7.3 Fazenda", "7.4 Maria Januaraia", 
+                "7.5 Janaina Lourenço", "7.6 Celi Raimundo", "7.7 Izael da Silva", "8.1 Fazenda", "8.2 Alcemar Venâncio", 
+                "8.3 Fazenda", "8.4 Fazenda", "8.5 Angelica Flores", "9.1 Edmilson Teixeira", "9.2 Fazenda", 
+                "10.1 Felipe Sabino", "10.2 Fazenda", "10.3 Fazenda", "10.4 Fazenda", "10.5 Fazenda", "10.6 Fazenda", 
+                "10.7 Fazenda", "10.8 Fazenda", "10.9 Fazenda", "11.1 Moises Lourenço", "11.2 Fazenda", "11.3 Fazenda", 
+                "11.4 Natalino Lourenço", "11.5 João Lourenço", "11.6 Fazenda", "12.1 Moises Lourenço", "12.2 Fazenda", 
+                "14.1 Fazenda", "14.2 Fazenda", "15.1 Fazenda", "15.2 Fazenda", "15.3 Fazenda", "16.1 Fazenda"
+            ],
+            "Fazenda Malort": [
+                "1.1 Alto da Pedra", "1.2 Baixada do Alto", "1.3 Otaviano Cachoeira 23", "1.4 Gustavo Cachoeira 23", 
+                "1.5 Davi Cachoeira 23", "1.6 Cachoeira Recepa 23", "1.7 Pasto", "1.8 Agulheiro", "1.9 Grota Gustavo Esq. 24", 
+                "1.10 Grota Gustavo", "1.11 Grota do Davi", "1.12 Despolpador", "1.13 Despolpador Davi", "1.14 Lav 17 mil", 
+                "1.15 Pasto dos Cabritos", "1.16 Lav. do Barraco", "1.17 Lav. do Eucalipto", "1.18 Morro Redondo Recepa 24", 
+                "1.19 Morro Redondo", "1.20 Quintal", "1.21 Lav. 11 mil", "1.22 Lav. 5 mil", "2.1 Hot Casa", 
+                "2.2 785 do Hott Nova", "2.3 Zé Carlos Hott", "2.4 Hott Divisa do Orlando", "3.1 Jaca Otaviano", 
+                "3.2 Jaca Gustavo", "4.1 Gameleira", "5.1 Vila Margem Rio", "5.2 Vila Ronaldo", "5.3 Vila Terreiro", 
+                "5.4 Vila Bananeiras", "5.5 Vila Pé de Limão", "5.6 Vila Canto da Mata", "5.7 Vila Vestido", 
+                "5.8 Vila Barra do Mato", "5.9 Vila Barra da Pedra", "5.11 Vila 3 Coqueiros", "5.12 Vila Acima da Mata"
+            ],
+            "Fazenda Marcélia": [
+                "1. Arara", "2. Esqueletada 25 (Q6-Q7)", "3. Lavoura Velha"
+            ],
+            "Sítio Boa Vista (José Roberto)": [
+                "1. Porteira", "2. Antena", "3. Central", "4. Encosta da Mata"
+            ],
+            "Fazenda Hot": [
+                "1.1 Extrema", "2.1 Diamante Broto", "2.2 Diamante Recepa 25", "2.3 Diamante Julio", 
+                "3.1 Luan e Gabriel", "3.2 Lagoinha + Ararinha", "3.3 Terreiro", "3.4 Pasto plantio 25", 
+                "4.1 Eucalipto Nova", "4.2 Eucalipto Velha", "5.1 Abaixo do Mato", "6.1 Gameleira Plantio 25", 
+                "6.2 Gameleira do Alto", "6.3 Gameleira Recepa 23", "6.4 Gameleira de Baixo"
+            ],
+            "Propriedade Cristina Sousa": [
+                "1.1 Serra (produção)", "1.1 Serra (brotos)", "2.1 Curral"
+            ],
+            "Sítio Santa Catarina": [
+                "1. Célio", "2. Célio", "3. Tirré", "4. Glaucio", "5. Célio", "6. Glaucio", 
+                "7. Célio", "8. Mirella", "9. Tirré", "10. Célio", "11. Glaucio"
+            ],
+            "Propriedades Daniel": [
+                "1.1 Manhuaçuzinho (produção)", "1.2 Manhuaçuzinho (nova)", "1.3 Manhuaçuzinho (nova)", 
+                "2.1 Soledade", "2.2 Soledade", "2.3 Soledade", "2.4 Soledade", "2.5 Soledade", "2.6 Soledade", 
+                "2.7 Soledade", "2.8 Soledade", "3.1 Dom Corrêa", "3.2 Dom Correa", "3.3 Dom Corrêa"
+            ],
+            "Fazenda Cafarnaum": [
+                "1. Boboleta", "2. 2016", "3. 2017", "4. 2018", "5. Recepa 2024"
+            ],
+            "Fazendas Café Realeza": [
+                "1.1 São Pedro", "1.2 São Pedro", "2.1 Vila Cruzeiro", "2.2 Vila Natal", "2.3 Vila", 
+                "2.4 Vila Pomar", "2.5 Vila Galpão", "2.6 Vila Eucalipto", "2.7 Vila Curral", "2.8 Vila Arara", 
+                "3.1 Realeza 785", "3.2 Realeza Lav. da Pedra", "3.3 Realeza Arara", "3.4 Realeza Velha 10", 
+                "3.5 Realeza Nova", "4.1 Taquara Velha", "4.2 Taquara Esqueletada"
+            ],
+            "Fazenda Riacho Fundo": [
+                "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", 
+                "15", "16", "17", "18", "19", "20", "21", "22"
+            ],
+            "Propriedades Gabriel e Thalys": [
+                "1.1 Antonio", "1.2 Antonio", "1.3 Antonio", "1.4 Antonio", "1.5 Antonio", "1.6 Antonio", 
+                "1.7 Antonio", "1.8 Antonio", "1.9 Antonio", "1.10 Antonio", "2.1 Estrada Limeira", 
+                "3.1 Limeira", "3.2 Limeira", "4.1 Santinha", "5.1 Ventania", "5.2 Ventania", "5.3 Ventania", 
+                "5.4 Ventania", "6.1 Flaviano", "6.2 Flaviano"
+            ]
+        };
+
+        // Lógica do Cadastro de Novas Fazendas e Talhões
+        let tempTalhoesNovos = [];
+
+        function togglePainelNovaFazenda() {
+            const painel = document.getElementById('painelNovaFazenda');
+            const icon = document.getElementById('iconTogglePainel');
+            const text = document.getElementById('textTogglePainel');
+
+            if (painel.classList.contains('hidden')) {
+                painel.classList.remove('hidden');
+                icon.innerHTML = '<i class="fas fa-chevron-up"></i>';
+                text.innerText = 'Fechar Painel';
+                atualizarDatalistFazendas();
+            } else {
+                painel.classList.add('hidden');
+                icon.innerHTML = '<i class="fas fa-chevron-down"></i>';
+                text.innerText = 'Abrir Cadastro';
+            }
+        }
+
+        function atualizarDatalistFazendas() {
+            const datalist = document.getElementById('listaFazendasExistentes');
+            datalist.innerHTML = '';
+            Object.keys(talhoesPorFazenda).sort().forEach(faz => {
+                const opt = document.createElement('option');
+                opt.value = faz;
+                datalist.appendChild(opt);
+            });
+        }
+
+        function adicionarTalhaoListaPreCad() {
+            const inputTalhao = document.getElementById('novoNomeTalhao');
+            const nome = inputTalhao.value.trim();
+
+            if (!nome) {
+                exibirToast("Digite o nome do talhão antes de adicionar!", "bg-amber-600");
+                return;
+            }
+
+            if (tempTalhoesNovos.includes(nome)) {
+                exibirToast("Este talhão já está na lista!", "bg-amber-600");
+                return;
+            }
+
+            tempTalhoesNovos.push(nome);
+            inputTalhao.value = '';
+            renderizarTalhoesTemp();
+        }
+
+        function removerTalhaoTemp(index) {
+            tempTalhoesNovos.splice(index, 1);
+            renderizarTalhoesTemp();
+        }
+
+        function renderizarTalhoesTemp() {
+            const container = document.getElementById('containerTalhoesTemp');
+            const lista = document.getElementById('listaTalhoesTemp');
+            lista.innerHTML = '';
+
+            if (tempTalhoesNovos.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+            tempTalhoesNovos.forEach((t, index) => {
+                const tag = document.createElement('span');
+                tag.className = 'inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-800 rounded-lg text-xs font-bold border border-emerald-300';
+                tag.innerHTML = `
+                    <span>${t}</span>
+                    <button type="button" onclick="removerTalhaoTemp(${index})" class="text-emerald-700 hover:text-red-600 transition">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                lista.appendChild(tag);
+            });
+        }
+
+        function cancelarCadastroFazenda() {
+            document.getElementById('novoNomeFazenda').value = '';
+            document.getElementById('novoNomeTalhao').value = '';
+            tempTalhoesNovos = [];
+            renderizarTalhoesTemp();
+            togglePainelNovaFazenda();
+        }
+
+        function salvarNovaFazendaETalhoes() {
+            const inputFazenda = document.getElementById('novoNomeFazenda');
+            const inputTalhao = document.getElementById('novoNomeTalhao');
+            
+            const nomeFazenda = inputFazenda.value.trim();
+            const talhaoResidual = inputTalhao.value.trim();
+
+            if (talhaoResidual && !tempTalhoesNovos.includes(talhaoResidual)) {
+                tempTalhoesNovos.push(talhaoResidual);
+            }
+
+            if (!nomeFazenda) {
+                exibirToast("Por favor, digite o nome da Propriedade / Fazenda!", "bg-amber-600");
+                return;
+            }
+
+            if (tempTalhoesNovos.length === 0) {
+                exibirToast("Adicione pelo menos um talhão para esta propriedade!", "bg-amber-600");
+                return;
+            }
+
+            if (!talhoesPorFazenda[nomeFazenda]) {
+                talhoesPorFazenda[nomeFazenda] = [];
+            }
+
+            // Adiciona novos talhões evitando duplicados
+            tempTalhoesNovos.forEach(t => {
+                if (!talhoesPorFazenda[nomeFazenda].includes(t)) {
+                    talhoesPorFazenda[nomeFazenda].push(t);
+                }
+            });
+
+            // Recarrega dropdown de fazendas e seleciona a nova
+            carregarFazendas();
+            fazendaSelect.value = nomeFazenda;
+            fazendaSelect.dispatchEvent(new Event('change'));
+
+            // Limpa o formulário de pré-cadastro
+            inputFazenda.value = '';
+            inputTalhao.value = '';
+            tempTalhoesNovos = [];
+            renderizarTalhoesTemp();
+            togglePainelNovaFazenda();
+
+            exibirToast(`Propriedade "${nomeFazenda}" cadastrada com sucesso!`, "bg-green-700");
+        }
+
+        const agronomos = {
+            "01": {
+                nome: "Dr. Glaucio Luciano Araujo",
+                detalhe: "CREA: MG0000254008D | CFTA: 7926903620"
+            },
+            "02": {
+                nome: "M.Sc. Sávio José Souza Salazar",
+                detalhe: "CREA: MG142362346-0"
+            }
+        };
+
+        let agronomosSelecionados = ["01"];
+
+        function toggleAgronomo(id) {
+            if (agronomosSelecionados.includes(id)) {
+                if (agronomosSelecionados.length === 1) {
+                    exibirToast("Pelo menos um Engenheiro Agrônomo deve ser selecionado!", "bg-amber-600");
+                    return;
+                }
+                agronomosSelecionados = agronomosSelecionados.filter(item => item !== id);
+            } else {
+                agronomosSelecionados.push(id);
+            }
+            atualizarCardsAgronomos();
+        }
+
+        function atualizarCardsAgronomos() {
+            Object.keys(agronomos).forEach(key => {
+                const card = document.getElementById(`card-agronomo-${key}`);
+                const check = document.getElementById(`check-agronomo-${key}`);
+                if (agronomosSelecionados.includes(key)) {
+                    card.className = "agronomo-card cursor-pointer p-4 rounded-xl border-2 transition-all relative flex flex-col justify-between bg-emerald-50/50 border-emerald-500 shadow-sm";
+                    check.classList.remove('hidden');
+                } else {
+                    card.className = "agronomo-card cursor-pointer p-4 rounded-xl border transition-all relative flex flex-col justify-between bg-white border-gray-200 hover:border-gray-300 opacity-60";
+                    check.classList.add('hidden');
+                }
+            });
+
+            const badgeConjunta = document.getElementById('badge-conjunta');
+            if (badgeConjunta) {
+                if (agronomosSelecionados.length > 1) {
+                    badgeConjunta.classList.remove('hidden');
+                } else {
+                    badgeConjunta.classList.add('hidden');
+                }
+            }
+        }
+
+        const fazendaSelect = document.getElementById('fazenda');
+        const talhaoSelect = document.getElementById('talhao');
+        let listaAvaliacoes = [];
+
+        // Data inicial padrão como hoje
+        document.getElementById('dataAvaliacao').valueAsDate = new Date();
+
+        // Carregar a lista de fazendas dinamicamente no Select
+        function carregarFazendas() {
+            fazendaSelect.innerHTML = '<option value="">-- Selecione a Fazenda --</option>';
+            Object.keys(talhoesPorFazenda).sort().forEach(fazenda => {
+                const opt = document.createElement('option');
+                opt.value = fazenda;
+                opt.textContent = fazenda;
+                fazendaSelect.appendChild(opt);
+            });
+        }
+        carregarFazendas();
+
+        // Event listener para alterar seleção de fazendas
+        fazendaSelect.addEventListener('change', function() {
+            talhaoSelect.innerHTML = '<option value="">-- Selecione o Talhão --</option>';
+            if (this.value && talhoesPorFazenda[this.value]) {
+                talhoesPorFazenda[this.value].forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t; 
+                    opt.textContent = t;
+                    talhaoSelect.appendChild(opt);
+                });
+                talhaoSelect.disabled = false;
+                document.getElementById('subtituloFazenda').innerText = this.value;
+            } else {
+                talhaoSelect.disabled = true;
+            }
+        });
+
+        // Função de exclusividade para checkboxes ("Livre de...")
+        function limparOutros(checkbox, groupName) {
+            if (checkbox.checked) {
+                document.querySelectorAll(`input[name="${groupName}"]`).forEach(cb => { 
+                    if (cb !== checkbox) cb.checked = false; 
+                });
+            }
+        }
+
+        // Submissão do formulário para adicionar à lista
+        document.getElementById('monitoramentoForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const avaliacao = {
+                data: document.getElementById('dataAvaliacao').value,
+                fazenda: fazendaSelect.value,
+                talhao: talhaoSelect.value,
+                pragas: Array.from(document.querySelectorAll('input[name="pragas"]:checked')).map(cb => cb.value).join(', ') || 'Livre',
+                doencas: Array.from(document.querySelectorAll('input[name="doencas"]:checked')).map(cb => cb.value).join(', ') || 'Livre',
+                mato: Array.from(document.querySelectorAll('input[name="mato"]:checked')).map(cb => cb.value).join(', ') || 'Sem registro',
+                indicacoes: Array.from(document.querySelectorAll('input[name="indicacoes"]:checked')).map(cb => cb.value).join(', ') || 'Talhão sem ações',
+                obs: document.getElementById('observacoes').value.trim() || '-'
+            };
+
+            if (listaAvaliacoes.some(av => av.talhao === avaliacao.talhao)) {
+                exibirToast("Este talhão já foi adicionado!", "bg-red-600");
+                return;
+            }
+
+            // Trava seleção de fazenda para manter consistência
+            fazendaSelect.disabled = true;
+
+            listaAvaliacoes.push(avaliacao);
+            renderizarTabela();
+            exibirToast("Talhão adicionado com sucesso!");
+
+            // Limpeza parcial mantendo Data e Fazenda
+            const dataSalva = document.getElementById('dataAvaliacao').value;
+            const fazendaSalva = fazendaSelect.value;
+            this.reset();
+            document.getElementById('dataAvaliacao').value = dataSalva;
+            fazendaSelect.value = fazendaSalva;
+            talhaoSelect.disabled = false;
+        });
+
+        // Função para renderizar a tabela na tela
+        function renderizarTabela() {
+            const tbody = document.getElementById('tabelaCorpo');
+            tbody.innerHTML = '';
+            
+            if (listaAvaliacoes.length === 0) {
+                document.getElementById('containerLista').classList.add('hidden');
+                fazendaSelect.disabled = false;
+                return;
+            }
+
+            const ordem = talhoesPorFazenda[fazendaSelect.value] || [];
+            listaAvaliacoes.sort((a,b) => ordem.indexOf(a.talhao) - ordem.indexOf(b.talhao));
+
+            listaAvaliacoes.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.className = index % 2 === 0 ? "bg-white hover:bg-green-50/50" : "bg-gray-50 hover:bg-green-50/50";
+                
+                tr.innerHTML = `
+                    <td class="p-3 font-semibold text-gray-900">${item.talhao}</td>
+                    <td class="p-3"><span class="px-2 py-1 rounded text-xs ${item.pragas.includes('Livre') ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800 font-semibold'}">${item.pragas}</span></td>
+                    <td class="p-3"><span class="px-2 py-1 rounded text-xs ${item.doencas.includes('Livre') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800 font-semibold'}">${item.doencas}</span></td>
+                    <td class="p-3"><span class="px-2 py-1 rounded text-xs ${item.mato.includes('Livre') ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${item.mato}</span></td>
+                    <td class="p-3 text-xs text-gray-700 font-medium">${item.indicacoes}</td>
+                    <td class="p-3 text-xs text-gray-500 italic truncate max-w-xs">${item.obs}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="removerItem(${index})" class="text-red-500 hover:text-red-700 p-1 transition" title="Remover item">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('containerLista').classList.remove('hidden');
+            document.getElementById('contadorAvaliacoes').innerText = listaAvaliacoes.length;
+        }
+
+        function removerItem(index) {
+            listaAvaliacoes.splice(index, 1);
+            renderizarTabela();
+            exibirToast("Item removido", "bg-gray-700");
+        }
+
+        // GERADOR DE RELATÓRIO PDF
+        function gerarPDF() {
+            if (listaAvaliacoes.length === 0) {
+                exibirToast("Adicione pelo menos um talhão antes de gerar o PDF!", "bg-amber-600");
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            // Orientação Paisagem (Landscape) para caber perfeitamente todas as colunas agronômicas
+            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+            const fazendaNome = fazendaSelect.value;
+            const dataHoje = document.getElementById('dataAvaliacao').value.split('-').reverse().join('/');
+            const incluirTodos = document.getElementById('incluirNaoAvaliados').checked;
+
+            // Prepara linhas da tabela
+            const todosTalhoesFazenda = talhoesPorFazenda[fazendaNome] || [];
+            let dadosTabela = [];
+
+            if (incluirTodos) {
+                todosTalhoesFazenda.forEach(t => {
+                    const av = listaAvaliacoes.find(i => i.talhao === t);
+                    if (av) {
+                        dadosTabela.push([av.talhao, av.pragas, av.doencas, av.mato, av.indicacoes, av.obs]);
+                    } else {
+                        dadosTabela.push([t, "-", "-", "-", "Sem Ações / Não Avaliado", "-"]);
+                    }
+                });
+            } else {
+                dadosTabela = listaAvaliacoes.map(av => [
+                    av.talhao,
+                    av.pragas,
+                    av.doencas,
+                    av.mato,
+                    av.indicacoes,
+                    av.obs
+                ]);
+            }
+
+            // Estatísticas rápidas
+            const totalTalhoesFazenda = todosTalhoesFazenda.length;
+            const totalAvaliados = listaAvaliacoes.length;
+
+            // ==========================================
+            // CABEÇALHO COM A IDENTIDADE VISUAL OFICIAL
+            // ==========================================
+            // Ícone / Logo "DC" em destaque
+            doc.setFillColor(25, 125, 55); // Verde Agro Oficial
+            doc.roundedRect(14, 9, 15, 15, 3, 3, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(18);
+            doc.text("DC", 21.5, 19.2, { align: 'center' });
+
+            // Nome da empresa e subtítulo
+            doc.setTextColor(27, 94, 32);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(16);
+            doc.text("DO CAMPO AGRONEGÓCIOS", 33, 16.5);
+
+            doc.setTextColor(80, 80, 80);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9.5);
+            doc.text("FICHA DE AVALIAÇÃO DE TALHÕES & RELATÓRIO TÉCNICO", 33, 22.5);
+
+            // Identificação do documento e Data
+            doc.setTextColor(27, 94, 32);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(11);
+            doc.text("#DC-RELATORIO", 283, 16, { align: 'right' });
+            
+            doc.setTextColor(100, 100, 100);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.text(`Data: ${dataHoje}`, 283, 22, { align: 'right' });
+
+            // Linha divisória do cabeçalho
+            doc.setDrawColor(27, 94, 32);
+            doc.setLineWidth(0.6);
+            doc.line(14, 27, 283, 27);
+
+            // ==========================================
+            // CAIXA DE METADADOS / RESUMO DA VISITA
+            // ==========================================
+            doc.setFillColor(248, 250, 248);
+            doc.setDrawColor(220, 230, 220);
+            doc.roundedRect(14, 30, 269, 11, 2, 2, 'FD');
+
+            doc.setTextColor(40, 40, 40);
+            doc.setFontSize(9.5);
+            
+            // Linha de Metadados
+            doc.setFont('helvetica', 'bold');
+            doc.text("PROPRIEDADE / FAZENDA:", 18, 37);
+            doc.setFont('helvetica', 'normal');
+            doc.text(fazendaNome, 65, 37);
+
+            doc.setFont('helvetica', 'bold');
+            doc.text("CULTURA:", 160, 37);
+            doc.setFont('helvetica', 'normal');
+            doc.text("Café", 178, 37);
+
+            doc.setFont('helvetica', 'bold');
+            doc.text("TALHÕES AVALIADOS:", 210, 37);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`${totalAvaliados} de ${totalTalhoesFazenda}`, 250, 37);
+
+            // Geração da Tabela usando autoTable
+            doc.autoTable({
+                startY: 45,
+                head: [['Talhão', 'Monitoramento de Pragas', 'Doenças Identificadas', 'Situação do Mato', 'Indicações de Manejo', 'Observações']],
+                body: dadosTabela,
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [27, 94, 32],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 9,
+                    halign: 'left'
+                },
+                bodyStyles: {
+                    fontSize: 8.5,
+                    textColor: [40, 40, 40],
+                    cellPadding: 3
+                },
+                columnStyles: {
+                    0: { cellWidth: 42, fontStyle: 'bold' },
+                    1: { cellWidth: 42 },
+                    2: { cellWidth: 42 },
+                    3: { cellWidth: 35 },
+                    4: { cellWidth: 62 },
+                    5: { cellWidth: 46, fontStyle: 'italic' }
+                },
+                alternateRowStyles: {
+                    fillColor: [248, 250, 248]
+                },
+                didParseCell: function(data) {
+                    if (data.section === 'body') {
+                        const val = data.cell.raw;
+                        if (val === 'Sem Ações / Não Avaliado') {
+                            data.cell.styles.textColor = [150, 150, 150];
+                        }
+                    }
+                },
+                margin: { left: 14, right: 14, top: 28, bottom: 24 }
+            });
+
+            // Campo para assinaturas na última página do relatório
+            const finalY = doc.lastAutoTable.finalY + 12;
+            const pageHeight = doc.internal.pageSize.getHeight();
+
+            if (finalY + 22 < pageHeight - 20) {
+                desenharAssinaturas(doc, finalY);
+            } else {
+                doc.addPage();
+                desenharAssinaturas(doc, 30);
+            }
+
+            // ==========================================
+            // RODAPÉ COM IDENTIDADE VISUAL E PAGINAÇÃO
+            // ==========================================
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+
+                // Em páginas adicionais (se houver), insere mini cabeçalho de continuação
+                if (i > 1) {
+                    doc.setFillColor(25, 125, 55);
+                    doc.roundedRect(14, 8, 11, 11, 2.5, 2.5, 'F');
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(13);
+                    doc.text("DC", 19.5, 15.5, { align: 'center' });
+
+                    doc.setTextColor(27, 94, 32);
+                    doc.setFontSize(11);
+                    doc.text("DO CAMPO AGRONEGÓCIOS - RELATÓRIO TÉCNICO", 28, 14.5);
+                    
+                    doc.setDrawColor(27, 94, 32);
+                    doc.setLineWidth(0.4);
+                    doc.line(14, 21, 283, 21);
+                }
+
+                // Linha divisória do rodapé em verde Agro
+                doc.setDrawColor(27, 94, 32);
+                doc.setLineWidth(0.6);
+                doc.line(14, pageHeight - 17, 283, pageHeight - 17);
+
+                // Nome da Empresa no Rodapé
+                doc.setFontSize(9);
+                doc.setTextColor(27, 94, 32);
+                doc.setFont('helvetica', 'bold');
+                doc.text("DO CAMPO AGRONEGÓCIOS", 148.5, pageHeight - 12, { align: 'center' });
+
+                // Endereço, CNPJ e Telefone
+                doc.setFontSize(8);
+                doc.setTextColor(100, 100, 100);
+                doc.setFont('helvetica', 'normal');
+                doc.text("Rua Do Campo, SN, Reduto - Minas Gerais  |  CNPJ: 52.124.298/0001-45  |  Telefone: (33) 98468-9806", 148.5, pageHeight - 7, { align: 'center' });
+
+                // Numeração de páginas no canto direito
+                doc.setFontSize(8);
+                doc.setTextColor(80, 80, 80);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`Página ${i} de ${pageCount}`, 283, pageHeight - 7, { align: 'right' });
+            }
+
+            const dataFormatada = document.getElementById('dataAvaliacao').value;
+            const nomeFazendaLimpo = fazendaNome.replace(/[^a-zA-Z0-9]/g, '_');
+            doc.save(`Relatorio_Campo_${nomeFazendaLimpo}_${dataFormatada}.pdf`);
+            
+            exibirToast("PDF gerado com sucesso!", "bg-green-700");
+        }
+
+        // Função auxiliar para bloco de assinaturas no PDF
+        function desenharAssinaturas(doc, startY) {
+            doc.setDrawColor(180, 180, 180);
+
+            if (agronomosSelecionados.length === 2) {
+                // Assinatura Conjunta (2 Agrônomos + Produtor Rural)
+                const ag1 = agronomos["01"];
+                const ag2 = agronomos["02"];
+
+                // Coluna 1 - Agrônomo 01
+                doc.line(18, startY + 10, 93, startY + 10);
+                doc.setFontSize(8.5);
+                doc.setTextColor(40, 40, 40);
+                doc.setFont('helvetica', 'bold');
+                doc.text(ag1.nome, 55.5, startY + 14, { align: 'center' });
+                doc.setFontSize(7.5);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(100, 100, 100);
+                doc.text(ag1.detalhe, 55.5, startY + 18, { align: 'center' });
+                doc.text("Responsável Técnico / Agrônomo", 55.5, startY + 22, { align: 'center' });
+
+                // Coluna 2 - Agrônomo 02
+                doc.line(111, startY + 10, 186, startY + 10);
+                doc.setFontSize(8.5);
+                doc.setTextColor(40, 40, 40);
+                doc.setFont('helvetica', 'bold');
+                doc.text(ag2.nome, 148.5, startY + 14, { align: 'center' });
+                doc.setFontSize(7.5);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(100, 100, 100);
+                doc.text(ag2.detalhe, 148.5, startY + 18, { align: 'center' });
+                doc.text("Responsável Técnico / Agrônomo", 148.5, startY + 22, { align: 'center' });
+
+                // Coluna 3 - Produtor Rural
+                doc.line(204, startY + 10, 279, startY + 10);
+                doc.setFontSize(8.5);
+                doc.setTextColor(40, 40, 40);
+                doc.setFont('helvetica', 'bold');
+                doc.text("Produtor Rural / Gerente", 241.5, startY + 14, { align: 'center' });
+                doc.setFontSize(7.5);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(100, 100, 100);
+                doc.text("Propriedade Avaliada", 241.5, startY + 18, { align: 'center' });
+            } else {
+                // Apenas 1 Agrônomo Selecionado
+                const idSel = agronomosSelecionados[0] || "01";
+                const agronomo = agronomos[idSel];
+
+                doc.line(30, startY + 10, 120, startY + 10);
+                doc.setFontSize(8.5);
+                doc.setTextColor(40, 40, 40);
+                doc.setFont('helvetica', 'bold');
+                doc.text(agronomo.nome, 75, startY + 14, { align: 'center' });
+                
+                doc.setFontSize(7.5);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(100, 100, 100);
+                doc.text(agronomo.detalhe, 75, startY + 18, { align: 'center' });
+                doc.text("Responsável Técnico / Agrônomo", 75, startY + 22, { align: 'center' });
+
+                doc.line(177, startY + 10, 267, startY + 10);
+                doc.setFontSize(8.5);
+                doc.setTextColor(40, 40, 40);
+                doc.setFont('helvetica', 'bold');
+                doc.text("Produtor Rural / Gerente da Fazenda", 222, startY + 14, { align: 'center' });
+            }
+        }
+
+        // EXPORTAR PLANILHA CSV
+        function exportarCSV() {
+            if (listaAvaliacoes.length === 0) {
+                exibirToast("Nenhuma avaliação para exportar!", "bg-amber-600");
+                return;
+            }
+
+            const dataHoje = document.getElementById('dataAvaliacao').value.split('-').reverse().join('/');
+            const fazendaNome = fazendaSelect.value;
+
+            let csv = `Do Campo Agronegócios\nRelatório de Visita de Campo\nFazenda: ${fazendaNome}\nData: ${dataHoje}\n\nTalhão;Pragas;Doenças;Mato;Indicações;Observações\n`;
+            
+            const todosTalhoes = talhoesPorFazenda[fazendaNome] || [];
+            todosTalhoes.forEach(t => {
+                const av = listaAvaliacoes.find(i => i.talhao === t);
+                if (av) {
+                    csv += `"${av.talhao}";"${av.pragas}";"${av.doencas}";"${av.mato}";"${av.indicacoes}";"${av.obs}"\n`;
+                } else {
+                    csv += `"${t}";"-";"-";"-";"Sem Ações / Não Avaliado";"-"\n`;
+                }
+            });
+
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Avaliacoes_Do_Campo_${fazendaNome.replace(/[^a-zA-Z0-9]/g, '_')}_${document.getElementById('dataAvaliacao').value}.csv`;
+            link.click();
+            exibirToast("Planilha CSV gerada!");
+        }
+
+        // Função para notificações na tela
+        function exibirToast(msg, bgClass = "bg-green-700") {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            
+            toast.className = `fixed top-4 right-4 z-50 ${bgClass} text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-toast`;
+            toastMsg.innerText = msg;
+            toast.classList.remove('hidden');
+
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

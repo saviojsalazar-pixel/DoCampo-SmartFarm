@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#075f3d">
+  <title>Do Campo SmartFarm</title>
+  <style>
+    :root{--green:#087449;--deep:#06452f;--mint:#eaf7f0;--ink:#17231d;--muted:#637269;--line:#dbe7df;--gold:#d8a83e}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:#f3f7f4;color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+    .shell{min-height:100vh;background:linear-gradient(155deg,#06452f 0,#087449 30%,#f3f7f4 30.1%);padding:calc(18px + env(safe-area-inset-top)) 18px calc(24px + env(safe-area-inset-bottom))}
+    .top{max-width:760px;margin:auto;display:flex;align-items:center;gap:14px;color:white;padding:8px 2px 28px}.logo{width:72px;height:72px;object-fit:contain;background:white;border-radius:19px;padding:6px;box-shadow:0 12px 28px #003d2940}.brand h1{font-size:22px;margin:0;font-weight:850;letter-spacing:.2px}.brand p{margin:4px 0 0;color:#ccebdd;font-size:12px;font-weight:650;letter-spacing:.8px;text-transform:uppercase}
+    main{max-width:760px;margin:auto}.welcome{background:white;border:1px solid #ffffff80;border-radius:22px;padding:21px;box-shadow:0 14px 36px #173b2814;margin-bottom:18px}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--green);font-weight:800}.welcome h2{font-size:23px;line-height:1.15;margin:7px 0}.welcome p{margin:0;color:var(--muted);font-size:14px;line-height:1.5}
+    .section-title{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#526259;margin:22px 4px 10px;font-weight:850}.grid{display:grid;grid-template-columns:1fr;gap:12px}.card{display:flex;align-items:center;gap:15px;text-decoration:none;color:inherit;background:white;border:1px solid var(--line);border-radius:18px;padding:17px;box-shadow:0 8px 22px #173b280c;transition:.18s}.card:active{transform:scale(.985);background:var(--mint)}.icon{width:52px;height:52px;flex:none;border-radius:15px;display:grid;place-items:center;background:var(--mint);color:var(--green)}.icon svg{width:27px;height:27px}.card h3{font-size:16px;margin:0 0 4px}.card p{font-size:12.5px;color:var(--muted);margin:0;line-height:1.35}.arrow{margin-left:auto;color:var(--green);font-size:24px}.future{opacity:.63}.future .icon{background:#edf1ee;color:#718078}.tag{display:inline-block;margin-top:6px;padding:3px 7px;border-radius:99px;background:#edf1ee;color:#67746c;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
+    footer{text-align:center;color:#718078;font-size:11px;margin-top:26px;line-height:1.5}.status{display:inline-flex;align-items:center;gap:6px}.dot{width:7px;height:7px;border-radius:50%;background:#31a66a}
+    @media(min-width:650px){.grid{grid-template-columns:1fr 1fr}.top{padding-bottom:38px}.welcome{padding:26px}.shell{padding-left:28px;padding-right:28px}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="top">
+      <img class="logo" src="assets/logo.png" alt="Logo Do Campo Agronegócios">
+      <div class="brand"><h1>Do Campo SmartFarm</h1><p>Consultoria e inteligência agrícola</p></div>
+    </header>
+    <main>
+      <section class="welcome">
+        <div class="eyebrow">Central técnica</div>
+        <h2>O campo inteiro em um só lugar.</h2>
+        <p>Escolha uma ferramenta para iniciar. Os registros permanecem organizados no aparelho.</p>
+      </section>
+
+      <h2 class="section-title">Ferramentas disponíveis</h2>
+      <div class="grid">
+        <a class="card" href="checklist.html">
+          <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+          <span><h3>Checklist de lavoura</h3><p>Registro dos talhões e observações realizadas durante a visita.</p></span><span class="arrow">›</span>
+        </a>
+        <a class="card" href="pulverizacao.html">
+          <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 22h18M5 22V10l7-7 7 7v12"/><path d="M9 22v-7h6v7M8 10h8"/></svg></span>
+          <span><h3>Recomendação técnica</h3><p>Organização profissional da recomendação e emissão do relatório.</p></span><span class="arrow">›</span>
+        </a>
+      </div>
+
+      <h2 class="section-title">Próximas integrações</h2>
+      <div class="grid">
+        <div class="card future"><span class="icon">◫</span><span><h3>Solo e análise foliar</h3><p>Interpretação automática e histórico por talhão.</p><span class="tag">Em breve</span></span></div>
+        <div class="card future"><span class="icon">⌁</span><span><h3>Recomendações agronômicas</h3><p>Adubação, calagem, gessagem, herbicidas e via solo.</p><span class="tag">Em breve</span></span></div>
+        <div class="card future"><span class="icon">☂</span><span><h3>Meteorologia</h3><p>Chuva, sensores e condições de campo.</p><span class="tag">Em breve</span></span></div>
+        <div class="card future"><span class="icon">▦</span><span><h3>Propriedades e histórico</h3><p>Base única de clientes, fazendas e talhões.</p><span class="tag">Planejado</span></span></div>
+      </div>
+      <footer><span class="status"><span class="dot"></span> Aplicativo preparado para uso em campo</span><br>Do Campo Agronegócios • Versão 1.0</footer>
+    </main>
+  </div>
+</body>
+</html>
