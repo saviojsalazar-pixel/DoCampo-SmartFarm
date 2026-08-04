@@ -355,6 +355,9 @@
                     <div class="flex items-center gap-2">
                         <select id="farm-select" onchange="onFarmChange()" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
                         </select>
+                        <button type="button" id="btn-edit-farm" onclick="editCurrentFarm()" class="hidden shrink-0 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-3.5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm" title="Alterar esta propriedade">
+                            <i class="fa-solid fa-pen"></i><span class="hidden sm:inline">Editar</span>
+                        </button>
                         <button type="button" id="btn-delete-farm" onclick="confirmDeleteFarm()" class="hidden shrink-0 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3.5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm" title="Excluir esta propriedade por completo">
                             <i class="fa-solid fa-trash-can text-rose-600"></i>
                             <span class="hidden sm:inline">Excluir Propriedade</span>
@@ -1523,6 +1526,8 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
         let selectedAgronomistIndex = 0;
         let productStockMap = {};
         let pendingConfirmCallback = null;
+        let editingProductOriginal = null;
+        let editingFarmOriginal = null;
 
         const AGRONOMISTS_LIST = [
             {
@@ -1785,7 +1790,23 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             }
 
             calculateTotals();
+            const cadastro=new URLSearchParams(location.search).get('cadastro');
+            if(cadastro==='produtos')setTimeout(openManageProductsModal,80);
+            if(cadastro==='propriedades')setTimeout(openManageFarmsModal,80);
         };
+
+        function openManageFarmsModal(){
+            let modal=document.getElementById('manage-farms-modal');
+            if(!modal){modal=document.createElement('div');modal.id='manage-farms-modal';modal.className='fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print';document.body.appendChild(modal)}
+            const farms=[...EMBEDDED_DATABASE].sort((a,b)=>a.farm.localeCompare(b.farm,'pt-BR'));
+            modal.innerHTML='<div class="bg-white rounded-2xl max-w-3xl w-full p-5 shadow-xl max-h-[88vh] flex flex-col"><div class="flex items-center justify-between border-b pb-3"><div><h3 class="font-bold text-lg">Produtores, fazendas e talhões</h3><p class="text-xs text-slate-500">'+farms.length+' propriedade(s) cadastrada(s)</p></div><button onclick="closeManageFarmsModal()" class="text-2xl px-2">×</button></div><button onclick="newFarmFromManager()" class="my-3 bg-emerald-700 text-white font-bold rounded-xl px-4 py-3">+ Cadastrar nova propriedade</button><div class="overflow-y-auto space-y-2">'+farms.map((f,i)=>'<div class="border rounded-xl p-3 bg-slate-50"><div class="flex justify-between gap-2"><div><p class="font-bold text-sm">'+escapeManager(f.farm)+'</p><p class="text-xs text-slate-600">'+escapeManager(f.proprietor||f.producer||'Produtor não informado')+' • '+(f.fields||[]).length+' talhão(ões)</p><p class="text-[11px] text-slate-500 mt-1">'+(f.fields||[]).map(x=>escapeManager(x.name)+' ('+(Number(x.area)||0)+' ha)').join(' • ')+'</p></div><div class="flex"><button onclick="editFarmFromManager('+i+')" class="text-amber-700 p-2" title="Editar">✎</button><button onclick="deleteFarmFromManager('+i+')" class="text-rose-700 p-2" title="Excluir">🗑</button></div></div></div>').join('')+'</div></div>';
+            modal.classList.remove('hidden');
+        }
+        function escapeManager(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+        function closeManageFarmsModal(){const m=document.getElementById('manage-farms-modal');if(m)m.classList.add('hidden')}
+        function newFarmFromManager(){closeManageFarmsModal();const p=document.getElementById('new-farm-panel');if(p&&p.classList.contains('hidden'))toggleNewFarmPanel();p.scrollIntoView({behavior:'smooth',block:'start'})}
+        function editFarmFromManager(index){const farms=[...EMBEDDED_DATABASE].sort((a,b)=>a.farm.localeCompare(b.farm,'pt-BR')),farm=farms[index];if(!farm)return;selectedFarm=farm.farm;const s=document.getElementById('farm-select');s.value=farm.farm;onFarmChange();closeManageFarmsModal();editCurrentFarm()}
+        function deleteFarmFromManager(index){const farms=[...EMBEDDED_DATABASE].sort((a,b)=>a.farm.localeCompare(b.farm,'pt-BR')),farm=farms[index];if(!farm)return;selectedFarm=farm.farm;const s=document.getElementById('farm-select');s.value=farm.farm;onFarmChange();closeManageFarmsModal();confirmDeleteFarm()}
 
         function populateFarmDropdown() {
             const select = document.getElementById('farm-select');
@@ -1875,6 +1896,11 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 PRODUCT_CATALOG[cat] = [];
             }
 
+            if(editingProductOriginal&&(editingProductOriginal.cat!==cat||editingProductOriginal.name.toLowerCase()!==name.toLowerCase())){
+                const old=editingProductOriginal;PRODUCT_CATALOG[old.cat]=(PRODUCT_CATALOG[old.cat]||[]).filter(p=>p.name.toLowerCase()!==old.name.toLowerCase());
+                if(window.DoCampoData)window.DoCampoData.removeProduct(old.cat,old.name);
+            }
+
             const existingIdx = PRODUCT_CATALOG[cat].findIndex(function(p) { return p.name.toLowerCase() === name.toLowerCase(); });
             const newProdObj = { name: name, dose: dose, unit: unit, target: target, active: active };
 
@@ -1910,6 +1936,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             if (doseInput) doseInput.value = "";
             if (targetInput) targetInput.value = "";
             if (activeInput) activeInput.value = "";
+            editingProductOriginal=null;
 
             toggleNewProductPanel();
 
@@ -1961,9 +1988,8 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                             targetText +
                             activeText +
                         '</div>' +
-                        '<button type="button" onclick="confirmDeleteProduct(\'' + cat.replace(/'/g, "\\'") + '\', \'' + p.name.replace(/'/g, "\\'") + '\')" class="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-lg transition shrink-0 cursor-pointer" title="Excluir produto do catálogo">' +
-                            '<i class="fa-solid fa-trash-can text-sm"></i>' +
-                        '</button>' +
+                        '<div class="flex shrink-0"><button type="button" onclick="editProduct(\'' + cat.replace(/'/g, "\\'") + '\', \'' + p.name.replace(/'/g, "\\'") + '\')" class="text-amber-700 hover:bg-amber-50 p-2 rounded-lg" title="Alterar produto"><i class="fa-solid fa-pen text-sm"></i></button>' +
+                        '<button type="button" onclick="confirmDeleteProduct(\'' + cat.replace(/'/g, "\\'") + '\', \'' + p.name.replace(/'/g, "\\'") + '\')" class="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-lg transition cursor-pointer" title="Excluir produto do catálogo"><i class="fa-solid fa-trash-can text-sm"></i></button></div>' +
                     '</div>';
                 });
 
@@ -1981,6 +2007,21 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             showConfirm('Deseja realmente excluir o insumo "' + prodName + '" da categoria "' + cat + '"?', function() {
                 deleteProduct(cat, prodName);
             }, 'Excluir Insumo');
+        }
+
+        function editProduct(cat, prodName) {
+            const product=(PRODUCT_CATALOG[cat]||[]).find(p=>p.name.toLowerCase()===prodName.toLowerCase());
+            if(!product)return;
+            closeManageProductsModal();
+            const panel=document.getElementById('new-product-panel');if(panel&&panel.classList.contains('hidden'))toggleNewProductPanel();
+            document.getElementById('new-prod-category').value=cat;
+            document.getElementById('new-prod-name').value=product.name;
+            document.getElementById('new-prod-dose').value=product.dose;
+            document.getElementById('new-prod-unit').value=product.unit;
+            document.getElementById('new-prod-target').value=product.target||'';
+            document.getElementById('new-prod-active').value=product.active||'';
+            editingProductOriginal={cat:cat,name:product.name};
+            panel.scrollIntoView({behavior:'smooth',block:'start'});
         }
 
         function deleteProduct(cat, prodName) {
@@ -2024,6 +2065,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 });
 
                 renderManageProductsList();
+                if(window.DoCampoData)window.DoCampoData.removeProduct(cat,prodName);
                 calculateTotals();
                 showAlert('Insumo "' + prodName + '" excluído com sucesso!', 'Insumo Excluído', true);
             }
@@ -2109,6 +2151,12 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 fields: fields
             };
 
+            if(editingFarmOriginal&&editingFarmOriginal.toLowerCase()!==farmName.toLowerCase()){
+                const oldName=editingFarmOriginal,oldIndex=EMBEDDED_DATABASE.findIndex(f=>f.farm.toLowerCase()===oldName.toLowerCase());
+                if(oldIndex!==-1)EMBEDDED_DATABASE.splice(oldIndex,1);
+                if(window.DoCampoData)window.DoCampoData.removeFarm(oldName);
+            }
+
             const existingIndex = EMBEDDED_DATABASE.findIndex(function(f) { return f.farm.toLowerCase() === farmName.toLowerCase(); });
             if (existingIndex !== -1) {
                 EMBEDDED_DATABASE[existingIndex] = farmObj;
@@ -2142,6 +2190,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             const container = document.getElementById('new-farm-fields-container');
             if (container) container.innerHTML = "";
             newFarmFieldCounter = 0;
+            editingFarmOriginal=null;
             toggleNewFarmPanel();
 
             const stepsElem = document.getElementById('fields-container');
@@ -2159,6 +2208,19 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             showConfirm('Deseja realmente excluir a propriedade "' + selectedFarm + '" e TODOS os seus talhões? Esta ação é permanente.', function() {
                 deleteCurrentFarm();
             }, 'Excluir Propriedade Toda');
+        }
+
+        function editCurrentFarm(){
+            const farm=EMBEDDED_DATABASE.find(f=>f.farm===selectedFarm);if(!farm)return;
+            const panel=document.getElementById('new-farm-panel');if(panel&&panel.classList.contains('hidden'))toggleNewFarmPanel();
+            document.getElementById('new-farm-name').value=farm.farm||'';
+            document.getElementById('new-producer-name').value=farm.proprietor||farm.producer||'';
+            document.getElementById('new-producer-cpf').value=farm.cpf||'';
+            document.getElementById('new-producer-address').value=farm.address||'';
+            const container=document.getElementById('new-farm-fields-container');container.innerHTML='';newFarmFieldCounter=0;
+            (farm.fields||[]).forEach(f=>addNewFarmFieldRow(f.name,f.area));
+            editingFarmOriginal=farm.farm;
+            panel.scrollIntoView({behavior:'smooth',block:'start'});
         }
 
         function deleteCurrentFarm() {
@@ -2186,6 +2248,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             } catch(e) {
                 console.error("Erro ao salvar exclusão de propriedade", e);
             }
+            if(window.DoCampoData)window.DoCampoData.removeFarm(farmToDelete);
 
             // Reset UI selection
             selectedFarm = "";
@@ -2229,6 +2292,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
         function onFarmChange() {
             const select = document.getElementById('farm-select');
             const btnDeleteFarm = document.getElementById('btn-delete-farm');
+            const btnEditFarm = document.getElementById('btn-edit-farm');
             if (!select) return;
 
             selectedFarm = select.value;
@@ -2241,6 +2305,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                     btnDeleteFarm.classList.add('hidden');
                 }
             }
+            if(btnEditFarm)btnEditFarm.classList.toggle('hidden',!selectedFarm);
 
             const producerInput = document.getElementById('producer-display');
             const producerCpfInput = document.getElementById('producer-cpf-display');

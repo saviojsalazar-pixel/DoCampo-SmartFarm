@@ -26,7 +26,7 @@
         }
         return result;
     }
-    function removeFarm(name) { const data = read(); data.farms = data.farms.filter(item => String(item.farm).toLowerCase() !== String(name).toLowerCase()); return write(data); }
+    function removeFarm(name) { const data = read(); data.farms = data.farms.filter(item => String(item.farm).toLowerCase() !== String(name).toLowerCase()); const result=write(data); if(window.DoCampoDB){const item=window.DoCampoDB.list('farms').find(f=>String(f.name).toLowerCase()===String(name).toLowerCase());if(item)window.DoCampoDB.softDelete('farms',item.id)} return result; }
     function mergeProduct(category, product) {
         if (!category || !product || !product.name) return read();
         const data = read(); if (!Array.isArray(data.products[category])) data.products[category] = [];
@@ -39,5 +39,6 @@
         }
         return result;
     }
-    window.DoCampoData = { read, mergeFarm, removeFarm, mergeProduct };
+    function removeProduct(category,name){const data=read();if(Array.isArray(data.products[category]))data.products[category]=data.products[category].filter(p=>String(p.name).toLowerCase()!==String(name).toLowerCase());const result=write(data);if(window.DoCampoDB){const item=window.DoCampoDB.list('products').find(p=>String(p.name).toLowerCase()===String(name).toLowerCase()&&String(p.category)===String(category));if(item)window.DoCampoDB.softDelete('products',item.id)}return result}
+    window.DoCampoData = { read, mergeFarm, removeFarm, mergeProduct, removeProduct };
 })();
