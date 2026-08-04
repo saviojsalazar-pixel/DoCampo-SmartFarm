@@ -10,23 +10,18 @@
     <meta name="apple-mobile-web-app-title" content="Do Campo">
     <meta name="description" content="Aplicativo móvel Do Campo Agronegócios para elaboração e conferência de recomendações técnicas.">
     <title>Do Campo Agronegócios - Recomendação de Pulverização</title>
-    <link rel="manifest" href="manifest.webmanifest">
-    <link rel="icon" type="image/png" href="logo.png">
-    <link rel="apple-touch-icon" href="icon-192.png">
     
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="vendor/tailwind/tailwindcss.js"></script>
 
     <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
 
     <!-- Google Fonts: Inter & Outfit -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Fontes do sistema para funcionamento integralmente offline -->
 
     <!-- html2pdf.js for Client-side PDF Generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="vendor/pdf/html2pdf.bundle.min.js"></script>
 
     <script>
         tailwind.config = {
@@ -1325,7 +1320,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
 
         const DEFAULT_FIRST_AID_TEXT = "procure imediatamente um serviço médico de emergência levando a embalagem, rótulo, bula, folheto informativo e/ou receituário agronômico do produto. Ingestão: Se engolir o produto, não provoque vômito, exceto quando houver indicação médica. Caso o vômito ocorra naturalmente, deite a pessoa de lado. Não dê nada para beber ou comer.";
 
-        const DEFAULT_TECH_NOTES_TEXT = "Para o preparo da calda, deve-se utilizar água de boa qualidade, livre de coloides em suspensão (terra, argila ou matéria orgânica), a presença destes pode reduzir a eficácia dos produtos.\nPreencher o tanque/pulverizador com água até a metade de sua capacidade, inserir as doses recomendadas dos produtos, completar a capacidade do reservatório do pulverizador com água, mantendo sempre a agitação.\nAcrescente os produtos na ordem indicada pelo técnico, respeitando a seguinte ordem de entrada no tanque (por tipo de formulação): SG > SP > WP > WG > CS > SC > OD > SE > EC > EO > EW > ME > SL.\nRealize a aplicação em momentos em que a temperatura esteja abaixo de 25°C, para evitar a evaporação dos produtos. Acompanhe a previsão do tempo, pois os produtos necessitam de pelo menos 2 horas para serem absorvidos. Caso chova nesse período, os produtos podem ser lavados.\nO equipamento de pulverização a ser utilizado para a aplicação deve estar limpo, livre de resíduos de aplicações anteriores.";
+        const DEFAULT_TECH_NOTES_TEXT = "As orientações operacionais devem ser definidas e validadas pelo profissional legalmente habilitado, considerando diagnóstico, bula vigente, condições da área e legislação aplicável. Este aplicativo offline organiza somente o rascunho técnico e o registro da visita.";
 
         const DEFAULT_PRECAUTIONS_TEXT = "Aplique o produto somente nas doses recomendadas e observe o intervalo de segurança.\nMantenha o restante do produto adequadamente fechado em sua embalagem original, em local trancado, longe do alcance de crianças e animais.\nTome banho imediatamente após a aplicação do produto e troque as roupas.\nNão reutilizar a embalagem vazia.";
 
@@ -2462,11 +2457,32 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             
             calculateTotals();
         }
-        if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-            window.addEventListener('load', function () {
-                navigator.serviceWorker.register('./service-worker.js').catch(function () {});
-            });
+        // Modo profissional seguro: mantém cadastro, histórico e rascunho em PDF,
+        // mas bloqueia cálculos operacionais automáticos no aparelho.
+        function aplicarModoRascunhoProfissional() {
+            const bloquear = function () {
+                document.querySelectorAll('[id$="-dose"], [id$="-unit"], #spray-volume-ha, #tank-capacity').forEach(function (el) {
+                    el.disabled = true;
+                    el.setAttribute('aria-disabled', 'true');
+                    el.title = 'Campo reservado à validação do profissional habilitado';
+                    el.classList.add('opacity-60', 'cursor-not-allowed');
+                });
+            };
+
+            bloquear();
+            new MutationObserver(bloquear).observe(document.body, { childList: true, subtree: true });
+
+            const textoPdf = document.getElementById('btn-pdf-text');
+            if (textoPdf) textoPdf.innerText = 'Gerar Rascunho PDF';
+
+            const aviso = document.createElement('div');
+            aviso.className = 'fixed bottom-5 right-5 z-50 max-w-sm rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 shadow-xl no-print';
+            aviso.innerHTML = '<strong>Modo offline profissional:</strong> cálculos operacionais automáticos estão bloqueados. O documento gerado é um rascunho para revisão e assinatura do responsável habilitado.';
+            document.body.appendChild(aviso);
         }
+
+        window.addEventListener('DOMContentLoaded', aplicarModoRascunhoProfissional);
+
     </script>
 </body>
 </html>

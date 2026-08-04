@@ -8,6 +8,12 @@ Aplicativo Android híbrido com uma central de acesso aos módulos da Do Campo A
 - Recomendação técnica de pulverização
 - Espaços preparados para novos módulos
 
+## Funcionamento offline
+
+- Interface, fontes, ícones e bibliotecas de PDF incluídos no APK.
+- Checklist e geração do relatório funcionam sem internet.
+- O módulo de recomendação funciona como rascunho profissional offline, com cálculos operacionais automáticos bloqueados para revisão do responsável habilitado.
+
 ## Identificação Android
 
 - Nome: `Do Campo SmartFarm`
