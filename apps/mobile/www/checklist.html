@@ -6,11 +6,10 @@
     <title>Ficha de Campo - Do Campo Agronegócios</title>
     <!-- Tailwind CSS -->
     <script src="vendor/tailwind/tailwindcss.js"></script>
-    <!-- FontAwesome Icons -->
-    <link href="vendor/fontawesome/css/all.min.css" rel="stylesheet">
     <!-- jsPDF and AutoTable Libraries for PDF Generation -->
     <script src="vendor/pdf/jspdf.umd.min.js"></script>
     <script src="vendor/pdf/jspdf.plugin.autotable.min.js"></script>
+    <script src="shared-data.js"></script>
     <script src="native-pdf.js"></script>
     
     <script>
@@ -58,7 +57,7 @@
             display: none; 
         }
         
-        /* Modal Toast Animation */
+        /* Modal & Toast Animations */
         @keyframes slideIn {
             from { transform: translateY(-100%); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
@@ -66,10 +65,16 @@
         .animate-toast {
             animation: slideIn 0.3s forwards;
         }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans antialiased min-h-screen p-3 md:p-8">
-    <a href="index.html" class="fixed bottom-5 left-5 z-50 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-sm px-4 py-3 rounded-full shadow-xl border border-emerald-600 no-print" aria-label="Voltar para o início">← Início</a>
 
     <div class="max-w-5xl mx-auto space-y-6">
         
@@ -79,77 +84,159 @@
             <span id="toastMessage">Operação realizada com sucesso!</span>
         </div>
 
-        <!-- Main Card Header -->
-        <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-            <div class="bg-gradient-to-r from-gray-900 via-gray-800 to-green-950 text-white p-6 md:p-8 text-center border-b-4 border-agro-dark relative">
-                <div class="inline-flex items-center justify-center p-2 bg-white rounded-2xl mb-3 shadow-lg border border-green-200">
-                    <img src="assets/logo.png" alt="Logo Do Campo Agronegócios" class="w-16 h-16 object-contain rounded-xl">
+        <!-- Confirmation Modal -->
+        <div id="confirmModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl animate-fade-in space-y-4 border border-gray-100">
+                <div class="flex items-center gap-3 text-red-600">
+                    <div class="p-3 bg-red-100 rounded-xl">
+                        <i class="fas fa-exclamation-triangle text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900" id="confirmModalTitle">Confirmar Exclusão</h3>
                 </div>
-                <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">Do Campo Agronegócios</h1>
-                <p class="text-sm md:text-base mt-1 text-green-200 font-medium">Ficha de Avaliação de Talhões & Relatório Técnico</p>
+                <p class="text-sm text-gray-600 leading-relaxed" id="confirmModalMessage">Você tem certeza que deseja excluir este item?</p>
+                <div class="flex justify-end gap-3 pt-3 border-t border-gray-100">
+                    <button type="button" onclick="fecharConfirmModal()" class="px-4 py-2.5 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition">
+                        Cancelar
+                    </button>
+                    <button type="button" id="confirmModalBtn" class="px-5 py-2.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow transition flex items-center gap-1.5">
+                        <i class="fas fa-trash-alt"></i> Excluir
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header Card with Top Nova Visita Button -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+            <div class="bg-gradient-to-r from-gray-900 via-gray-800 to-green-950 text-white p-6 md:p-8 relative border-b-4 border-agro-dark">
+                
+                <!-- Botão de Nova Visita no Início da Página -->
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+                    <span class="inline-flex items-center gap-2 px-3 py-1 bg-white/10 text-green-300 text-xs font-semibold rounded-full backdrop-blur-md">
+                        <i class="fas fa-leaf text-green-400"></i> Sistema de Vistoria de Campo
+                    </span>
+                    <button type="button" onclick="iniciarNovaVisita()" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs md:text-sm shadow-md hover:shadow-lg transition flex items-center gap-2 transform hover:-translate-y-0.5 active:translate-y-0" title="Apagar informações da visita anterior e iniciar uma nova">
+                        <i class="fas fa-rotate-left text-base"></i>
+                        <span>Nova Visita (Apagar Dados Anteriores)</span>
+                    </button>
+                </div>
+
+                <div class="text-center pt-2">
+                    <img src="assets/logo.png" alt="Do Campo Agronegócios" class="w-24 h-24 object-contain mx-auto mb-2 bg-white rounded-2xl p-2 shadow-lg">
+                    <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">Do Campo Agronegócios</h1>
+                    <p class="text-sm md:text-base mt-1 text-green-200 font-medium">Ficha de Avaliação de Talhões & Relatório Técnico</p>
+                </div>
             </div>
 
             <form id="monitoramentoForm" class="p-6 md:p-8 space-y-8">
-                <!-- 0. Cadastrar Nova Propriedade e Talhões -->
+                <!-- Painel de Gerenciamento de Propriedades -->
                 <div class="bg-gradient-to-r from-emerald-50 to-green-50/80 rounded-2xl p-4 md:p-5 border border-emerald-200/80 shadow-sm transition-all space-y-4">
                     <div class="flex items-center justify-between cursor-pointer" onclick="togglePainelNovaFazenda()">
                         <div class="flex items-center gap-2 text-agro-dark font-bold text-base md:text-lg">
-                            <i class="fas fa-plus-circle text-agro text-xl"></i>
-                            <span>Cadastrar Nova Propriedade / Talhões</span>
+                            <i class="fas fa-layer-group text-agro text-xl"></i>
+                            <span>Cadastrar & Gerenciar Propriedades / Talhões</span>
                         </div>
                         <span id="iconTogglePainel" class="text-agro font-bold text-xs bg-white px-3 py-1.5 rounded-full shadow-sm border border-emerald-200 flex items-center gap-1 hover:bg-emerald-50 transition">
-                            <i class="fas fa-chevron-down"></i> <span id="textTogglePainel">Abrir Cadastro</span>
+                            <i class="fas fa-chevron-down"></i> <span id="textTogglePainel">Abrir Painel</span>
                         </span>
                     </div>
 
                     <div id="painelNovaFazenda" class="hidden space-y-4 pt-3 border-t border-emerald-200/60">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome da Propriedade / Fazenda *</label>
-                                <div class="relative">
-                                    <input type="text" id="novoNomeFazenda" list="listaFazendasExistentes" placeholder="Ex: Fazenda Bela Vista" class="w-full p-3 pl-9 border border-gray-300 rounded-xl focus:ring-2 focus:ring-agro outline-none bg-white text-sm">
-                                    <i class="fas fa-building text-gray-400 absolute left-3 top-3.5 text-sm"></i>
-                                </div>
-                                <datalist id="listaFazendasExistentes"></datalist>
-                                <p class="text-[11px] text-gray-500 mt-1">Digite uma nova propriedade ou escolha uma existente para incluir mais talhões.</p>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome do Talhão *</label>
-                                <div class="flex gap-2">
-                                    <div class="relative flex-1">
-                                        <input type="text" id="novoNomeTalhao" placeholder="Ex: 1.1 Lavoura Nova" class="w-full p-3 pl-9 border border-gray-300 rounded-xl focus:ring-2 focus:ring-agro outline-none bg-white text-sm" onkeypress="if(event.key==='Enter'){event.preventDefault(); adicionarTalhaoListaPreCad();}">
-                                        <i class="fas fa-vector-square text-gray-400 absolute left-3 top-3.5 text-sm"></i>
+                        <!-- Tabs -->
+                        <div class="flex border-b border-emerald-200 text-xs font-bold gap-2">
+                            <button type="button" id="tabCadastrarBtn" onclick="trocarAbaPainel('cadastrar')" class="py-2 px-4 rounded-t-xl bg-agro text-white border-b-2 border-agro transition flex items-center gap-1.5">
+                                <i class="fas fa-plus-circle"></i> Cadastrar
+                            </button>
+                            <button type="button" id="tabGerenciarBtn" onclick="trocarAbaPainel('gerenciar')" class="py-2 px-4 rounded-t-xl bg-gray-200 text-gray-700 hover:bg-gray-300 transition flex items-center gap-1.5">
+                                <i class="fas fa-tasks"></i> Gerenciar & Excluir
+                            </button>
+                        </div>
+
+                        <!-- SUB-PANEL 1: Cadastrar Nova Fazenda/Talhão -->
+                        <div id="subPainelCadastrar" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome da Propriedade / Fazenda *</label>
+                                    <div class="relative">
+                                        <input type="text" id="novoNomeFazenda" list="listaFazendasExistentes" placeholder="Ex: Fazenda Bela Vista" class="w-full p-3 pl-9 border border-gray-300 rounded-xl focus:ring-2 focus:ring-agro outline-none bg-white text-sm">
+                                        <i class="fas fa-building text-gray-400 absolute left-3 top-3.5 text-sm"></i>
                                     </div>
-                                    <button type="button" onclick="adicionarTalhaoListaPreCad()" class="bg-agro hover:bg-agro-dark text-white font-bold px-4 rounded-xl shadow transition flex items-center gap-1 text-sm">
-                                        <i class="fas fa-plus"></i> <span class="hidden sm:inline">Incluir</span>
-                                    </button>
+                                    <datalist id="listaFazendasExistentes"></datalist>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome do Proprietário / Produtor</label>
+                                    <div class="relative">
+                                        <input type="text" id="novoNomeProdutor" placeholder="Ex: João da Silva" class="w-full p-3 pl-9 border border-gray-300 rounded-xl focus:ring-2 focus:ring-agro outline-none bg-white text-sm">
+                                        <i class="fas fa-user text-gray-400 absolute left-3 top-3.5 text-sm"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome do Talhão *</label>
+                                    <div class="flex gap-2">
+                                        <div class="relative flex-1">
+                                            <input type="text" id="novoNomeTalhao" placeholder="Ex: 1.1 Lavoura Nova" class="w-full p-3 pl-9 border border-gray-300 rounded-xl focus:ring-2 focus:ring-agro outline-none bg-white text-sm" onkeypress="if(event.key==='Enter'){event.preventDefault(); adicionarTalhaoListaPreCad();}">
+                                            <i class="fas fa-vector-square text-gray-400 absolute left-3 top-3.5 text-sm"></i>
+                                        </div>
+                                        <button type="button" onclick="adicionarTalhaoListaPreCad()" class="bg-agro hover:bg-agro-dark text-white font-bold px-4 rounded-xl shadow transition flex items-center gap-1 text-sm">
+                                            <i class="fas fa-plus"></i> <span class="hidden sm:inline">Incluir</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Lista de talhões a adicionar -->
+                            <div id="containerTalhoesTemp" class="hidden space-y-2 bg-white p-3 rounded-xl border border-emerald-100 shadow-inner">
+                                <span class="text-xs font-bold text-gray-600 block uppercase">Talhões a serem cadastrados:</span>
+                                <div id="listaTalhoesTemp" class="flex flex-wrap gap-2"></div>
+                            </div>
+
+                            <div class="flex justify-end gap-2 pt-2 border-t border-emerald-100">
+                                <button type="button" onclick="cancelarCadastroFazenda()" class="px-4 py-2 text-xs font-bold text-gray-600 bg-gray-200 hover:bg-gray-300 rounded-xl transition">
+                                    Cancelar
+                                </button>
+                                <button type="button" onclick="salvarNovaFazendaETalhoes()" class="px-5 py-2.5 text-xs font-bold text-white bg-agro-dark hover:bg-agro-deep rounded-xl shadow transition flex items-center gap-2">
+                                    <i class="fas fa-save"></i> Salvar Propriedade e Talhões
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="subPainelGerenciar" class="hidden space-y-4">
+                            <div class="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm space-y-4">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Selecionar Propriedade para Gerenciar / Excluir</label>
+                                        <select id="gerenciarFazendaSelect" onchange="carregarGerenciadorTalhoes()" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-agro outline-none bg-white text-sm">
+                                            <option value="">-- Escolha uma Propriedade --</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <button type="button" id="btnExcluirFazendaInteira" onclick="solicitarExclusaoFazenda()" disabled class="w-full py-3 px-4 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm">
+                                            <i class="fas fa-trash-alt"></i> Excluir Fazenda Inteira
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div id="containerGerenciarTalhoes" class="hidden space-y-3 pt-3 border-t border-gray-100">
+                                    <div class="flex items-center justify-between">
+                                        <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wide">
+                                            Talhões Cadastrados nesta Fazenda (<span id="countTalhoesGerenciar">0</span>):
+                                        </h4>
+                                        <span class="text-[11px] text-gray-500 italic">Clique no ícone de lixeira para excluir um talhão individual.</span>
+                                    </div>
+                                    <div id="listaGerenciarTalhoes" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-1">
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Lista de talhões a adicionar -->
-                        <div id="containerTalhoesTemp" class="hidden space-y-2 bg-white p-3 rounded-xl border border-emerald-100 shadow-inner">
-                            <span class="text-xs font-bold text-gray-600 block uppercase">Talhões a serem cadastrados:</span>
-                            <div id="listaTalhoesTemp" class="flex flex-wrap gap-2"></div>
-                        </div>
-
-                        <div class="flex justify-end gap-2 pt-2 border-t border-emerald-100">
-                            <button type="button" onclick="cancelarCadastroFazenda()" class="px-4 py-2 text-xs font-bold text-gray-600 bg-gray-200 hover:bg-gray-300 rounded-xl transition">
-                                Cancelar
-                            </button>
-                            <button type="button" onclick="salvarNovaFazendaETalhoes()" class="px-5 py-2.5 text-xs font-bold text-white bg-agro-dark hover:bg-agro-deep rounded-xl shadow transition flex items-center gap-2">
-                                <i class="fas fa-save"></i> Salvar Propriedade e Talhões
-                            </button>
-                        </div>
                     </div>
                 </div>
 
-                <!-- 1. Identificação -->
+                <!-- Seção 1: Identificação da Visita -->
                 <div class="space-y-4">
                     <h2 class="text-xl font-bold text-agro-dark flex items-center border-b pb-2">
                         <i class="fas fa-map-marker-alt text-agro mr-2"></i> 1. Identificação da Visita
                     </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-1">Data da Visita *</label>
                             <input type="date" id="dataAvaliacao" required class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-agro outline-none transition bg-gray-50 focus:bg-white">
@@ -161,6 +248,13 @@
                             </select>
                         </div>
                         <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Nome do Proprietário / Produtor</label>
+                            <div class="relative">
+                                <input type="text" id="nomeProprietario" placeholder="Ex: João da Silva" class="w-full p-3 pl-9 border border-gray-300 rounded-xl focus:ring-2 focus:ring-agro outline-none transition bg-white shadow-sm">
+                                <i class="fas fa-user-circle text-gray-400 absolute left-3 top-3.5 text-sm"></i>
+                            </div>
+                        </div>
+                        <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-1">Talhão *</label>
                             <select id="talhao" required disabled class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-agro outline-none transition bg-white shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed">
                                 <option value="">-- Escolha a Fazenda primeiro --</option>
@@ -169,7 +263,6 @@
                     </div>
                 </div>
 
-                <!-- 2. Monitoramento Técnico -->
                 <div class="space-y-6">
                     <h2 class="text-xl font-bold text-agro-dark flex items-center border-b pb-2">
                         <i class="fas fa-bug text-agro mr-2"></i> 2. Monitoramento Fitossanitário
@@ -177,10 +270,18 @@
                     
                     <!-- Pragas -->
                     <div>
-                        <h3 class="text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide flex items-center gap-2">
-                            <i class="fas fa-spider text-amber-600"></i> Pragas Identificadas
-                        </h3>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                            <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide flex items-center gap-2">
+                                <i class="fas fa-spider text-amber-600"></i> Pragas Identificadas
+                            </h3>
+                            <div class="flex items-center gap-2 w-full sm:w-auto">
+                                <input type="text" id="novaPragaInput" placeholder="Nova praga..." class="p-2 text-xs border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-agro bg-white w-full sm:w-44 shadow-sm" onkeypress="if(event.key==='Enter'){event.preventDefault(); adicionarNovaPraga();}">
+                                <button type="button" onclick="adicionarNovaPraga()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-2 rounded-xl text-xs transition flex items-center gap-1 shrink-0 shadow-sm">
+                                    <i class="fas fa-plus"></i> <span>Incluir</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="gridPragas" class="grid grid-cols-2 md:grid-cols-4 gap-3">
                             <label><input type="checkbox" name="pragas" value="Livre de Pragas" onchange="limparOutros(this, 'pragas')"><span class="checkbox-label"><i class="fas fa-shield-alt text-green-500 mr-2"></i>Livre de Pragas</span></label>
                             <label><input type="checkbox" name="pragas" value="Bicho Mineiro"><span class="checkbox-label"><i class="fas fa-bug text-amber-600 mr-2"></i>Bicho Mineiro</span></label>
                             <label><input type="checkbox" name="pragas" value="Broca"><span class="checkbox-label"><i class="fas fa-bug text-amber-600 mr-2"></i>Broca</span></label>
@@ -194,10 +295,18 @@
 
                     <!-- Doenças -->
                     <div>
-                        <h3 class="text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide flex items-center gap-2">
-                            <i class="fas fa-disease text-red-500"></i> Doenças Identificadas
-                        </h3>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                            <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide flex items-center gap-2">
+                                <i class="fas fa-disease text-red-500"></i> Doenças Identificadas
+                            </h3>
+                            <div class="flex items-center gap-2 w-full sm:w-auto">
+                                <input type="text" id="novaDoencaInput" placeholder="Nova doença..." class="p-2 text-xs border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-agro bg-white w-full sm:w-44 shadow-sm" onkeypress="if(event.key==='Enter'){event.preventDefault(); adicionarNovaDoenca();}">
+                                <button type="button" onclick="adicionarNovaDoenca()" class="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-2 rounded-xl text-xs transition flex items-center gap-1 shrink-0 shadow-sm">
+                                    <i class="fas fa-plus"></i> <span>Incluir</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="gridDoencas" class="grid grid-cols-2 md:grid-cols-4 gap-3">
                             <label><input type="checkbox" name="doencas" value="Livre de Doenças" onchange="limparOutros(this, 'doencas')"><span class="checkbox-label"><i class="fas fa-shield-alt text-green-500 mr-2"></i>Livre de Doenças</span></label>
                             <label><input type="checkbox" name="doencas" value="Cercospora"><span class="checkbox-label"><i class="fas fa-virus text-red-500 mr-2"></i>Cercospora</span></label>
                             <label><input type="checkbox" name="doencas" value="Phoma"><span class="checkbox-label"><i class="fas fa-virus text-red-500 mr-2"></i>Phoma</span></label>
@@ -207,18 +316,25 @@
                         </div>
                     </div>
 
-                    <!-- Mato / Plantas Daninhas com desenhos de mato -->
+                    <!-- Mato -->
                     <div>
-                        <h3 class="text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide flex items-center gap-2">
-                            <svg class="w-5 h-5 text-emerald-600 inline-block" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M2 20h20v2H2z" />
-                                <path d="M5 20c1-5 3-10 6-12c-1.5 4-2 8-3 12z" />
-                                <path d="M10 20c1.5-4 3.5-8 7-9c-2 4-2.5 6.5-3.5 9z" />
-                            </svg>
-                            Situação do Mato
-                        </h3>
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-                            <!-- Livre de Mato -->
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                            <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide flex items-center gap-2">
+                                <svg class="w-5 h-5 text-emerald-600 inline-block" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M2 20h20v2H2z" />
+                                    <path d="M5 20c1-5 3-10 6-12c-1.5 4-2 8-3 12z" />
+                                    <path d="M10 20c1.5-4 3.5-8 7-9c-2 4-2.5 6.5-3.5 9z" />
+                                </svg>
+                                Situação do Mato
+                            </h3>
+                            <div class="flex items-center gap-2 w-full sm:w-auto">
+                                <input type="text" id="novoMatoInput" placeholder="Nova situação/mato..." class="p-2 text-xs border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-agro bg-white w-full sm:w-44 shadow-sm" onkeypress="if(event.key==='Enter'){event.preventDefault(); adicionarNovoMato();}">
+                                <button type="button" onclick="adicionarNovoMato()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-xl text-xs transition flex items-center gap-1 shrink-0 shadow-sm">
+                                    <i class="fas fa-plus"></i> <span>Incluir</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="gridMato" class="grid grid-cols-2 md:grid-cols-3 gap-3">
                             <label>
                                 <input type="checkbox" name="mato" value="Livre de Mato" onchange="limparOutros(this, 'mato')">
                                 <span class="checkbox-label flex items-center gap-2">
@@ -229,8 +345,6 @@
                                     <span>Livre de Mato</span>
                                 </span>
                             </label>
-
-                            <!-- Mato Baixo -->
                             <label>
                                 <input type="checkbox" name="mato" value="Mato Baixo">
                                 <span class="checkbox-label flex items-center gap-2">
@@ -243,8 +357,6 @@
                                     <span>Mato Baixo</span>
                                 </span>
                             </label>
-
-                            <!-- Mato Médio -->
                             <label>
                                 <input type="checkbox" name="mato" value="Mato Médio">
                                 <span class="checkbox-label flex items-center gap-2">
@@ -257,8 +369,6 @@
                                     <span>Mato Médio</span>
                                 </span>
                             </label>
-
-                            <!-- Mato Alto -->
                             <label>
                                 <input type="checkbox" name="mato" value="Mato Alto">
                                 <span class="checkbox-label flex items-center gap-2">
@@ -273,8 +383,6 @@
                                     <span>Mato Alto</span>
                                 </span>
                             </label>
-
-                            <!-- Mato na Linha -->
                             <label>
                                 <input type="checkbox" name="mato" value="Mato na Linha">
                                 <span class="checkbox-label flex items-center gap-2">
@@ -288,8 +396,6 @@
                                     <span>Mato na Linha</span>
                                 </span>
                             </label>
-
-                            <!-- Cipó -->
                             <label>
                                 <input type="checkbox" name="mato" value="Cipó">
                                 <span class="checkbox-label flex items-center gap-2">
@@ -306,12 +412,20 @@
                     </div>
                 </div>
 
-                <!-- 3. Indicações de Manejo -->
                 <div class="space-y-4">
-                    <h2 class="text-xl font-bold text-agro-dark flex items-center border-b pb-2">
-                        <i class="fas fa-clipboard-list text-agro mr-2"></i> 3. Recomendações e Indicações de Ação
-                    </h2>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-2">
+                        <h2 class="text-xl font-bold text-agro-dark flex items-center">
+                            <i class="fas fa-clipboard-list text-agro mr-2"></i> 3. Recomendações e Indicações de Ação
+                        </h2>
+                        <div class="flex items-center gap-2 w-full md:w-auto">
+                            <input type="text" id="novaAcaoInput" placeholder="Nova ação (ex: Irrigação)" class="p-2.5 text-xs border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-agro bg-white w-full sm:w-56 shadow-sm" onkeypress="if(event.key==='Enter'){event.preventDefault(); adicionarNovaAcaoManejo();}">
+                            <button type="button" onclick="adicionarNovaAcaoManejo()" class="bg-agro hover:bg-agro-dark text-white font-bold px-3.5 py-2.5 rounded-xl text-xs transition flex items-center gap-1.5 shrink-0 shadow-sm">
+                                <i class="fas fa-plus"></i> <span>Incluir Ação</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="gridIndicacoes" class="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <label><input type="checkbox" name="indicacoes" value="Análise de Solo"><span class="checkbox-label">Análise de Solo</span></label>
                         <label><input type="checkbox" name="indicacoes" value="Calagem"><span class="checkbox-label">Calagem</span></label>
                         <label><input type="checkbox" name="indicacoes" value="1ª Adubação"><span class="checkbox-label">1ª Adubação</span></label>
@@ -338,7 +452,6 @@
                     </div>
                 </div>
 
-                <!-- Observações -->
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1">Observações do Campo:</label>
                     <textarea id="observacoes" rows="2" placeholder="Digite detalhes adicionais sobre este talhão..." class="w-full p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-agro transition shadow-sm"></textarea>
@@ -351,7 +464,7 @@
             </form>
         </div>
 
-        <!-- Resumo das Avaliações Cadastradas -->
+        <!-- Resumo dos Talhões Avaliados -->
         <div id="containerLista" class="bg-white rounded-2xl shadow-xl overflow-hidden hidden border border-gray-100">
             <div class="bg-gray-800 text-white p-5 flex flex-wrap justify-between items-center gap-3">
                 <div class="flex items-center gap-3">
@@ -361,9 +474,14 @@
                         <p class="text-xs text-gray-300" id="subtituloFazenda">Fazenda selecionada</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-xs uppercase tracking-wider bg-gray-700 px-3 py-1.5 rounded-lg border border-gray-600">Avaliados:</span>
-                    <span id="contadorAvaliacoes" class="bg-green-500 text-gray-950 font-extrabold px-3 py-1 rounded-lg text-base">0</span>
+                <div class="flex items-center gap-3 flex-wrap">
+                    <button type="button" onclick="iniciarNovaVisita()" class="bg-red-600/80 hover:bg-red-600 text-white font-bold px-3 py-2 rounded-xl text-xs transition flex items-center gap-1.5 shadow-sm" title="Iniciar um novo dia/visita e limpar a lista atual de avaliações">
+                        <i class="fas fa-rotate-left"></i> <span>Nova Visita (Limpar Lista)</span>
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs uppercase tracking-wider bg-gray-700 px-3 py-1.5 rounded-lg border border-gray-600">Avaliados:</span>
+                        <span id="contadorAvaliacoes" class="bg-green-500 text-gray-950 font-extrabold px-3 py-1 rounded-lg text-base">0</span>
+                    </div>
                 </div>
             </div>
 
@@ -446,8 +564,30 @@
 
     </div>
 
-    <script>
-        // Mapeamento completo dos talhões atualizado com base no PDF "Dados_fazendas.pdf"
+    <script type="module">
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'do-campo-agronegocios';
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+
+        // Mapeamento automático de Produtores por Fazenda com base no PDF Dados_fazendas.pdf
+        const produtoresPorFazenda = {
+            "Fazenda Santa Apolinária": "Edna Huebra Alves",
+            "Fazenda Flávia Adriana Elvira": "Elvira Maria de Oliveira e Sousa",
+            "Fazenda Alcantilado-São Francisco": "Francisco Lacerda de Aguiar Neto",
+            "Fazenda Mafort": "Otaviano Mendes Mafort",
+            "Propriedade Marcélia": "Marcélia de Souza",
+            "Sítio Boa Vista": "José Roberto de Sousa",
+            "Fazenda Hott": "Ronaldo Luiz Hott",
+            "Propriedade Cristina Sousa": "Maria Cristina de Sousa Amancio",
+            "Sítio Santa Catarina": "Célio da Silva Araujo",
+            "Propriedades Daniel": "Daniel Vinicius Ferreira Lopes",
+            "Fazenda Cafarnaum": "Olavo de Sousa Costa",
+            "Fazendas Café Realeza": "Luiz Eduardo Santos de Sousa",
+            "Fazenda Riacho Fundo": "Mariana Raissa Moreira Martins",
+            "Propriedades Gabriel e Thalys": "Gabriel de Sá Rodrigues"
+        };
+
         const talhoesPorFazenda = {
             "Fazenda Santa Apolinária": [
                 "1. Brotos", "2. Acima do Secador", "3. Abaixo do Secador", "4. Canto da Mata"
@@ -471,7 +611,7 @@
                 "11.4 Natalino Lourenço", "11.5 João Lourenço", "11.6 Fazenda", "12.1 Moises Lourenço", "12.2 Fazenda", 
                 "14.1 Fazenda", "14.2 Fazenda", "15.1 Fazenda", "15.2 Fazenda", "15.3 Fazenda", "16.1 Fazenda"
             ],
-            "Fazenda Malort": [
+            "Fazenda Mafort": [
                 "1.1 Alto da Pedra", "1.2 Baixada do Alto", "1.3 Otaviano Cachoeira 23", "1.4 Gustavo Cachoeira 23", 
                 "1.5 Davi Cachoeira 23", "1.6 Cachoeira Recepa 23", "1.7 Pasto", "1.8 Agulheiro", "1.9 Grota Gustavo Esq. 24", 
                 "1.10 Grota Gustavo", "1.11 Grota do Davi", "1.12 Despolpador", "1.13 Despolpador Davi", "1.14 Lav 17 mil", 
@@ -482,13 +622,13 @@
                 "5.4 Vila Bananeiras", "5.5 Vila Pé de Limão", "5.6 Vila Canto da Mata", "5.7 Vila Vestido", 
                 "5.8 Vila Barra do Mato", "5.9 Vila Barra da Pedra", "5.11 Vila 3 Coqueiros", "5.12 Vila Acima da Mata"
             ],
-            "Fazenda Marcélia": [
+            "Propriedade Marcélia": [
                 "1. Arara", "2. Esqueletada 25 (Q6-Q7)", "3. Lavoura Velha"
             ],
-            "Sítio Boa Vista (José Roberto)": [
+            "Sítio Boa Vista": [
                 "1. Porteira", "2. Antena", "3. Central", "4. Encosta da Mata"
             ],
-            "Fazenda Hot": [
+            "Fazenda Hott": [
                 "1.1 Extrema", "2.1 Diamante Broto", "2.2 Diamante Recepa 25", "2.3 Diamante Julio", 
                 "3.1 Luan e Gabriel", "3.2 Lagoinha + Ararinha", "3.3 Terreiro", "3.4 Pasto plantio 25", 
                 "4.1 Eucalipto Nova", "4.2 Eucalipto Velha", "5.1 Abaixo do Mato", "6.1 Gameleira Plantio 25", 
@@ -527,8 +667,297 @@
             ]
         };
 
-        // Lógica do Cadastro de Novas Fazendas e Talhões
         let tempTalhoesNovos = [];
+        let acoesCustomizadas = [];
+        let pragasCustomizadas = [];
+        let doencasCustomizadas = [];
+        let matoCustomizados = [];
+        let confirmCallbackAction = null;
+        let listaAvaliacoes = [];
+
+        function carregarTudoDoLocalStorage() {
+            try {
+                const localFazendas = localStorage.getItem('docampo_talhoesPorFazenda');
+                if (localFazendas) {
+                    const parsed = JSON.parse(localFazendas);
+                    Object.assign(talhoesPorFazenda, parsed);
+                }
+                const localProdutores = localStorage.getItem('docampo_produtoresPorFazenda');
+                if (localProdutores) {
+                    const parsed = JSON.parse(localProdutores);
+                    Object.assign(produtoresPorFazenda, parsed);
+                }
+                const localPragas = localStorage.getItem('docampo_pragasCustomizadas');
+                if (localPragas) pragasCustomizadas = JSON.parse(localPragas);
+
+                const localDoencas = localStorage.getItem('docampo_doencasCustomizadas');
+                if (localDoencas) doencasCustomizadas = JSON.parse(localDoencas);
+
+                const localMato = localStorage.getItem('docampo_matoCustomizados');
+                if (localMato) matoCustomizados = JSON.parse(localMato);
+
+                const localAcoes = localStorage.getItem('docampo_acoesCustomizadas');
+                if (localAcoes) acoesCustomizadas = JSON.parse(localAcoes);
+
+                const localAvaliacoes = localStorage.getItem('docampo_listaAvaliacoes');
+                if (localAvaliacoes) listaAvaliacoes = JSON.parse(localAvaliacoes);
+
+                const localProprietario = localStorage.getItem('docampo_nomeProprietario');
+                if (localProprietario && document.getElementById('nomeProprietario')) {
+                    document.getElementById('nomeProprietario').value = localProprietario;
+                }
+                if (window.DoCampoData) {
+                    window.DoCampoData.read().farms.forEach(f => {
+                        if (!f || !f.farm) return;
+                        talhoesPorFazenda[f.farm] = (f.fields || []).map(t => t.name).filter(Boolean);
+                        if (f.producer) produtoresPorFazenda[f.farm] = f.producer;
+                    });
+                }
+            } catch (e) {
+                console.error("Erro ao carregar do localStorage:", e);
+            }
+        }
+
+        async function initFirebase() {
+            carregarTudoDoLocalStorage();
+            carregarFazendas();
+            carregarSelectGerenciarFazendas();
+            atualizarDatalistFazendas();
+            renderizarPragasCustomizadas();
+            renderizarDoencasCustomizadas();
+            renderizarMatoCustomizados();
+            renderizarAcoesCustomizadas();
+            renderizarTabela();
+            console.info('Modo de campo offline ativo: dados salvos neste aparelho.');
+        }
+
+        function iniciarEscutaFirestore() {
+            if (!currentUser || !db) return;
+
+            // Escuta de Propriedades e Talhões
+            const propRef = doc(db, 'artifacts', appId, 'public', 'data', 'propriedades_config', 'lista');
+            onSnapshot(propRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    if (data && data.json) {
+                        try {
+                            const carregadas = JSON.parse(data.json);
+                            Object.assign(talhoesPorFazenda, carregadas);
+                            try { localStorage.setItem('docampo_talhoesPorFazenda', JSON.stringify(talhoesPorFazenda)); } catch(e){}
+                            
+                            carregarFazendas();
+                            carregarSelectGerenciarFazendas();
+                            atualizarDatalistFazendas();
+                        } catch (e) {
+                            console.error("Erro ao processar talhões salvos:", e);
+                        }
+                    }
+                    if (data && data.produtoresJson) {
+                        try {
+                            const prodCarregados = JSON.parse(data.produtoresJson);
+                            Object.assign(produtoresPorFazenda, prodCarregados);
+                            try { localStorage.setItem('docampo_produtoresPorFazenda', JSON.stringify(produtoresPorFazenda)); } catch(e){}
+                        } catch (e) {
+                            console.error("Erro ao processar produtores salvos:", e);
+                        }
+                    }
+                } else {
+                    salvarPropriedadesFirestore();
+                }
+            }, (err) => console.error("Erro Firestore propriedades:", err));
+
+            // Escuta de Ações de Manejo Customizadas
+            const acoesRef = doc(db, 'artifacts', appId, 'public', 'data', 'acoes_config', 'lista');
+            onSnapshot(acoesRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    if (data && Array.isArray(data.acoes)) {
+                        acoesCustomizadas = Array.from(new Set([...acoesCustomizadas, ...data.acoes]));
+                        try { localStorage.setItem('docampo_acoesCustomizadas', JSON.stringify(acoesCustomizadas)); } catch(e){}
+                        renderizarAcoesCustomizadas();
+                    }
+                } else {
+                    salvarAcoesFirestore();
+                }
+            }, (err) => console.error("Erro Firestore ações:", err));
+
+            // Escuta de Pragas Customizadas
+            const pragasRef = doc(db, 'artifacts', appId, 'public', 'data', 'pragas_config', 'lista');
+            onSnapshot(pragasRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    if (data && Array.isArray(data.pragas)) {
+                        pragasCustomizadas = Array.from(new Set([...pragasCustomizadas, ...data.pragas]));
+                        try { localStorage.setItem('docampo_pragasCustomizadas', JSON.stringify(pragasCustomizadas)); } catch(e){}
+                        renderizarPragasCustomizadas();
+                    }
+                } else {
+                    salvarPragasFirestore();
+                }
+            }, (err) => console.error("Erro Firestore pragas:", err));
+
+            // Escuta de Doenças Customizadas
+            const doencasRef = doc(db, 'artifacts', appId, 'public', 'data', 'doencas_config', 'lista');
+            onSnapshot(doencasRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    if (data && Array.isArray(data.doencas)) {
+                        doencasCustomizadas = Array.from(new Set([...doencasCustomizadas, ...data.doencas]));
+                        try { localStorage.setItem('docampo_doencasCustomizadas', JSON.stringify(doencasCustomizadas)); } catch(e){}
+                        renderizarDoencasCustomizadas();
+                    }
+                } else {
+                    salvarDoencasFirestore();
+                }
+            }, (err) => console.error("Erro Firestore doenças:", err));
+
+            // Escuta de Situação do Mato Customizada
+            const matoRef = doc(db, 'artifacts', appId, 'public', 'data', 'mato_config', 'lista');
+            onSnapshot(matoRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    if (data && Array.isArray(data.matos)) {
+                        matoCustomizados = Array.from(new Set([...matoCustomizados, ...data.matos]));
+                        try { localStorage.setItem('docampo_matoCustomizados', JSON.stringify(matoCustomizados)); } catch(e){}
+                        renderizarMatoCustomizados();
+                    }
+                } else {
+                    salvarMatoFirestore();
+                }
+            }, (err) => console.error("Erro Firestore mato:", err));
+
+            // Escuta de Avaliações
+            const avalRef = doc(db, 'artifacts', appId, 'public', 'data', 'avaliacoes_config', 'lista');
+            onSnapshot(avalRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    if (data && Array.isArray(data.lista)) {
+                        listaAvaliacoes = data.lista;
+                        try { localStorage.setItem('docampo_listaAvaliacoes', JSON.stringify(listaAvaliacoes)); } catch(e){}
+                        renderizarTabela();
+                    }
+                }
+            }, (err) => console.error("Erro Firestore avaliações:", err));
+        }
+
+        function salvarPropriedades() {
+            try { 
+                localStorage.setItem('docampo_talhoesPorFazenda', JSON.stringify(talhoesPorFazenda)); 
+                localStorage.setItem('docampo_produtoresPorFazenda', JSON.stringify(produtoresPorFazenda)); 
+            } catch (e) {}
+            if (window.DoCampoData) {
+                Object.keys(talhoesPorFazenda).forEach(nome => window.DoCampoData.mergeFarm({
+                    farm: nome,
+                    producer: produtoresPorFazenda[nome] || '',
+                    fields: (talhoesPorFazenda[nome] || []).map(t => ({ name: t, area: 0 }))
+                }));
+            }
+            salvarPropriedadesFirestore();
+        }
+
+        function salvarPragas() {
+            try { localStorage.setItem('docampo_pragasCustomizadas', JSON.stringify(pragasCustomizadas)); } catch (e) {}
+            salvarPragasFirestore();
+        }
+
+        function salvarDoencas() {
+            try { localStorage.setItem('docampo_doencasCustomizadas', JSON.stringify(doencasCustomizadas)); } catch (e) {}
+            salvarDoencasFirestore();
+        }
+
+        function salvarMato() {
+            try { localStorage.setItem('docampo_matoCustomizados', JSON.stringify(matoCustomizados)); } catch (e) {}
+            salvarMatoFirestore();
+        }
+
+        function salvarAcoes() {
+            try { localStorage.setItem('docampo_acoesCustomizadas', JSON.stringify(acoesCustomizadas)); } catch (e) {}
+            salvarAcoesFirestore();
+        }
+
+        function salvarAvaliacoes() {
+            try { localStorage.setItem('docampo_listaAvaliacoes', JSON.stringify(listaAvaliacoes)); } catch (e) {}
+            salvarAvaliacoesFirestore();
+        }
+
+        async function salvarPropriedadesFirestore() {
+            if (!currentUser || !db) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'propriedades_config', 'lista');
+                await setDoc(docRef, {
+                    json: JSON.stringify(talhoesPorFazenda),
+                    produtoresJson: JSON.stringify(produtoresPorFazenda),
+                    atualizadoEm: new Date().toISOString()
+                });
+            } catch (err) {
+                console.error("Erro ao salvar propriedades no banco:", err);
+            }
+        }
+
+        async function salvarAcoesFirestore() {
+            if (!currentUser || !db) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'acoes_config', 'lista');
+                await setDoc(docRef, {
+                    acoes: acoesCustomizadas,
+                    atualizadoEm: new Date().toISOString()
+                });
+            } catch (err) {
+                console.error("Erro ao salvar ações no banco:", err);
+            }
+        }
+
+        async function salvarPragasFirestore() {
+            if (!currentUser || !db) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pragas_config', 'lista');
+                await setDoc(docRef, {
+                    pragas: pragasCustomizadas,
+                    atualizadoEm: new Date().toISOString()
+                });
+            } catch (err) {
+                console.error("Erro ao salvar pragas no banco:", err);
+            }
+        }
+
+        async function salvarDoencasFirestore() {
+            if (!currentUser || !db) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'doencas_config', 'lista');
+                await setDoc(docRef, {
+                    doencas: doencasCustomizadas,
+                    atualizadoEm: new Date().toISOString()
+                });
+            } catch (err) {
+                console.error("Erro ao salvar doenças no banco:", err);
+            }
+        }
+
+        async function salvarMatoFirestore() {
+            if (!currentUser || !db) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'mato_config', 'lista');
+                await setDoc(docRef, {
+                    matos: matoCustomizados,
+                    atualizadoEm: new Date().toISOString()
+                });
+            } catch (err) {
+                console.error("Erro ao salvar situação do mato no banco:", err);
+            }
+        }
+
+        async function salvarAvaliacoesFirestore() {
+            if (!currentUser || !db) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'avaliacoes_config', 'lista');
+                await setDoc(docRef, {
+                    lista: listaAvaliacoes,
+                    atualizadoEm: new Date().toISOString()
+                });
+            } catch (err) {
+                console.error("Erro ao salvar avaliações no banco:", err);
+            }
+        }
 
         function togglePainelNovaFazenda() {
             const painel = document.getElementById('painelNovaFazenda');
@@ -540,15 +969,37 @@
                 icon.innerHTML = '<i class="fas fa-chevron-up"></i>';
                 text.innerText = 'Fechar Painel';
                 atualizarDatalistFazendas();
+                carregarSelectGerenciarFazendas();
             } else {
                 painel.classList.add('hidden');
                 icon.innerHTML = '<i class="fas fa-chevron-down"></i>';
-                text.innerText = 'Abrir Cadastro';
+                text.innerText = 'Abrir Painel';
+            }
+        }
+
+        function trocarAbaPainel(aba) {
+            const cadSub = document.getElementById('subPainelCadastrar');
+            const gerSub = document.getElementById('subPainelGerenciar');
+            const btnCad = document.getElementById('tabCadastrarBtn');
+            const btnGer = document.getElementById('tabGerenciarBtn');
+
+            if (aba === 'cadastrar') {
+                cadSub.classList.remove('hidden');
+                gerSub.classList.add('hidden');
+                btnCad.className = "py-2 px-4 rounded-t-xl bg-agro text-white border-b-2 border-agro transition flex items-center gap-1.5";
+                btnGer.className = "py-2 px-4 rounded-t-xl bg-gray-200 text-gray-700 hover:bg-gray-300 transition flex items-center gap-1.5";
+            } else {
+                cadSub.classList.add('hidden');
+                gerSub.classList.remove('hidden');
+                btnCad.className = "py-2 px-4 rounded-t-xl bg-gray-200 text-gray-700 hover:bg-gray-300 transition flex items-center gap-1.5";
+                btnGer.className = "py-2 px-4 rounded-t-xl bg-agro text-white border-b-2 border-agro transition flex items-center gap-1.5";
+                carregarSelectGerenciarFazendas();
             }
         }
 
         function atualizarDatalistFazendas() {
             const datalist = document.getElementById('listaFazendasExistentes');
+            if (!datalist) return;
             datalist.innerHTML = '';
             Object.keys(talhoesPorFazenda).sort().forEach(faz => {
                 const opt = document.createElement('option');
@@ -557,12 +1008,122 @@
             });
         }
 
+        function carregarSelectGerenciarFazendas() {
+            const select = document.getElementById('gerenciarFazendaSelect');
+            if (!select) return;
+            const fazendaAtualSel = select.value;
+            select.innerHTML = '<option value="">-- Escolha uma Propriedade --</option>';
+
+            Object.keys(talhoesPorFazenda).sort().forEach(fazenda => {
+                const opt = document.createElement('option');
+                opt.value = fazenda;
+                opt.textContent = `${fazenda} (${talhoesPorFazenda[fazenda].length} talhões)`;
+                select.appendChild(opt);
+            });
+
+            if (fazendaAtualSel && talhoesPorFazenda[fazendaAtualSel]) {
+                select.value = fazendaAtualSel;
+            } else {
+                select.value = "";
+            }
+            carregarGerenciadorTalhoes();
+        }
+
+        function carregarGerenciadorTalhoes() {
+            const select = document.getElementById('gerenciarFazendaSelect');
+            if (!select) return;
+            const fazendaSel = select.value;
+            const container = document.getElementById('containerGerenciarTalhoes');
+            const lista = document.getElementById('listaGerenciarTalhoes');
+            const btnExcluir = document.getElementById('btnExcluirFazendaInteira');
+
+            if (!fazendaSel || !talhoesPorFazenda[fazendaSel]) {
+                container.classList.add('hidden');
+                btnExcluir.disabled = true;
+                return;
+            }
+
+            btnExcluir.disabled = false;
+            container.classList.remove('hidden');
+            document.getElementById('countTalhoesGerenciar').innerText = talhoesPorFazenda[fazendaSel].length;
+
+            lista.innerHTML = '';
+            if (talhoesPorFazenda[fazendaSel].length === 0) {
+                lista.innerHTML = '<p class="text-xs text-gray-400 italic col-span-full">Nenhum talhão cadastrado nesta propriedade.</p>';
+                return;
+            }
+
+            talhoesPorFazenda[fazendaSel].forEach((talhaoNome) => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between p-2.5 bg-gray-50 hover:bg-emerald-50 rounded-xl border border-gray-200 transition text-xs font-semibold text-gray-800';
+                item.innerHTML = `
+                    <span class="truncate pr-2">${talhaoNome}</span>
+                    <button type="button" onclick="solicitarExclusaoTalhao('${fazendaSel.replace(/'/g, "\\'")}', '${talhaoNome.replace(/'/g, "\\'")}')" class="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded-lg transition" title="Excluir talhão">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                `;
+                lista.appendChild(item);
+            });
+        }
+
+        function fecharConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+            confirmCallbackAction = null;
+        }
+
+        function abrirConfirmModal(titulo, mensagem, callback) {
+            document.getElementById('confirmModalTitle').innerText = titulo;
+            document.getElementById('confirmModalMessage').innerText = mensagem;
+            confirmCallbackAction = callback;
+            document.getElementById('confirmModalBtn').onclick = () => {
+                if (confirmCallbackAction) confirmCallbackAction();
+                fecharConfirmModal();
+            };
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function solicitarExclusaoFazenda() {
+            const select = document.getElementById('gerenciarFazendaSelect');
+            const fazendaSel = select.value;
+            if (!fazendaSel || !talhoesPorFazenda[fazendaSel]) return;
+
+            abrirConfirmModal(
+                'Confirmar Exclusão da Propriedade',
+                `Tem certeza que deseja excluir a propriedade "${fazendaSel}" e todos os seus ${talhoesPorFazenda[fazendaSel].length} talhões? Esta ação não poderá ser desfeita.`,
+                () => {
+                    delete talhoesPorFazenda[fazendaSel];
+                    delete produtoresPorFazenda[fazendaSel];
+                    salvarPropriedades();
+                    carregarFazendas();
+                    carregarSelectGerenciarFazendas();
+                    atualizarDatalistFazendas();
+                    exibirToast(`Propriedade "${fazendaSel}" excluída com sucesso.`, "bg-red-600");
+                }
+            );
+        }
+
+        function solicitarExclusaoTalhao(fazenda, talhao) {
+            if (!talhoesPorFazenda[fazenda]) return;
+
+            abrirConfirmModal(
+                'Confirmar Exclusão do Talhão',
+                `Tem certeza que deseja excluir o talhão "${talhao}" da propriedade "${fazenda}"?`,
+                () => {
+                    talhoesPorFazenda[fazenda] = talhoesPorFazenda[fazenda].filter(t => t !== talhao);
+                    salvarPropriedades();
+                    carregarGerenciadorTalhoes();
+                    carregarFazendas();
+                    exibirToast(`Talhão "${talhao}" excluído com sucesso.`, "bg-red-600");
+                }
+            );
+        }
+
         function adicionarTalhaoListaPreCad() {
             const inputTalhao = document.getElementById('novoNomeTalhao');
             const nome = inputTalhao.value.trim();
 
             if (!nome) {
-                exibirToast("Digite o nome do talhão antes de adicionar!", "bg-amber-600");
+                exibirToast("Digite o nome do talhão antes de incluir!", "bg-amber-600");
                 return;
             }
 
@@ -607,6 +1168,7 @@
 
         function cancelarCadastroFazenda() {
             document.getElementById('novoNomeFazenda').value = '';
+            document.getElementById('novoNomeProdutor').value = '';
             document.getElementById('novoNomeTalhao').value = '';
             tempTalhoesNovos = [];
             renderizarTalhoesTemp();
@@ -615,9 +1177,11 @@
 
         function salvarNovaFazendaETalhoes() {
             const inputFazenda = document.getElementById('novoNomeFazenda');
+            const inputProdutor = document.getElementById('novoNomeProdutor');
             const inputTalhao = document.getElementById('novoNomeTalhao');
             
             const nomeFazenda = inputFazenda.value.trim();
+            const nomeProdutor = inputProdutor.value.trim();
             const talhaoResidual = inputTalhao.value.trim();
 
             if (talhaoResidual && !tempTalhoesNovos.includes(talhaoResidual)) {
@@ -638,26 +1202,349 @@
                 talhoesPorFazenda[nomeFazenda] = [];
             }
 
-            // Adiciona novos talhões evitando duplicados
+            if (nomeProdutor) {
+                produtoresPorFazenda[nomeFazenda] = nomeProdutor;
+            }
+
             tempTalhoesNovos.forEach(t => {
                 if (!talhoesPorFazenda[nomeFazenda].includes(t)) {
                     talhoesPorFazenda[nomeFazenda].push(t);
                 }
             });
 
-            // Recarrega dropdown de fazendas e seleciona a nova
+            salvarPropriedades();
+
             carregarFazendas();
             fazendaSelect.value = nomeFazenda;
             fazendaSelect.dispatchEvent(new Event('change'));
 
-            // Limpa o formulário de pré-cadastro
             inputFazenda.value = '';
+            inputProdutor.value = '';
             inputTalhao.value = '';
             tempTalhoesNovos = [];
             renderizarTalhoesTemp();
             togglePainelNovaFazenda();
 
-            exibirToast(`Propriedade "${nomeFazenda}" cadastrada com sucesso!`, "bg-green-700");
+            exibirToast(`Propriedade "${nomeFazenda}" salva com sucesso!`, "bg-green-700");
+        }
+
+        function adicionarNovaPraga() {
+            const input = document.getElementById('novaPragaInput');
+            const nomePraga = input.value.trim();
+
+            if (!nomePraga) {
+                exibirToast("Digite o nome da praga antes de incluir!", "bg-amber-600");
+                return;
+            }
+
+            const existentes = Array.from(document.querySelectorAll('input[name="pragas"]'));
+            const cbExistente = existentes.find(cb => cb.value.toLowerCase() === nomePraga.toLowerCase());
+
+            if (cbExistente) {
+                cbExistente.checked = true;
+                exibirToast(`A praga "${cbExistente.value}" já existe e foi marcada!`, "bg-amber-600");
+                input.value = '';
+                return;
+            }
+
+            if (!pragasCustomizadas.includes(nomePraga)) {
+                pragasCustomizadas.push(nomePraga);
+                salvarPragas();
+            }
+
+            renderizarPragasCustomizadas([nomePraga]);
+            input.value = '';
+            exibirToast(`Praga "${nomePraga}" salva com sucesso!`, "bg-green-700");
+        }
+
+        function renderizarPragasCustomizadas(checkedList = null) {
+            const grid = document.getElementById('gridPragas');
+            if (!grid) return;
+
+            let currentlyChecked;
+            if (checkedList !== null) {
+                currentlyChecked = new Set(checkedList);
+            } else {
+                currentlyChecked = new Set(
+                    Array.from(grid.querySelectorAll('input[name="pragas"][data-custom-cb="true"]:checked')).map(cb => cb.value)
+                );
+            }
+
+            grid.querySelectorAll('[data-custom="true"]').forEach(el => el.remove());
+
+            pragasCustomizadas.forEach(nomePraga => {
+                const isChecked = currentlyChecked.has(nomePraga);
+                const novoLabel = document.createElement('label');
+                novoLabel.className = 'relative group';
+                novoLabel.setAttribute('data-custom', 'true');
+                novoLabel.innerHTML = `
+                    <input type="checkbox" name="pragas" value="${nomePraga}" data-custom-cb="true" ${isChecked ? 'checked' : ''}>
+                    <span class="checkbox-label flex items-center justify-between pr-8">
+                        <span class="truncate"><i class="fas fa-bug text-amber-600 mr-2"></i>${nomePraga}</span>
+                    </span>
+                    <button type="button" onclick="removerPragaCustom('${nomePraga.replace(/'/g, "\\'")}')" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-600 p-1 rounded transition text-xs" title="Remover esta praga">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                grid.appendChild(novoLabel);
+            });
+        }
+
+        function removerPragaCustom(nomePraga) {
+            pragasCustomizadas = pragasCustomizadas.filter(a => a !== nomePraga);
+            renderizarPragasCustomizadas();
+            salvarPragas();
+            exibirToast("Praga personalizada removida.", "bg-gray-700");
+        }
+
+        function adicionarNovaDoenca() {
+            const input = document.getElementById('novaDoencaInput');
+            const nomeDoenca = input.value.trim();
+
+            if (!nomeDoenca) {
+                exibirToast("Digite o nome da doença antes de incluir!", "bg-amber-600");
+                return;
+            }
+
+            const existentes = Array.from(document.querySelectorAll('input[name="doencas"]'));
+            const cbExistente = existentes.find(cb => cb.value.toLowerCase() === nomeDoenca.toLowerCase());
+
+            if (cbExistente) {
+                cbExistente.checked = true;
+                exibirToast(`A doença "${cbExistente.value}" já existe e foi marcada!`, "bg-amber-600");
+                input.value = '';
+                return;
+            }
+
+            if (!doencasCustomizadas.includes(nomeDoenca)) {
+                doencasCustomizadas.push(nomeDoenca);
+                salvarDoencas();
+            }
+
+            renderizarDoencasCustomizadas([nomeDoenca]);
+            input.value = '';
+            exibirToast(`Doença "${nomeDoenca}" salva com sucesso!`, "bg-green-700");
+        }
+
+        function renderizarDoencasCustomizadas(checkedList = null) {
+            const grid = document.getElementById('gridDoencas');
+            if (!grid) return;
+
+            let currentlyChecked;
+            if (checkedList !== null) {
+                currentlyChecked = new Set(checkedList);
+            } else {
+                currentlyChecked = new Set(
+                    Array.from(grid.querySelectorAll('input[name="doencas"][data-custom-cb="true"]:checked')).map(cb => cb.value)
+                );
+            }
+
+            grid.querySelectorAll('[data-custom="true"]').forEach(el => el.remove());
+
+            doencasCustomizadas.forEach(nomeDoenca => {
+                const isChecked = currentlyChecked.has(nomeDoenca);
+                const novoLabel = document.createElement('label');
+                novoLabel.className = 'relative group';
+                novoLabel.setAttribute('data-custom', 'true');
+                novoLabel.innerHTML = `
+                    <input type="checkbox" name="doencas" value="${nomeDoenca}" data-custom-cb="true" ${isChecked ? 'checked' : ''}>
+                    <span class="checkbox-label flex items-center justify-between pr-8">
+                        <span class="truncate"><i class="fas fa-virus text-red-500 mr-2"></i>${nomeDoenca}</span>
+                    </span>
+                    <button type="button" onclick="removerDoencaCustom('${nomeDoenca.replace(/'/g, "\\'")}')" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-600 p-1 rounded transition text-xs" title="Remover esta doença">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                grid.appendChild(novoLabel);
+            });
+        }
+
+        function removerDoencaCustom(nomeDoenca) {
+            doencasCustomizadas = doencasCustomizadas.filter(a => a !== nomeDoenca);
+            renderizarDoencasCustomizadas();
+            salvarDoencas();
+            exibirToast("Doença personalizada removida.", "bg-gray-700");
+        }
+
+        function adicionarNovoMato() {
+            const input = document.getElementById('novoMatoInput');
+            const nomeMato = input.value.trim();
+
+            if (!nomeMato) {
+                exibirToast("Digite a nova situação do mato antes de incluir!", "bg-amber-600");
+                return;
+            }
+
+            const existentes = Array.from(document.querySelectorAll('input[name="mato"]'));
+            const cbExistente = existentes.find(cb => cb.value.toLowerCase() === nomeMato.toLowerCase());
+
+            if (cbExistente) {
+                cbExistente.checked = true;
+                exibirToast(`A opção "${cbExistente.value}" já existe e foi marcada!`, "bg-amber-600");
+                input.value = '';
+                return;
+            }
+
+            if (!matoCustomizados.includes(nomeMato)) {
+                matoCustomizados.push(nomeMato);
+                salvarMato();
+            }
+
+            renderizarMatoCustomizados([nomeMato]);
+            input.value = '';
+            exibirToast(`Opção de mato "${nomeMato}" salva com sucesso!`, "bg-green-700");
+        }
+
+        function renderizarMatoCustomizados(checkedList = null) {
+            const grid = document.getElementById('gridMato');
+            if (!grid) return;
+
+            let currentlyChecked;
+            if (checkedList !== null) {
+                currentlyChecked = new Set(checkedList);
+            } else {
+                currentlyChecked = new Set(
+                    Array.from(grid.querySelectorAll('input[name="mato"][data-custom-cb="true"]:checked')).map(cb => cb.value)
+                );
+            }
+
+            grid.querySelectorAll('[data-custom="true"]').forEach(el => el.remove());
+
+            matoCustomizados.forEach(nomeMato => {
+                const isChecked = currentlyChecked.has(nomeMato);
+                const novoLabel = document.createElement('label');
+                novoLabel.className = 'relative group';
+                novoLabel.setAttribute('data-custom', 'true');
+                novoLabel.innerHTML = `
+                    <input type="checkbox" name="mato" value="${nomeMato}" data-custom-cb="true" ${isChecked ? 'checked' : ''}>
+                    <span class="checkbox-label flex items-center justify-between pr-8">
+                        <span class="truncate"><i class="fas fa-seedling text-emerald-600 mr-2"></i>${nomeMato}</span>
+                    </span>
+                    <button type="button" onclick="removerMatoCustom('${nomeMato.replace(/'/g, "\\'")}')" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-600 p-1 rounded transition text-xs" title="Remover este item de mato">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                grid.appendChild(novoLabel);
+            });
+        }
+
+        function removerMatoCustom(nomeMato) {
+            matoCustomizados = matoCustomizados.filter(a => a !== nomeMato);
+            renderizarMatoCustomizados();
+            salvarMato();
+            exibirToast("Opção de mato personalizada removida.", "bg-gray-700");
+        }
+
+        function adicionarNovaAcaoManejo() {
+            const input = document.getElementById('novaAcaoInput');
+            const nomeAcao = input.value.trim();
+
+            if (!nomeAcao) {
+                exibirToast("Digite o nome da nova ação antes de incluir!", "bg-amber-600");
+                return;
+            }
+
+            const existentes = Array.from(document.querySelectorAll('input[name="indicacoes"]'));
+            const cbExistente = existentes.find(cb => cb.value.toLowerCase() === nomeAcao.toLowerCase());
+
+            if (cbExistente) {
+                cbExistente.checked = true;
+                exibirToast(`A ação "${cbExistente.value}" já existe e foi marcada!`, "bg-amber-600");
+                input.value = '';
+                return;
+            }
+
+            if (!acoesCustomizadas.includes(nomeAcao)) {
+                acoesCustomizadas.push(nomeAcao);
+                salvarAcoes();
+            }
+
+            renderizarAcoesCustomizadas([nomeAcao]);
+            input.value = '';
+            exibirToast(`Nova ação "${nomeAcao}" salva com sucesso!`, "bg-green-700");
+        }
+
+        function renderizarAcoesCustomizadas(checkedList = null) {
+            const grid = document.getElementById('gridIndicacoes');
+            if (!grid) return;
+
+            let currentlyChecked;
+            if (checkedList !== null) {
+                currentlyChecked = new Set(checkedList);
+            } else {
+                currentlyChecked = new Set(
+                    Array.from(grid.querySelectorAll('input[name="indicacoes"][data-custom-cb="true"]:checked')).map(cb => cb.value)
+                );
+            }
+
+            grid.querySelectorAll('[data-custom="true"]').forEach(el => el.remove());
+
+            acoesCustomizadas.forEach(nomeAcao => {
+                const isChecked = currentlyChecked.has(nomeAcao);
+                const novoLabel = document.createElement('label');
+                novoLabel.className = 'relative group';
+                novoLabel.setAttribute('data-custom', 'true');
+                novoLabel.innerHTML = `
+                    <input type="checkbox" name="indicacoes" value="${nomeAcao}" data-custom-cb="true" ${isChecked ? 'checked' : ''}>
+                    <span class="checkbox-label flex items-center justify-between pr-8">
+                        <span class="truncate">${nomeAcao}</span>
+                    </span>
+                    <button type="button" onclick="removerAcaoCustom('${nomeAcao.replace(/'/g, "\\'")}')" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-600 p-1 rounded transition text-xs" title="Remover esta ação">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                grid.appendChild(novoLabel);
+            });
+        }
+
+        function removerAcaoCustom(nomeAcao) {
+            acoesCustomizadas = acoesCustomizadas.filter(a => a !== nomeAcao);
+            renderizarAcoesCustomizadas();
+            salvarAcoes();
+            exibirToast("Ação personalizada removida.", "bg-gray-700");
+        }
+
+        function limparCamposFormulario() {
+            document.querySelectorAll('input[name="pragas"], input[name="doencas"], input[name="mato"], input[name="indicacoes"]').forEach(cb => {
+                cb.checked = false;
+            });
+            const obs = document.getElementById('observacoes');
+            if (obs) obs.value = '';
+
+            renderizarPragasCustomizadas([]);
+            renderizarDoencasCustomizadas([]);
+            renderizarMatoCustomizados([]);
+            renderizarAcoesCustomizadas([]);
+        }
+
+        function iniciarNovaVisita() {
+            abrirConfirmModal(
+                'Iniciar Nova Visita',
+                'Deseja apagar as informações da visita anterior e iniciar um novo relatório do zero? Esta ação irá limpar a lista de avaliações salvas.',
+                () => {
+                    listaAvaliacoes = [];
+                    salvarAvaliacoes();
+                    renderizarTabela();
+                    limparCamposFormulario();
+                    
+                    // Reset do proprietário e seleções
+                    const propInput = document.getElementById('nomeProprietario');
+                    if (propInput) propInput.value = '';
+                    try { localStorage.removeItem('docampo_nomeProprietario'); } catch(e){}
+
+                    if (fazendaSelect) {
+                        fazendaSelect.value = '';
+                        fazendaSelect.disabled = false;
+                    }
+                    if (talhaoSelect) {
+                        talhaoSelect.value = '';
+                        talhaoSelect.disabled = true;
+                    }
+
+                    document.getElementById('dataAvaliacao').valueAsDate = new Date();
+                    exibirToast("Nova visita iniciada com sucesso. Dados da visita anterior apagados!", "bg-emerald-700");
+                }
+            );
         }
 
         const agronomos = {
@@ -690,6 +1577,7 @@
             Object.keys(agronomos).forEach(key => {
                 const card = document.getElementById(`card-agronomo-${key}`);
                 const check = document.getElementById(`check-agronomo-${key}`);
+                if (!card) return;
                 if (agronomosSelecionados.includes(key)) {
                     card.className = "agronomo-card cursor-pointer p-4 rounded-xl border-2 transition-all relative flex flex-col justify-between bg-emerald-50/50 border-emerald-500 shadow-sm";
                     check.classList.remove('hidden');
@@ -711,13 +1599,18 @@
 
         const fazendaSelect = document.getElementById('fazenda');
         const talhaoSelect = document.getElementById('talhao');
-        let listaAvaliacoes = [];
 
-        // Data inicial padrão como hoje
         document.getElementById('dataAvaliacao').valueAsDate = new Date();
 
-        // Carregar a lista de fazendas dinamicamente no Select
+        const propInputEl = document.getElementById('nomeProprietario');
+        if (propInputEl) {
+            propInputEl.addEventListener('input', function() {
+                try { localStorage.setItem('docampo_nomeProprietario', this.value); } catch(e){}
+            });
+        }
+
         function carregarFazendas() {
+            const valorAnterior = fazendaSelect.value;
             fazendaSelect.innerHTML = '<option value="">-- Selecione a Fazenda --</option>';
             Object.keys(talhoesPorFazenda).sort().forEach(fazenda => {
                 const opt = document.createElement('option');
@@ -725,13 +1618,17 @@
                 opt.textContent = fazenda;
                 fazendaSelect.appendChild(opt);
             });
+            if (valorAnterior && talhoesPorFazenda[valorAnterior]) {
+                fazendaSelect.value = valorAnterior;
+            }
         }
-        carregarFazendas();
 
-        // Event listener para alterar seleção de fazendas
         fazendaSelect.addEventListener('change', function() {
             talhaoSelect.innerHTML = '<option value="">-- Selecione o Talhão --</option>';
+            limparCamposFormulario();
+
             if (this.value && talhoesPorFazenda[this.value]) {
+                // Preenche os talhões
                 talhoesPorFazenda[this.value].forEach(t => {
                     const opt = document.createElement('option');
                     opt.value = t; 
@@ -740,12 +1637,26 @@
                 });
                 talhaoSelect.disabled = false;
                 document.getElementById('subtituloFazenda').innerText = this.value;
+
+                // Auto-preenchimento do Nome do Proprietário/Produtor em função da fazenda
+                const produtorSugerido = produtoresPorFazenda[this.value] || '';
+                if (propInputEl) {
+                    propInputEl.value = produtorSugerido;
+                    try { localStorage.setItem('docampo_nomeProprietario', produtorSugerido); } catch(e){}
+                }
             } else {
                 talhaoSelect.disabled = true;
+                if (propInputEl) {
+                    propInputEl.value = '';
+                    try { localStorage.removeItem('docampo_nomeProprietario'); } catch(e){}
+                }
             }
         });
 
-        // Função de exclusividade para checkboxes ("Livre de...")
+        talhaoSelect.addEventListener('change', function() {
+            limparCamposFormulario();
+        });
+
         function limparOutros(checkbox, groupName) {
             if (checkbox.checked) {
                 document.querySelectorAll(`input[name="${groupName}"]`).forEach(cb => { 
@@ -754,7 +1665,6 @@
             }
         }
 
-        // Submissão do formulário para adicionar à lista
         document.getElementById('monitoramentoForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
@@ -774,35 +1684,42 @@
                 return;
             }
 
-            // Trava seleção de fazenda para manter consistência
             fazendaSelect.disabled = true;
 
             listaAvaliacoes.push(avaliacao);
             renderizarTabela();
-            exibirToast("Talhão adicionado com sucesso!");
+            salvarAvaliacoes();
+            exibirToast("Talhão adicionado e salvo com sucesso!");
 
-            // Limpeza parcial mantendo Data e Fazenda
             const dataSalva = document.getElementById('dataAvaliacao').value;
             const fazendaSalva = fazendaSelect.value;
-            this.reset();
+            
+            limparCamposFormulario();
             document.getElementById('dataAvaliacao').value = dataSalva;
             fazendaSelect.value = fazendaSalva;
+            talhaoSelect.value = '';
             talhaoSelect.disabled = false;
         });
 
-        // Função para renderizar a tabela na tela
         function renderizarTabela() {
             const tbody = document.getElementById('tabelaCorpo');
+            if (!tbody) return;
             tbody.innerHTML = '';
             
             if (listaAvaliacoes.length === 0) {
                 document.getElementById('containerLista').classList.add('hidden');
-                fazendaSelect.disabled = false;
+                if (fazendaSelect) fazendaSelect.disabled = false;
                 return;
             }
 
-            const ordem = talhoesPorFazenda[fazendaSelect.value] || [];
-            listaAvaliacoes.sort((a,b) => ordem.indexOf(a.talhao) - ordem.indexOf(b.talhao));
+            const selFazenda = fazendaSelect ? fazendaSelect.value : '';
+            const ordem = selFazenda ? (talhoesPorFazenda[selFazenda] || []) : [];
+            listaAvaliacoes.sort((a,b) => {
+                const idxA = ordem.indexOf(a.talhao);
+                const idxB = ordem.indexOf(b.talhao);
+                if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                return a.talhao.localeCompare(b.talhao);
+            });
 
             listaAvaliacoes.forEach((item, index) => {
                 const tr = document.createElement('tr');
@@ -816,7 +1733,7 @@
                     <td class="p-3 text-xs text-gray-700 font-medium">${item.indicacoes}</td>
                     <td class="p-3 text-xs text-gray-500 italic truncate max-w-xs">${item.obs}</td>
                     <td class="p-3 text-center">
-                        <button onclick="removerItem(${index})" class="text-red-500 hover:text-red-700 p-1 transition" title="Remover item">
+                        <button type="button" onclick="removerItem(${index})" class="text-red-500 hover:text-red-700 p-1 transition" title="Remover item">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </td>
@@ -825,30 +1742,31 @@
             });
 
             document.getElementById('containerLista').classList.remove('hidden');
-            document.getElementById('contadorAvaliacoes').innerText = listaAvaliacoes.length;
+            const contadorEl = document.getElementById('contadorAvaliacoes');
+            if (contadorEl) contadorEl.innerText = listaAvaliacoes.length;
         }
 
         function removerItem(index) {
             listaAvaliacoes.splice(index, 1);
             renderizarTabela();
+            salvarAvaliacoes();
             exibirToast("Item removido", "bg-gray-700");
         }
 
-        // GERADOR DE RELATÓRIO PDF
         function carregarLogoChecklist() {
-            return new Promise(function(resolve) {
-                const imagem = new Image();
-                imagem.onload = function() {
+            return new Promise(resolve => {
+                const img = new Image();
+                img.onload = () => {
                     try {
                         const canvas = document.createElement('canvas');
-                        canvas.width = imagem.naturalWidth;
-                        canvas.height = imagem.naturalHeight;
-                        canvas.getContext('2d').drawImage(imagem, 0, 0);
+                        canvas.width = img.naturalWidth || img.width;
+                        canvas.height = img.naturalHeight || img.height;
+                        canvas.getContext('2d').drawImage(img, 0, 0);
                         resolve(canvas.toDataURL('image/png'));
-                    } catch (erro) { resolve(null); }
+                    } catch (_) { resolve(null); }
                 };
-                imagem.onerror = function() { resolve(null); };
-                imagem.src = 'assets/logo.png';
+                img.onerror = () => resolve(null);
+                img.src = 'assets/logo.png';
             });
         }
 
@@ -859,15 +1777,14 @@
             }
 
             const { jsPDF } = window.jspdf;
-            const logoChecklist = await carregarLogoChecklist();
-            // Orientação Paisagem (Landscape) para caber perfeitamente todas as colunas agronômicas
             const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+            const logoChecklist = await carregarLogoChecklist();
 
             const fazendaNome = fazendaSelect.value;
+            const nomeProprietarioVal = document.getElementById('nomeProprietario').value.trim();
             const dataHoje = document.getElementById('dataAvaliacao').value.split('-').reverse().join('/');
             const incluirTodos = document.getElementById('incluirNaoAvaliados').checked;
 
-            // Prepara linhas da tabela
             const todosTalhoesFazenda = talhoesPorFazenda[fazendaNome] || [];
             let dadosTabela = [];
 
@@ -891,81 +1808,71 @@
                 ]);
             }
 
-            // Estatísticas rápidas
             const totalTalhoesFazenda = todosTalhoesFazenda.length;
             const totalAvaliados = listaAvaliacoes.length;
 
-            // ==========================================
-            // CABEÇALHO COM A IDENTIDADE VISUAL OFICIAL
-            // ==========================================
-            // Logomarca oficial. Mantém "DC" apenas como contingência.
-            if (logoChecklist) {
-                doc.addImage(logoChecklist, 'PNG', 14, 7, 19, 19);
-            } else {
-                doc.setFillColor(25, 125, 55);
-                doc.roundedRect(14, 9, 15, 15, 3, 3, 'F');
-                doc.setTextColor(255, 255, 255);
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(18);
-                doc.text("DC", 21.5, 19.2, { align: 'center' });
-            }
+            // Header compacto
+            doc.setFillColor(25, 125, 55);
+            doc.roundedRect(14, 6, 12, 12, 2.5, 2.5, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(15);
+            doc.text("DC", 20, 14, { align: 'center' });
 
-            // Nome da empresa e subtítulo
             doc.setTextColor(27, 94, 32);
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(16);
-            doc.text("DO CAMPO AGRONEGÓCIOS", 37, 16.5);
+            doc.setFontSize(14);
+            doc.text("DO CAMPO AGRONEGÓCIOS", 29, 12);
 
             doc.setTextColor(80, 80, 80);
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(9.5);
-            doc.text("FICHA DE AVALIAÇÃO DE TALHÕES & RELATÓRIO TÉCNICO", 37, 22.5);
+            doc.setFontSize(8.5);
+            doc.text("FICHA DE AVALIAÇÃO DE TALHÕES & RELATÓRIO TÉCNICO", 29, 16.5);
 
-            // Identificação do documento e Data
             doc.setTextColor(27, 94, 32);
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(11);
-            doc.text("#DC-RELATORIO", 283, 16, { align: 'right' });
+            doc.setFontSize(10);
+            doc.text("#DC-RELATORIO", 283, 11.5, { align: 'right' });
             
             doc.setTextColor(100, 100, 100);
             doc.setFont('helvetica', 'normal');
-            doc.setFontSize(9);
-            doc.text(`Data: ${dataHoje}`, 283, 22, { align: 'right' });
+            doc.setFontSize(8.5);
+            doc.text(`Data: ${dataHoje}`, 283, 16.5, { align: 'right' });
 
-            // Linha divisória do cabeçalho
             doc.setDrawColor(27, 94, 32);
-            doc.setLineWidth(0.6);
-            doc.line(14, 27, 283, 27);
+            doc.setLineWidth(0.5);
+            doc.line(14, 20, 283, 20);
 
-            // ==========================================
-            // CAIXA DE METADADOS / RESUMO DA VISITA
-            // ==========================================
+            // Quadrado de Resumo de Dados (Otimizado)
             doc.setFillColor(248, 250, 248);
             doc.setDrawColor(220, 230, 220);
-            doc.roundedRect(14, 30, 269, 11, 2, 2, 'FD');
+            doc.roundedRect(14, 22, 269, 10, 1.5, 1.5, 'FD');
 
             doc.setTextColor(40, 40, 40);
-            doc.setFontSize(9.5);
+            doc.setFontSize(8);
             
-            // Linha de Metadados
             doc.setFont('helvetica', 'bold');
-            doc.text("PROPRIEDADE / FAZENDA:", 18, 37);
+            doc.text("PROPRIEDADE / FAZENDA:", 17, 26);
             doc.setFont('helvetica', 'normal');
-            doc.text(fazendaNome, 65, 37);
+            doc.text(fazendaNome, 64, 26);
 
             doc.setFont('helvetica', 'bold');
-            doc.text("CULTURA:", 160, 37);
+            doc.text("PROPRIETÁRIO / PRODUTOR:", 17, 29.5);
             doc.setFont('helvetica', 'normal');
-            doc.text("Café", 178, 37);
+            doc.text(nomeProprietarioVal || "Não informado", 64, 29.5);
 
             doc.setFont('helvetica', 'bold');
-            doc.text("TALHÕES AVALIADOS:", 210, 37);
+            doc.text("CULTURA:", 165, 26);
             doc.setFont('helvetica', 'normal');
-            doc.text(`${totalAvaliados} de ${totalTalhoesFazenda}`, 250, 37);
+            doc.text("Café", 181, 26);
 
-            // Geração da Tabela usando autoTable
+            doc.setFont('helvetica', 'bold');
+            doc.text("TALHÕES AVALIADOS:", 210, 26);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`${totalAvaliados} de ${totalTalhoesFazenda}`, 245, 26);
+
             doc.autoTable({
-                startY: 45,
+                startY: 34,
                 head: [['Talhão', 'Monitoramento de Pragas', 'Doenças Identificadas', 'Situação do Mato', 'Indicações de Manejo', 'Observações']],
                 body: dadosTabela,
                 theme: 'grid',
@@ -973,13 +1880,14 @@
                     fillColor: [27, 94, 32],
                     textColor: [255, 255, 255],
                     fontStyle: 'bold',
-                    fontSize: 9,
+                    fontSize: 8.5,
+                    cellPadding: 2,
                     halign: 'left'
                 },
                 bodyStyles: {
-                    fontSize: 8.5,
+                    fontSize: 8,
                     textColor: [40, 40, 40],
-                    cellPadding: 3
+                    cellPadding: 1.8
                 },
                 columnStyles: {
                     0: { cellWidth: 42, fontStyle: 'bold' },
@@ -1000,158 +1908,146 @@
                         }
                     }
                 },
-                margin: { left: 14, right: 14, top: 28, bottom: 24 }
+                margin: { left: 14, right: 14, top: 21, bottom: 15 }
             });
 
-            // Campo para assinaturas na última página do relatório
-            const finalY = doc.lastAutoTable.finalY + 12;
+            const finalY = doc.lastAutoTable.finalY + 5;
             const pageHeight = doc.internal.pageSize.getHeight();
 
-            if (finalY + 22 < pageHeight - 20) {
-                desenharAssinaturas(doc, finalY);
+            if (finalY + 18 < pageHeight - 14) {
+                desenharAssinaturas(doc, finalY, nomeProprietarioVal);
             } else {
                 doc.addPage();
-                desenharAssinaturas(doc, 30);
+                desenharAssinaturas(doc, 24, nomeProprietarioVal);
             }
 
-            // ==========================================
-            // RODAPÉ COM IDENTIDADE VISUAL E PAGINAÇÃO
-            // ==========================================
             const pageCount = doc.internal.getNumberOfPages();
             for (let i = 1; i <= pageCount; i++) {
                 doc.setPage(i);
 
-                // Em páginas adicionais (se houver), insere mini cabeçalho de continuação
                 if (i > 1) {
-                    if (logoChecklist) {
-                        doc.addImage(logoChecklist, 'PNG', 14, 6, 14, 14);
-                    } else {
-                        doc.setFillColor(25, 125, 55);
-                        doc.roundedRect(14, 8, 11, 11, 2.5, 2.5, 'F');
-                        doc.setTextColor(255, 255, 255);
-                        doc.setFont('helvetica', 'bold');
-                        doc.setFontSize(13);
-                        doc.text("DC", 19.5, 15.5, { align: 'center' });
-                    }
+                    doc.setFillColor(25, 125, 55);
+                    doc.roundedRect(14, 6, 9, 9, 2, 2, 'F');
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(11);
+                    doc.text("DC", 18.5, 12.2, { align: 'center' });
 
                     doc.setTextColor(27, 94, 32);
-                    doc.setFontSize(11);
-                    doc.text("DO CAMPO AGRONEGÓCIOS - RELATÓRIO TÉCNICO", 31, 14.5);
+                    doc.setFontSize(10);
+                    doc.text("DO CAMPO AGRONEGÓCIOS - RELATÓRIO TÉCNICO", 26, 12);
                     
                     doc.setDrawColor(27, 94, 32);
                     doc.setLineWidth(0.4);
-                    doc.line(14, 21, 283, 21);
+                    doc.line(14, 17, 283, 17);
                 }
 
-                // Linha divisória do rodapé em verde Agro
                 doc.setDrawColor(27, 94, 32);
-                doc.setLineWidth(0.6);
-                doc.line(14, pageHeight - 17, 283, pageHeight - 17);
+                doc.setLineWidth(0.5);
+                doc.line(14, pageHeight - 13, 283, pageHeight - 13);
 
-                // Nome da Empresa no Rodapé
-                doc.setFontSize(9);
+                doc.setFontSize(8.5);
                 doc.setTextColor(27, 94, 32);
                 doc.setFont('helvetica', 'bold');
-                doc.text("DO CAMPO AGRONEGÓCIOS", 148.5, pageHeight - 12, { align: 'center' });
+                doc.text("DO CAMPO AGRONEGÓCIOS", 148.5, pageHeight - 9, { align: 'center' });
 
-                // Endereço, CNPJ e Telefone
-                doc.setFontSize(8);
+                doc.setFontSize(7.5);
                 doc.setTextColor(100, 100, 100);
                 doc.setFont('helvetica', 'normal');
-                doc.text("Rua Do Campo, SN, Reduto - Minas Gerais  |  CNPJ: 52.124.298/0001-45  |  Telefone: (33) 98468-9806", 148.5, pageHeight - 7, { align: 'center' });
+                doc.text("Rua Do Campo, SN, Reduto - Minas Gerais  |  CNPJ: 52.124.298/0001-45  |  Telefone: (33) 98468-9806", 148.5, pageHeight - 5, { align: 'center' });
 
-                // Numeração de páginas no canto direito
-                doc.setFontSize(8);
+                doc.setFontSize(7.5);
                 doc.setTextColor(80, 80, 80);
                 doc.setFont('helvetica', 'bold');
-                doc.text(`Página ${i} de ${pageCount}`, 283, pageHeight - 7, { align: 'right' });
+                doc.text(`Página ${i} de ${pageCount}`, 283, pageHeight - 5, { align: 'right' });
             }
 
+            if (logoChecklist) {
+                const total = doc.getNumberOfPages();
+                for (let pagina = 1; pagina <= total; pagina++) {
+                    doc.setPage(pagina);
+                    doc.addImage(logoChecklist, 'PNG', 14, 5, 18, 18, undefined, 'FAST');
+                }
+            }
             const dataFormatada = document.getElementById('dataAvaliacao').value;
             const nomeFazendaLimpo = fazendaNome.replace(/[^a-zA-Z0-9]/g, '_');
             const nomeArquivo = `Relatorio_Campo_${nomeFazendaLimpo}_${dataFormatada}.pdf`;
-            try {
-                await window.DoCampoPDF.salvarECompartilhar(
-                    doc.output('datauristring'),
-                    nomeArquivo,
-                    'Checklist de lavoura Do Campo'
-                );
-                exibirToast("Escolha onde salvar ou enviar o PDF", "bg-green-700");
-            } catch (erro) {
-                console.error('Erro ao salvar ou compartilhar checklist:', erro);
-                exibirToast("Não foi possível abrir o compartilhamento do PDF", "bg-red-700");
+            if (window.DoCampoPDF) {
+                await window.DoCampoPDF.salvarECompartilhar(doc.output('datauristring'), nomeArquivo, 'Relatório de visita de campo');
+            } else {
+                doc.save(nomeArquivo);
             }
+            
+            exibirToast("PDF gerado com sucesso!", "bg-green-700");
         }
 
-        // Função auxiliar para bloco de assinaturas no PDF
-        function desenharAssinaturas(doc, startY) {
+        function desenharAssinaturas(doc, startY, nomeProprietario) {
             doc.setDrawColor(180, 180, 180);
+            const tituloProdutor = nomeProprietario ? nomeProprietario : "Produtor Rural / Gerente";
 
             if (agronomosSelecionados.length === 2) {
-                // Assinatura Conjunta (2 Agrônomos + Produtor Rural)
                 const ag1 = agronomos["01"];
                 const ag2 = agronomos["02"];
 
-                // Coluna 1 - Agrônomo 01
-                doc.line(18, startY + 10, 93, startY + 10);
-                doc.setFontSize(8.5);
+                doc.line(18, startY + 6, 93, startY + 6);
+                doc.setFontSize(8);
                 doc.setTextColor(40, 40, 40);
                 doc.setFont('helvetica', 'bold');
-                doc.text(ag1.nome, 55.5, startY + 14, { align: 'center' });
-                doc.setFontSize(7.5);
+                doc.text(ag1.nome, 55.5, startY + 9.5, { align: 'center' });
+                doc.setFontSize(7);
                 doc.setFont('helvetica', 'normal');
                 doc.setTextColor(100, 100, 100);
-                doc.text(ag1.detalhe, 55.5, startY + 18, { align: 'center' });
-                doc.text("Responsável Técnico / Agrônomo", 55.5, startY + 22, { align: 'center' });
+                doc.text(ag1.detalhe, 55.5, startY + 13, { align: 'center' });
+                doc.text("Responsável Técnico / Agrônomo", 55.5, startY + 16.5, { align: 'center' });
 
-                // Coluna 2 - Agrônomo 02
-                doc.line(111, startY + 10, 186, startY + 10);
-                doc.setFontSize(8.5);
+                doc.line(111, startY + 6, 186, startY + 6);
+                doc.setFontSize(8);
                 doc.setTextColor(40, 40, 40);
                 doc.setFont('helvetica', 'bold');
-                doc.text(ag2.nome, 148.5, startY + 14, { align: 'center' });
-                doc.setFontSize(7.5);
+                doc.text(ag2.nome, 148.5, startY + 9.5, { align: 'center' });
+                doc.setFontSize(7);
                 doc.setFont('helvetica', 'normal');
                 doc.setTextColor(100, 100, 100);
-                doc.text(ag2.detalhe, 148.5, startY + 18, { align: 'center' });
-                doc.text("Responsável Técnico / Agrônomo", 148.5, startY + 22, { align: 'center' });
+                doc.text(ag2.detalhe, 148.5, startY + 13, { align: 'center' });
+                doc.text("Responsável Técnico / Agrônomo", 148.5, startY + 16.5, { align: 'center' });
 
-                // Coluna 3 - Produtor Rural
-                doc.line(204, startY + 10, 279, startY + 10);
-                doc.setFontSize(8.5);
+                doc.line(204, startY + 6, 279, startY + 6);
+                doc.setFontSize(8);
                 doc.setTextColor(40, 40, 40);
                 doc.setFont('helvetica', 'bold');
-                doc.text("Produtor Rural / Gerente", 241.5, startY + 14, { align: 'center' });
-                doc.setFontSize(7.5);
+                doc.text(tituloProdutor, 241.5, startY + 9.5, { align: 'center' });
+                doc.setFontSize(7);
                 doc.setFont('helvetica', 'normal');
                 doc.setTextColor(100, 100, 100);
-                doc.text("Propriedade Avaliada", 241.5, startY + 18, { align: 'center' });
+                doc.text("Produtor Rural / Proprietário", 241.5, startY + 13, { align: 'center' });
             } else {
-                // Apenas 1 Agrônomo Selecionado
                 const idSel = agronomosSelecionados[0] || "01";
                 const agronomo = agronomos[idSel];
 
-                doc.line(30, startY + 10, 120, startY + 10);
-                doc.setFontSize(8.5);
+                doc.line(30, startY + 6, 120, startY + 6);
+                doc.setFontSize(8);
                 doc.setTextColor(40, 40, 40);
                 doc.setFont('helvetica', 'bold');
-                doc.text(agronomo.nome, 75, startY + 14, { align: 'center' });
+                doc.text(agronomo.nome, 75, startY + 9.5, { align: 'center' });
                 
-                doc.setFontSize(7.5);
+                doc.setFontSize(7);
                 doc.setFont('helvetica', 'normal');
                 doc.setTextColor(100, 100, 100);
-                doc.text(agronomo.detalhe, 75, startY + 18, { align: 'center' });
-                doc.text("Responsável Técnico / Agrônomo", 75, startY + 22, { align: 'center' });
+                doc.text(agronomo.detalhe, 75, startY + 13, { align: 'center' });
+                doc.text("Responsável Técnico / Agrônomo", 75, startY + 16.5, { align: 'center' });
 
-                doc.line(177, startY + 10, 267, startY + 10);
-                doc.setFontSize(8.5);
+                doc.line(177, startY + 6, 267, startY + 6);
+                doc.setFontSize(8);
                 doc.setTextColor(40, 40, 40);
                 doc.setFont('helvetica', 'bold');
-                doc.text("Produtor Rural / Gerente da Fazenda", 222, startY + 14, { align: 'center' });
+                doc.text(tituloProdutor, 222, startY + 9.5, { align: 'center' });
+                doc.setFontSize(7);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(100, 100, 100);
+                doc.text("Produtor Rural / Proprietário", 222, startY + 13, { align: 'center' });
             }
         }
 
-        // EXPORTAR PLANILHA CSV
         function exportarCSV() {
             if (listaAvaliacoes.length === 0) {
                 exibirToast("Nenhuma avaliação para exportar!", "bg-amber-600");
@@ -1160,8 +2056,9 @@
 
             const dataHoje = document.getElementById('dataAvaliacao').value.split('-').reverse().join('/');
             const fazendaNome = fazendaSelect.value;
+            const nomeProprietarioVal = document.getElementById('nomeProprietario').value.trim();
 
-            let csv = `Do Campo Agronegócios\nRelatório de Visita de Campo\nFazenda: ${fazendaNome}\nData: ${dataHoje}\n\nTalhão;Pragas;Doenças;Mato;Indicações;Observações\n`;
+            let csv = `Do Campo Agronegócios\nRelatório de Visita de Campo\nFazenda: ${fazendaNome}\nProprietário: ${nomeProprietarioVal || 'Não informado'}\nData: ${dataHoje}\n\nTalhão;Pragas;Doenças;Mato;Indicações;Observações\n`;
             
             const todosTalhoes = talhoesPorFazenda[fazendaNome] || [];
             todosTalhoes.forEach(t => {
@@ -1181,7 +2078,6 @@
             exibirToast("Planilha CSV gerada!");
         }
 
-        // Função para notificações na tela
         function exibirToast(msg, bgClass = "bg-green-700") {
             const toast = document.getElementById('toast');
             const toastMsg = document.getElementById('toastMessage');
@@ -1194,6 +2090,38 @@
                 toast.classList.add('hidden');
             }, 3000);
         }
+
+        // Window exports for inline handlers
+        window.togglePainelNovaFazenda = togglePainelNovaFazenda;
+        window.trocarAbaPainel = trocarAbaPainel;
+        window.adicionarTalhaoListaPreCad = adicionarTalhaoListaPreCad;
+        window.removerTalhaoTemp = removerTalhaoTemp;
+        window.cancelarCadastroFazenda = cancelarCadastroFazenda;
+        window.salvarNovaFazendaETalhoes = salvarNovaFazendaETalhoes;
+        window.carregarSelectGerenciarFazendas = carregarSelectGerenciarFazendas;
+        window.carregarGerenciadorTalhoes = carregarGerenciadorTalhoes;
+        window.solicitarExclusaoFazenda = solicitarExclusaoFazenda;
+        window.solicitarExclusaoTalhao = solicitarExclusaoTalhao;
+        window.fecharConfirmModal = fecharConfirmModal;
+        window.limparOutros = limparOutros;
+        window.adicionarNovaAcaoManejo = adicionarNovaAcaoManejo;
+        window.removerAcaoCustom = removerAcaoCustom;
+        window.adicionarNovaPraga = adicionarNovaPraga;
+        window.removerPragaCustom = removerPragaCustom;
+        window.adicionarNovaDoenca = adicionarNovaDoenca;
+        window.removerDoencaCustom = removerDoencaCustom;
+        window.adicionarNovoMato = adicionarNovoMato;
+        window.removerMatoCustom = removerMatoCustom;
+        window.limparCamposFormulario = limparCamposFormulario;
+        window.iniciarNovaVisita = iniciarNovaVisita;
+        window.renderizarTabela = renderizarTabela;
+        window.toggleAgronomo = toggleAgronomo;
+        window.removerItem = removerItem;
+        window.gerarPDF = gerarPDF;
+        window.exportarCSV = exportarCSV;
+
+        // Start initialization
+        initFirebase();
     </script>
 </body>
 </html>
