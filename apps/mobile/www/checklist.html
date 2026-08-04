@@ -835,6 +835,23 @@
         }
 
         // GERADOR DE RELATÓRIO PDF
+        function carregarLogoChecklist() {
+            return new Promise(function(resolve) {
+                const imagem = new Image();
+                imagem.onload = function() {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = imagem.naturalWidth;
+                        canvas.height = imagem.naturalHeight;
+                        canvas.getContext('2d').drawImage(imagem, 0, 0);
+                        resolve(canvas.toDataURL('image/png'));
+                    } catch (erro) { resolve(null); }
+                };
+                imagem.onerror = function() { resolve(null); };
+                imagem.src = 'assets/logo.png';
+            });
+        }
+
         async function gerarPDF() {
             if (listaAvaliacoes.length === 0) {
                 exibirToast("Adicione pelo menos um talhão antes de gerar o PDF!", "bg-amber-600");
@@ -842,6 +859,7 @@
             }
 
             const { jsPDF } = window.jspdf;
+            const logoChecklist = await carregarLogoChecklist();
             // Orientação Paisagem (Landscape) para caber perfeitamente todas as colunas agronômicas
             const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
@@ -880,24 +898,28 @@
             // ==========================================
             // CABEÇALHO COM A IDENTIDADE VISUAL OFICIAL
             // ==========================================
-            // Ícone / Logo "DC" em destaque
-            doc.setFillColor(25, 125, 55); // Verde Agro Oficial
-            doc.roundedRect(14, 9, 15, 15, 3, 3, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(18);
-            doc.text("DC", 21.5, 19.2, { align: 'center' });
+            // Logomarca oficial. Mantém "DC" apenas como contingência.
+            if (logoChecklist) {
+                doc.addImage(logoChecklist, 'PNG', 14, 7, 19, 19);
+            } else {
+                doc.setFillColor(25, 125, 55);
+                doc.roundedRect(14, 9, 15, 15, 3, 3, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(18);
+                doc.text("DC", 21.5, 19.2, { align: 'center' });
+            }
 
             // Nome da empresa e subtítulo
             doc.setTextColor(27, 94, 32);
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(16);
-            doc.text("DO CAMPO AGRONEGÓCIOS", 33, 16.5);
+            doc.text("DO CAMPO AGRONEGÓCIOS", 37, 16.5);
 
             doc.setTextColor(80, 80, 80);
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9.5);
-            doc.text("FICHA DE AVALIAÇÃO DE TALHÕES & RELATÓRIO TÉCNICO", 33, 22.5);
+            doc.text("FICHA DE AVALIAÇÃO DE TALHÕES & RELATÓRIO TÉCNICO", 37, 22.5);
 
             // Identificação do documento e Data
             doc.setTextColor(27, 94, 32);
@@ -1001,16 +1023,20 @@
 
                 // Em páginas adicionais (se houver), insere mini cabeçalho de continuação
                 if (i > 1) {
-                    doc.setFillColor(25, 125, 55);
-                    doc.roundedRect(14, 8, 11, 11, 2.5, 2.5, 'F');
-                    doc.setTextColor(255, 255, 255);
-                    doc.setFont('helvetica', 'bold');
-                    doc.setFontSize(13);
-                    doc.text("DC", 19.5, 15.5, { align: 'center' });
+                    if (logoChecklist) {
+                        doc.addImage(logoChecklist, 'PNG', 14, 6, 14, 14);
+                    } else {
+                        doc.setFillColor(25, 125, 55);
+                        doc.roundedRect(14, 8, 11, 11, 2.5, 2.5, 'F');
+                        doc.setTextColor(255, 255, 255);
+                        doc.setFont('helvetica', 'bold');
+                        doc.setFontSize(13);
+                        doc.text("DC", 19.5, 15.5, { align: 'center' });
+                    }
 
                     doc.setTextColor(27, 94, 32);
                     doc.setFontSize(11);
-                    doc.text("DO CAMPO AGRONEGÓCIOS - RELATÓRIO TÉCNICO", 28, 14.5);
+                    doc.text("DO CAMPO AGRONEGÓCIOS - RELATÓRIO TÉCNICO", 31, 14.5);
                     
                     doc.setDrawColor(27, 94, 32);
                     doc.setLineWidth(0.4);
