@@ -22,6 +22,7 @@
 
     <!-- html2pdf.js for Client-side PDF Generation -->
     <script src="vendor/pdf/html2pdf.bundle.min.js"></script>
+    <script src="native-pdf.js"></script>
 
     <script>
         tailwind.config = {
@@ -2280,7 +2281,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             if (pdfCreaDisplay) pdfCreaDisplay.innerText = (creaNumInput ? creaNumInput.value : '') || '';
         }
 
-        function downloadPDF() {
+        async function downloadPDF() {
             if (!selectedFarm) {
                 alert("Por favor, selecione uma fazenda antes de gerar o relatório PDF.");
                 return;
@@ -2334,24 +2335,25 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 pagebreak:    { mode: ['css', 'legacy'] }
             };
 
-            setTimeout(function() {
+            setTimeout(async function() {
                 if (typeof html2pdf !== 'undefined') {
-                    html2pdf().set(opt).from(clonedContent).save().then(function() {
+                    html2pdf().set(opt).from(clonedContent).outputPdf('datauristring').then(async function(dataUri) {
+                        await window.DoCampoPDF.salvarECompartilhar(dataUri, filename, 'Rascunho técnico Do Campo');
                         if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
                         if (wrapper) wrapper.classList.add('hidden');
-                        if (btnText) btnText.innerText = "Gerar Relatório PDF";
+                        if (btnText) btnText.innerText = "Gerar Rascunho PDF";
                     }).catch(function(err) {
-                        console.warn("html2pdf error, falling back to print", err);
+                        console.warn("Erro ao gerar ou compartilhar PDF", err);
                         if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
-                        window.print();
+                        alert('Não foi possível gerar o PDF. Feche e abra o aplicativo e tente novamente.');
                         if (wrapper) wrapper.classList.add('hidden');
-                        if (btnText) btnText.innerText = "Gerar Relatório PDF";
+                        if (btnText) btnText.innerText = "Gerar Rascunho PDF";
                     });
                 } else {
                     if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
-                    window.print();
+                    alert('O gerador de PDF não foi carregado.');
                     if (wrapper) wrapper.classList.add('hidden');
-                    if (btnText) btnText.innerText = "Gerar Relatório PDF";
+                    if (btnText) btnText.innerText = "Gerar Rascunho PDF";
                 }
             }, 300);
         }
@@ -2476,9 +2478,18 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             if (textoPdf) textoPdf.innerText = 'Gerar Rascunho PDF';
 
             const aviso = document.createElement('div');
+            aviso.id = 'aviso-modo-offline';
             aviso.className = 'fixed bottom-5 right-5 z-50 max-w-sm rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 shadow-xl no-print';
-            aviso.innerHTML = '<strong>Modo offline profissional:</strong> cálculos operacionais automáticos estão bloqueados. O documento gerado é um rascunho para revisão e assinatura do responsável habilitado.';
+            aviso.innerHTML = '<button type="button" aria-label="Fechar aviso" style="float:right;margin-left:10px;font-size:18px;line-height:1;border:0;background:transparent;cursor:pointer">×</button><strong>Modo offline profissional:</strong> cálculos operacionais automáticos estão bloqueados. O documento gerado é um rascunho para revisão e assinatura do responsável habilitado.';
             document.body.appendChild(aviso);
+            aviso.querySelector('button').addEventListener('click', function () { aviso.remove(); });
+            setTimeout(function () {
+                if (!document.body.contains(aviso)) return;
+                aviso.style.transition = 'opacity .35s ease, transform .35s ease';
+                aviso.style.opacity = '0';
+                aviso.style.transform = 'translateY(12px)';
+                setTimeout(function () { if (document.body.contains(aviso)) aviso.remove(); }, 400);
+            }, 6000);
         }
 
         window.addEventListener('DOMContentLoaded', aplicarModoRascunhoProfissional);
