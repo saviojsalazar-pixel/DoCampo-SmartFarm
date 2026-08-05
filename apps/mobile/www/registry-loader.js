@@ -30,6 +30,7 @@
     }
     const products={};
     Object.entries(base.products||{}).forEach(([cat,list])=>(list||[]).filter(p=>!(deletedProducts[cat]||[]).includes(String(p.name).toLowerCase())).forEach(p=>mergeProduct(products,cat,p)));
+    Object.entries(window.DoCampoHerbicideDefaults||{}).forEach(([cat,list])=>(list||[]).filter(p=>!(deletedProducts[cat]||[]).includes(String(p.name).toLowerCase())).forEach(p=>mergeProduct(products,cat,p)));
     Object.entries(shared.products||{}).forEach(([cat,list])=>(list||[]).forEach(p=>mergeProduct(products,cat,p)));
     if(window.DoCampoDB){
       DoCampoDB.list('products').forEach(p=>mergeProduct(products,p.category||'Outros',p));
