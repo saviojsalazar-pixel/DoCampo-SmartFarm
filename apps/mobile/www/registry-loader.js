@@ -2,6 +2,24 @@
   'use strict';
   function extract(source,label,open,close){const start=source.indexOf(label);if(start<0)return null;const first=source.indexOf(open,start);let depth=0,quote='',escape=false;for(let i=first;i<source.length;i++){const c=source[i];if(quote){if(escape)escape=false;else if(c==='\\')escape=true;else if(c===quote)quote='';continue}if(c==='"'||c==="'"||c==='`'){quote=c;continue}if(c===open)depth++;else if(c===close&&--depth===0)return source.slice(first,i+1)}return null}
   async function defaults(){try{const source=await fetch('pulverizacao.html').then(r=>r.text()),farmsText=extract(source,'const EMBEDDED_DATABASE','[',']'),productsText=extract(source,'const PRODUCT_CATALOG','{','}');return{farms:farmsText?Function('return ('+farmsText+')')():[],products:productsText?Function('return ('+productsText+')')():{}}}catch(e){console.error(e);return{farms:[],products:{}}}}
-  async function all(){const base=await defaults(),shared=window.DoCampoData?DoCampoData.read():{farms:[],products:{}},deletedFarms=JSON.parse(localStorage.getItem('agri_deleted_farms')||'[]').map(x=>String(x).toLowerCase()),deletedProducts=JSON.parse(localStorage.getItem('agri_deleted_products')||'{}');let farms=base.farms.filter(f=>!deletedFarms.includes(String(f.farm).toLowerCase()));(shared.farms||[]).forEach(f=>{const i=farms.findIndex(x=>String(x.farm).toLowerCase()===String(f.farm).toLowerCase());if(i>=0)farms[i]={...farms[i],...f};else farms.push(f)});const products={};Object.entries(base.products||{}).forEach(([cat,list])=>products[cat]=(list||[]).filter(p=>!(deletedProducts[cat]||[]).includes(String(p.name).toLowerCase())));Object.entries(shared.products||{}).forEach(([cat,list])=>{products[cat]||(products[cat]=[]);(list||[]).forEach(p=>{const i=products[cat].findIndex(x=>String(x.name).toLowerCase()===String(p.name).toLowerCase());if(i>=0)products[cat][i]=p;else products[cat].push(p)})});return{farms:farms.sort((a,b)=>String(a.producer||a.proprietor).localeCompare(String(b.producer||b.proprietor),'pt-BR')),products}}
+  function mergeFarm(list, farm) {
+    if (!farm || !String(farm.farm || '').trim()) return;
+    const name = String(farm.farm).trim();
+    const i = list.findIndex(x => String(x.farm).toLowerCase() === name.toLowerCase());
+    if (i >= 0) list[i] = { ...list[i], ...farm };
+    else list.push(farm);
+  }
+  async function all(){
+    const base=await defaults(),shared=window.DoCampoData?DoCampoData.read():{farms:[],products:{}},deletedFarms=JSON.parse(localStorage.getItem('agri_deleted_farms')||'[]').map(x=>String(x).toLowerCase()),deletedProducts=JSON.parse(localStorage.getItem('agri_deleted_products')||'{}');
+    let farms=base.farms.filter(f=>!deletedFarms.includes(String(f.farm).toLowerCase()));
+    (shared.farms||[]).forEach(f=>mergeFarm(farms,f));
+    if(window.DoCampoDB){
+      const dbFields=DoCampoDB.list('fields');
+      DoCampoDB.list('farms').forEach(f=>{
+        const fields=dbFields.filter(x=>x.farmId===f.id).map(x=>({name:x.name||x.talhao||'',area:Number(x.area)||0,plants:Number(x.plants)||0})).filter(x=>x.name);
+        mergeFarm(farms,{farm:f.name||f.farm||'',producer:f.producerName||f.producer||f.proprietor||'',cpf:f.cpf||'',address:f.address||f.city||'',fields:fields.length?fields:(f.fieldsSnapshot||f.fields||[])});
+      });
+    }
+    const products={};Object.entries(base.products||{}).forEach(([cat,list])=>products[cat]=(list||[]).filter(p=>!(deletedProducts[cat]||[]).includes(String(p.name).toLowerCase())));Object.entries(shared.products||{}).forEach(([cat,list])=>{products[cat]||(products[cat]=[]);(list||[]).forEach(p=>{const i=products[cat].findIndex(x=>String(x.name).toLowerCase()===String(p.name).toLowerCase());if(i>=0)products[cat][i]=p;else products[cat].push(p)})});return{farms:farms.sort((a,b)=>String(a.producer||a.proprietor).localeCompare(String(b.producer||b.proprietor),'pt-BR')),products}}
   window.DoCampoRegistry={defaults,all};
 })();
