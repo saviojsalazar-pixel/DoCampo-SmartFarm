@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#075f3d">
+  <title>Receituário de Herbicida • Do Campo</title>
+  <style>
+    :root{--g:#087449;--d:#06452f;--m:#eaf7f0;--ink:#17231d;--mut:#637269;--line:#dbe7df}*{box-sizing:border-box}body{margin:0;background:#f3f7f4;color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}header{background:linear-gradient(135deg,var(--d),var(--g));color:#fff;padding:calc(14px + env(safe-area-inset-top)) 15px 18px}.head{max-width:900px;margin:auto;display:flex;align-items:center;gap:12px}.back{color:#fff;text-decoration:none;font-size:32px}.logo{width:58px;height:58px;border-radius:15px;background:#fff;padding:5px;object-fit:contain}.head h1{font-size:20px;margin:0}.head p{font-size:11px;margin:3px 0;color:#ccebdd}main{max-width:900px;margin:auto;padding:15px 14px calc(45px + env(safe-area-inset-bottom))}.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:17px;margin-bottom:13px;box-shadow:0 7px 20px #173b2809}.eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--g);font-weight:850}.card h2{font-size:19px;margin:5px 0}.help{font-size:12px;line-height:1.5;color:var(--mut);margin:0 0 14px}.fields{display:grid;grid-template-columns:1fr;gap:10px}label{display:block;font-size:10.5px;font-weight:800;color:#405047;margin-bottom:5px}select,input{width:100%;border:1px solid #ccd9d1;border-radius:11px;background:#fbfdfb;padding:12px 10px;color:var(--ink)}input[readonly]{background:#f1f5f2;color:#4d5b53}.notice{background:#f8fbf9;border:1px solid #cde2d6;border-radius:13px;padding:13px;color:#526259;font-size:11.5px;line-height:1.45}.status{display:flex;gap:7px;align-items:center;margin-top:13px;color:#607068;font-size:10.5px}.dot{width:8px;height:8px;border-radius:50%;background:#31a66a}@media(min-width:650px){.fields{grid-template-columns:1fr 1fr}.wide{grid-column:1/-1}.card{padding:22px}}
+  </style>
+</head>
+<body>
+  <header><div class="head"><a class="back" href="index.html" aria-label="Voltar">‹</a><img class="logo" src="assets/logo.png" alt="Logo Do Campo Agronegócios"><div><h1>Receituário de Herbicida</h1><p>DO CAMPO AGRONEGÓCIOS • REGISTRO PROFISSIONAL</p></div></div></header>
+  <main>
+    <section class="card">
+      <div class="eyebrow">Identificação da propriedade</div>
+      <h2>Produtor, fazenda e talhão</h2>
+      <p class="help">Os cadastros são os mesmos utilizados nos outros módulos e permanecem disponíveis offline.</p>
+      <div class="fields">
+        <div class="wide"><label>Produtor cadastrado</label><select id="producerSelect"><option value="">Selecione</option></select></div>
+        <div class="wide"><label>Fazenda / propriedade</label><select id="farmSelect"><option value="">Selecione</option></select></div>
+        <div class="wide"><label>Talhão</label><select id="fieldSelect"><option value="">Selecione</option></select></div>
+        <div><label>Produtor</label><input id="producer" readonly></div>
+        <div><label>Fazenda</label><input id="farm" readonly></div>
+        <div><label>Talhão</label><input id="field" readonly></div>
+        <div><label>Área (ha)</label><input id="area" readonly></div>
+      </div>
+      <div class="status"><span class="dot"></span><span>Cadastro disponível offline neste aparelho</span></div>
+    </section>
+    <section class="card">
+      <div class="eyebrow">Estrutura integrada</div><h2>Registro da prescrição</h2>
+      <div class="notice">Este módulo está conectado ao cadastro central da Do Campo. A identificação da propriedade já está pronta; os dados técnicos da prescrição devem ser definidos e conferidos pelo profissional habilitado.</div>
+    </section>
+  </main>
+  <script src="unified-db.js"></script><script src="shared-data.js"></script><script src="registry-loader.js"></script><script src="app-shell.js"></script>
+  <script>
+  (function(){'use strict';const $=id=>document.getElementById(id);let farms=[];
+    function options(el,items,placeholder){el.innerHTML='';const first=document.createElement('option');first.value='';first.textContent=placeholder;el.appendChild(first);items.forEach(item=>{const op=document.createElement('option');op.value=item;op.textContent=item;el.appendChild(op)})}
+    async function load(){farms=(await DoCampoRegistry.all()).farms;const producers=[...new Set(farms.map(f=>f.producer||f.proprietor).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));options($('producerSelect'),producers,'Selecione');options($('farmSelect'),[],'Selecione');options($('fieldSelect'),[],'Selecione')}
+    $('producerSelect').onchange=()=>{const p=$('producerSelect').value,list=farms.filter(f=>(f.producer||f.proprietor)===p);options($('farmSelect'),list.map(f=>f.farm),'Selecione');options($('fieldSelect'),[],'Selecione');$('producer').value=p;$('farm').value='';$('field').value='';$('area').value=''};
+    $('farmSelect').onchange=()=>{const f=farms.find(x=>x.farm===$('farmSelect').value);if(!f)return;$('producer').value=f.producer||f.proprietor||'';$('farm').value=f.farm;options($('fieldSelect'),(f.fields||[]).map(x=>x.name),'Selecione');$('field').value='';$('area').value=''};
+    $('fieldSelect').onchange=()=>{const f=farms.find(x=>x.farm===$('farmSelect').value),field=f&&(f.fields||[]).find(x=>x.name===$('fieldSelect').value);$('field').value=$('fieldSelect').value;$('area').value=field&&field.area?field.area:''};
+    window.addEventListener('docampo:data-updated',load);window.addEventListener('docampo:sync-complete',load);load();
+  })();
+  </script>
+</body></html>
