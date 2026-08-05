@@ -9,6 +9,14 @@
     if (i >= 0) list[i] = { ...list[i], ...farm };
     else list.push(farm);
   }
+  function mergeProduct(products, category, product) {
+    if (!category || !product || !String(product.name || '').trim()) return;
+    if (!products[category]) products[category] = [];
+    const name = String(product.name).trim();
+    const i = products[category].findIndex(x => String(x.name).toLowerCase() === name.toLowerCase());
+    if (i >= 0) products[category][i] = { ...products[category][i], ...product, name };
+    else products[category].push({ ...product, name });
+  }
   async function all(){
     const base=await defaults(),shared=window.DoCampoData?DoCampoData.read():{farms:[],products:{}},deletedFarms=JSON.parse(localStorage.getItem('agri_deleted_farms')||'[]').map(x=>String(x).toLowerCase()),deletedProducts=JSON.parse(localStorage.getItem('agri_deleted_products')||'{}');
     let farms=base.farms.filter(f=>!deletedFarms.includes(String(f.farm).toLowerCase()));
@@ -20,6 +28,13 @@
         mergeFarm(farms,{farm:f.name||f.farm||'',producer:f.producerName||f.producer||f.proprietor||'',cpf:f.cpf||'',address:f.address||f.city||'',fields:fields.length?fields:(f.fieldsSnapshot||f.fields||[])});
       });
     }
-    const products={};Object.entries(base.products||{}).forEach(([cat,list])=>products[cat]=(list||[]).filter(p=>!(deletedProducts[cat]||[]).includes(String(p.name).toLowerCase())));Object.entries(shared.products||{}).forEach(([cat,list])=>{products[cat]||(products[cat]=[]);(list||[]).forEach(p=>{const i=products[cat].findIndex(x=>String(x.name).toLowerCase()===String(p.name).toLowerCase());if(i>=0)products[cat][i]=p;else products[cat].push(p)})});return{farms:farms.sort((a,b)=>String(a.producer||a.proprietor).localeCompare(String(b.producer||b.proprietor),'pt-BR')),products}}
+    const products={};
+    Object.entries(base.products||{}).forEach(([cat,list])=>(list||[]).filter(p=>!(deletedProducts[cat]||[]).includes(String(p.name).toLowerCase())).forEach(p=>mergeProduct(products,cat,p)));
+    Object.entries(shared.products||{}).forEach(([cat,list])=>(list||[]).forEach(p=>mergeProduct(products,cat,p)));
+    if(window.DoCampoDB){
+      DoCampoDB.list('products').forEach(p=>mergeProduct(products,p.category||'Outros',p));
+    }
+    Object.values(products).forEach(list=>list.sort((a,b)=>String(a.name).localeCompare(String(b.name),'pt-BR')));
+    return{farms:farms.sort((a,b)=>String(a.producer||a.proprietor).localeCompare(String(b.producer||b.proprietor),'pt-BR')),products}}
   window.DoCampoRegistry={defaults,all};
 })();

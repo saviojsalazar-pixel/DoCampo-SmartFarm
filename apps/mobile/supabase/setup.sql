@@ -8,7 +8,7 @@ create table if not exists public.docampo_sync_events (
   user_name text not null,
   created_at timestamptz not null,
   base_revision integer not null default 0,
-  app_version text not null default '1.9.2'
+  app_version text not null default '1.9.3'
 );
 create index if not exists docampo_sync_events_created_idx on public.docampo_sync_events(created_at);
 create index if not exists docampo_sync_events_entity_idx on public.docampo_sync_events(entity_type,entity_id);
