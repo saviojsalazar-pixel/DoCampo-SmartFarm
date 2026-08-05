@@ -615,6 +615,55 @@
                     </div>
                 </div>
 
+                <!-- Pré-diluição opcional -->
+                <div class="bg-sky-50/70 border border-sky-200 rounded-xl p-5 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <h4 class="font-bold text-sm text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-flask text-sky-700"></i> Pré-diluição do produto <span class="text-[10px] font-semibold text-slate-500 normal-case">(opcional)</span>
+                            </h4>
+                            <p class="text-xs text-slate-600 mt-1">Utilize somente quando definido pelo profissional responsável. O produto deve estar previamente indicado neste receituário.</p>
+                        </div>
+                        <label class="inline-flex items-center gap-2 bg-white border border-sky-300 rounded-lg px-3 py-2 text-xs font-bold text-sky-900 cursor-pointer shrink-0">
+                            <input id="predilution-enabled" type="checkbox" onchange="togglePredilution()" class="w-4 h-4 text-sky-700 focus:ring-sky-600 rounded border-slate-300">
+                            Incluir pré-diluição
+                        </label>
+                    </div>
+                    <div id="predilution-panel" class="hidden space-y-4 border-t border-sky-200 pt-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Produto já indicado no receituário</label>
+                                <select id="predilution-product" onchange="recalculatePredilution()" class="w-full bg-white border border-sky-300 rounded-xl px-4 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-sky-600 focus:outline-none">
+                                    <option value="">-- Selecione um produto indicado acima --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Quantidade calculada por tanque/bomba</label>
+                                <div id="predilution-per-tank" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-black font-mono text-slate-700">--</div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Volume de água no recipiente de pré-diluição (L)</label>
+                                <input id="predilution-water" type="number" min="0.1" step="0.1" value="2" oninput="recalculatePredilution()" class="w-full bg-white border border-sky-300 rounded-xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-sky-600 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Volume da pré-diluição utilizado por tanque/bomba (mL)</label>
+                                <input id="predilution-aliquot" type="number" min="1" step="10" value="200" oninput="recalculatePredilution()" class="w-full bg-white border border-sky-300 rounded-xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-sky-600 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Quantidade do produto na pré-diluição</label>
+                                <div class="flex items-center gap-2">
+                                    <input id="predilution-product-qty" type="number" min="0" step="0.01" value="0" oninput="updatePredilutionText()" class="flex-1 bg-white border border-sky-300 rounded-xl px-4 py-2.5 text-sm font-black font-mono focus:ring-2 focus:ring-sky-600 focus:outline-none">
+                                    <span id="predilution-product-unit" class="min-w-12 text-sm font-black text-sky-900">--</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white border border-sky-200 rounded-xl p-4">
+                            <span class="text-[10px] uppercase font-bold text-sky-800 block mb-1">Orientação que será incluída no receituário</span>
+                            <p id="predilution-text" class="text-sm text-slate-800 leading-relaxed font-medium">Selecione o produto para calcular a pré-diluição.</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Operational Parameters Bar -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-emerald-700 text-white p-4 rounded-xl shadow-inner">
                     <div class="text-center p-2 border-b sm:border-b-0 sm:border-r border-emerald-600">
@@ -882,6 +931,11 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                                 <div id="pdf-total-products-summary" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 3px; font-size: 9px;">
                                     <span style="color: #64748b; font-style: italic;">Nenhum produto prescrito.</span>
                                 </div>
+                            </div>
+
+                            <div id="pdf-predilution-box" class="pdf-box hidden" style="padding: 5px 7px; background-color: #f0f9ff !important; border-color: #7dd3fc !important;">
+                                <strong style="color: #075985; font-size: 9.5px; display: block; margin-bottom: 2px; text-transform: uppercase;">Pré-diluição do produto — opcional</strong>
+                                <p id="pdf-predilution-text" style="color: #334155; font-size: 8.5px; line-height: 1.3; margin: 0;">--</p>
                             </div>
 
                             <div class="pdf-box" style="padding: 5px 7px; background-color: #fffbeb !important; border-color: #fcd34d !important;">
@@ -1398,6 +1452,8 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
         let selectedAgronomistIndex = 0;
         let productStockMap = {};
         let pendingConfirmCallback = null;
+        let currentRecommendationProducts = [];
+        let currentHaPerTank = 0;
 
         const AGRONOMISTS_LIST = [
             {
@@ -1436,6 +1492,104 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                 return qty.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' kg';
             }
             return qty.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ' + unitClean.replace('/ha', '');
+        }
+
+        function togglePredilution() {
+            const enabled = document.getElementById('predilution-enabled');
+            const panel = document.getElementById('predilution-panel');
+            if (!enabled || !panel) return;
+            panel.classList.toggle('hidden', !enabled.checked);
+            refreshPredilutionProducts(currentRecommendationProducts, currentHaPerTank);
+            updatePredilutionText();
+        }
+
+        function normalizedPerTank(item) {
+            if (!item) return { qty: 0, unit: '' };
+            const raw = (Number(item.dose) || 0) * (Number(currentHaPerTank) || 0);
+            const unit = item.doseUnit || '';
+            if (unit === 'kg/ha' || unit === 'kg') return { qty: raw * 1000, unit: 'g' };
+            if (unit === 'g/ha' || unit === 'g') return { qty: raw, unit: 'g' };
+            if (unit === 'L/ha' || unit === 'L') return { qty: raw * 1000, unit: 'mL' };
+            if (unit === 'mL/ha' || unit === 'mL') return { qty: raw, unit: 'mL' };
+            return { qty: raw, unit: unit.replace('/ha', '') };
+        }
+
+        function refreshPredilutionProducts(items, haPerTank) {
+            const select = document.getElementById('predilution-product');
+            if (!select) return;
+            const previousName = select.value !== '' && select.options[select.selectedIndex]
+                ? select.options[select.selectedIndex].textContent
+                : '';
+            currentRecommendationProducts = Array.isArray(items) ? items.slice() : [];
+            currentHaPerTank = Number(haPerTank) || 0;
+            select.innerHTML = '<option value="">-- Selecione um produto indicado acima --</option>';
+            currentRecommendationProducts.forEach(function(item, index) {
+                const opt = document.createElement('option');
+                opt.value = String(index);
+                opt.textContent = item.name;
+                select.appendChild(opt);
+            });
+            if (previousName) {
+                const newIndex = currentRecommendationProducts.findIndex(function(item) { return item.name === previousName; });
+                if (newIndex >= 0) select.value = String(newIndex);
+            }
+            recalculatePredilution();
+        }
+
+        function recalculatePredilution() {
+            const select = document.getElementById('predilution-product');
+            const perTankEl = document.getElementById('predilution-per-tank');
+            const qtyEl = document.getElementById('predilution-product-qty');
+            const unitEl = document.getElementById('predilution-product-unit');
+            if (!select || !perTankEl || !qtyEl || !unitEl) return;
+            const item = select.value === '' ? null : currentRecommendationProducts[Number(select.value)];
+            if (!item) {
+                perTankEl.textContent = '--';
+                qtyEl.value = '0';
+                unitEl.textContent = '--';
+                updatePredilutionText();
+                return;
+            }
+            const perTank = normalizedPerTank(item);
+            const waterL = Math.max(0, Number(document.getElementById('predilution-water')?.value) || 0);
+            const aliquotMl = Math.max(0, Number(document.getElementById('predilution-aliquot')?.value) || 0);
+            const portions = aliquotMl > 0 ? (waterL * 1000 / aliquotMl) : 0;
+            const totalProduct = perTank.qty * portions;
+            perTankEl.textContent = perTank.qty.toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 2}) + ' ' + perTank.unit;
+            qtyEl.value = Number.isFinite(totalProduct) ? totalProduct.toFixed(2) : '0';
+            unitEl.textContent = perTank.unit;
+            updatePredilutionText();
+        }
+
+        function getPredilutionData() {
+            const enabled = document.getElementById('predilution-enabled');
+            const select = document.getElementById('predilution-product');
+            if (!enabled || !enabled.checked || !select || select.value === '') return null;
+            const item = currentRecommendationProducts[Number(select.value)];
+            if (!item) return null;
+            const perTank = normalizedPerTank(item);
+            const waterL = Math.max(0, Number(document.getElementById('predilution-water')?.value) || 0);
+            const aliquotMl = Math.max(0, Number(document.getElementById('predilution-aliquot')?.value) || 0);
+            const productQty = Math.max(0, Number(document.getElementById('predilution-product-qty')?.value) || 0);
+            const tankCapacity = Math.max(0, Number(document.getElementById('tank-capacity')?.value) || 0);
+            const portions = aliquotMl > 0 ? (waterL * 1000 / aliquotMl) : 0;
+            return { product: item.name, perTankQty: perTank.qty, unit: perTank.unit, waterL, aliquotMl, productQty, portions, tankCapacity };
+        }
+
+        function predilutionInstruction(data) {
+            if (!data) return '';
+            const qty = data.productQty.toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 2});
+            const water = data.waterL.toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 2});
+            const aliquot = data.aliquotMl.toLocaleString('pt-BR', {maximumFractionDigits: 1});
+            const tank = data.tankCapacity.toLocaleString('pt-BR', {maximumFractionDigits: 1});
+            return 'Produto: ' + data.product + '. Em ' + water + ' L de água, adicionar ' + qty + ' ' + data.unit + ' do produto e homogeneizar adequadamente. Utilizar ' + aliquot + ' mL da pré-diluição por tanque/bomba (' + tank + ' L).';
+        }
+
+        function updatePredilutionText() {
+            const textEl = document.getElementById('predilution-text');
+            if (!textEl) return;
+            const data = getPredilutionData();
+            textEl.textContent = data ? predilutionInstruction(data) : 'Selecione o produto para calcular a pré-diluição.';
         }
 
         function showAlert(message, title = "Atenção", isSuccess = false) {
@@ -2603,6 +2757,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                     summaryContainer.innerHTML = summaryHtml;
                 }
             }
+            refreshPredilutionProducts(totalSummaryList, haPerTank);
         }
 
         function updatePDFPreview() {
@@ -2761,6 +2916,12 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                 }
             }
 
+            const pdfPredilutionBox = document.getElementById('pdf-predilution-box');
+            const pdfPredilutionText = document.getElementById('pdf-predilution-text');
+            const predilutionData = getPredilutionData();
+            if (pdfPredilutionBox) pdfPredilutionBox.classList.toggle('hidden', !predilutionData);
+            if (pdfPredilutionText) pdfPredilutionText.innerText = predilutionData ? predilutionInstruction(predilutionData) : '--';
+
             const pdfSafetyNotes = document.getElementById('pdf-safety-notes');
             const pdfFirstAidNotes = document.getElementById('pdf-first-aid-notes');
             const pdfTechNotes = document.getElementById('pdf-tech-notes');
@@ -2800,6 +2961,15 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
             if (selectedFields.size === 0) {
                 showAlert("Por favor, selecione ao menos um talhão para a aplicação do herbicida.");
                 return;
+            }
+
+            const predEnabled = document.getElementById('predilution-enabled');
+            if (predEnabled && predEnabled.checked) {
+                const predData = getPredilutionData();
+                if (!predData || predData.waterL <= 0 || predData.aliquotMl <= 0 || predData.productQty <= 0) {
+                    showAlert("A pré-diluição foi ativada. Selecione o produto e confira os volumes e a quantidade antes de gerar o PDF.");
+                    return;
+                }
             }
 
             updatePDFPreview();
@@ -2888,7 +3058,8 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                 farm: selectedFarm,
                 producer: farmData ? farmData.producer : '',
                 fieldsCount: selectedFields.size,
-                totalArea: areaDisplayEl ? areaDisplayEl.innerText : '0,00'
+                totalArea: areaDisplayEl ? areaDisplayEl.innerText : '0,00',
+                predilution: getPredilutionData()
             };
 
             history.unshift(entry);
@@ -2966,6 +3137,14 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
             if (document.getElementById('precautions-notes')) document.getElementById('precautions-notes').value = DEFAULT_PRECAUTIONS_TEXT;
             if (document.getElementById('ipm-notes')) document.getElementById('ipm-notes').value = DEFAULT_IPM_TEXT;
             if (document.getElementById('environment-notes')) document.getElementById('environment-notes').value = DEFAULT_ENVIRONMENT_TEXT;
+
+            const predEnabled = document.getElementById('predilution-enabled');
+            const predPanel = document.getElementById('predilution-panel');
+            if (predEnabled) predEnabled.checked = false;
+            if (predPanel) predPanel.classList.add('hidden');
+            if (document.getElementById('predilution-water')) document.getElementById('predilution-water').value = 2;
+            if (document.getElementById('predilution-aliquot')) document.getElementById('predilution-aliquot').value = 200;
+            if (document.getElementById('predilution-product-qty')) document.getElementById('predilution-product-qty').value = 0;
 
             selectAgronomist(0);
 
