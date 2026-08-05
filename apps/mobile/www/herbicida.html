@@ -1,46 +1,57 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#075f3d">
-  <title>Receituário de Herbicida • Do Campo</title>
-  <style>
-    :root{--g:#087449;--d:#06452f;--m:#eaf7f0;--ink:#17231d;--mut:#637269;--line:#dbe7df}*{box-sizing:border-box}body{margin:0;background:#f3f7f4;color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}header{background:linear-gradient(135deg,var(--d),var(--g));color:#fff;padding:calc(14px + env(safe-area-inset-top)) 15px 18px}.head{max-width:900px;margin:auto;display:flex;align-items:center;gap:12px}.back{color:#fff;text-decoration:none;font-size:32px}.logo{width:58px;height:58px;border-radius:15px;background:#fff;padding:5px;object-fit:contain}.head h1{font-size:20px;margin:0}.head p{font-size:11px;margin:3px 0;color:#ccebdd}main{max-width:900px;margin:auto;padding:15px 14px calc(45px + env(safe-area-inset-bottom))}.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:17px;margin-bottom:13px;box-shadow:0 7px 20px #173b2809}.eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--g);font-weight:850}.card h2{font-size:19px;margin:5px 0}.help{font-size:12px;line-height:1.5;color:var(--mut);margin:0 0 14px}.fields{display:grid;grid-template-columns:1fr;gap:10px}label{display:block;font-size:10.5px;font-weight:800;color:#405047;margin-bottom:5px}select,input{width:100%;border:1px solid #ccd9d1;border-radius:11px;background:#fbfdfb;padding:12px 10px;color:var(--ink)}input[readonly]{background:#f1f5f2;color:#4d5b53}.notice{background:#f8fbf9;border:1px solid #cde2d6;border-radius:13px;padding:13px;color:#526259;font-size:11.5px;line-height:1.45}.status{display:flex;gap:7px;align-items:center;margin-top:13px;color:#607068;font-size:10.5px}.dot{width:8px;height:8px;border-radius:50%;background:#31a66a}@media(min-width:650px){.fields{grid-template-columns:1fr 1fr}.wide{grid-column:1/-1}.card{padding:22px}}
-  </style>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="theme-color" content="#15803d">
+  <title>Do Campo Agronegócios - Receituário de Herbicida</title>
+  <script src="vendor/tailwind/tailwindcss.js"></script><link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+  <script>tailwind.config={theme:{extend:{colors:{agri:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',600:'#16a34a',700:'#15803d',800:'#166534',900:'#14532d'}}}}}</script>
+  <style>body{font-family:Inter,system-ui,sans-serif;background:#f8fafc;color:#0f172a}.field-card:has(input:checked){border-color:#16a34a;background:#f0fdf4}.field-card input{accent-color:#15803d}</style>
 </head>
-<body>
-  <header><div class="head"><a class="back" href="index.html" aria-label="Voltar">‹</a><img class="logo" src="assets/logo.png" alt="Logo Do Campo Agronegócios"><div><h1>Receituário de Herbicida</h1><p>DO CAMPO AGRONEGÓCIOS • REGISTRO PROFISSIONAL</p></div></div></header>
-  <main>
-    <section class="card">
-      <div class="eyebrow">Identificação da propriedade</div>
-      <h2>Produtor, fazenda e talhão</h2>
-      <p class="help">Os cadastros são os mesmos utilizados nos outros módulos e permanecem disponíveis offline.</p>
-      <div class="fields">
-        <div class="wide"><label>Produtor cadastrado</label><select id="producerSelect"><option value="">Selecione</option></select></div>
-        <div class="wide"><label>Fazenda / propriedade</label><select id="farmSelect"><option value="">Selecione</option></select></div>
-        <div class="wide"><label>Talhão</label><select id="fieldSelect"><option value="">Selecione</option></select></div>
-        <div><label>Produtor</label><input id="producer" readonly></div>
-        <div><label>Fazenda</label><input id="farm" readonly></div>
-        <div><label>Talhão</label><input id="field" readonly></div>
-        <div><label>Área (ha)</label><input id="area" readonly></div>
+<body class="min-h-screen flex flex-col antialiased bg-slate-50">
+  <header class="bg-emerald-700 text-white sticky top-0 z-40 shadow-md border-b border-emerald-600">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div class="flex items-center gap-3"><a href="index.html" class="text-3xl text-emerald-100 pr-1" aria-label="Voltar">‹</a><img src="assets/logo.png" alt="Do Campo Agronegócios" class="w-14 h-14 object-contain bg-white rounded-xl p-1 shadow-inner border border-emerald-400"><div><h1 class="text-xl font-bold tracking-wide leading-tight">DO CAMPO</h1><p class="text-xs font-semibold text-emerald-100 tracking-wider uppercase">AGRONEGÓCIOS • Receituário de Herbicida</p></div></div>
+      <a href="index.html" class="flex items-center gap-2 bg-emerald-800 text-emerald-100 px-3.5 py-2 rounded-lg text-sm font-medium border border-emerald-600"><i class="fa-solid fa-house"></i><span class="hidden sm:inline">Menu</span></a>
+    </div>
+  </header>
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+      <div class="space-y-1"><div class="inline-flex items-center gap-2 px-3 py-1 bg-amber-50 border border-amber-200 rounded-full text-amber-800 text-xs font-bold uppercase tracking-wider"><i class="fa-solid fa-wheat-awn-circle-exclamation text-amber-600"></i> Sistema de Manejo e Registro de Herbicidas</div><h2 class="text-2xl font-black text-slate-900">Recomendação Agronômica de Herbicidas</h2><p class="text-slate-500 text-sm">Selecione a propriedade e os talhões. O registro utiliza os mesmos cadastros da Do Campo SmartFarm.</p></div>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="bg-slate-800 text-white rounded-2xl p-5 shadow-sm border border-slate-700 flex items-center gap-4"><div class="w-11 h-11 rounded-xl bg-slate-700 grid place-items-center text-emerald-300"><i class="fa-solid fa-file-lines"></i></div><div><span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Identificação</span><div id="recDisplay" class="font-black text-lg font-mono">#DC-H-0001</div></div></div>
+      <div class="bg-slate-800 text-white rounded-2xl p-5 shadow-sm border border-slate-700 flex items-center gap-4"><div class="w-11 h-11 rounded-xl bg-slate-700 grid place-items-center text-emerald-300"><i class="fa-solid fa-calendar-days"></i></div><div><span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Data do registro</span><div id="dateDisplay" class="font-black text-lg font-mono">--/--/----</div></div></div>
+    </div>
+    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex flex-wrap gap-2 items-center justify-between"><p class="text-xs text-emerald-900 font-semibold">Os cadastros são os mesmos utilizados em todo o SmartFarm e ficam disponíveis offline.</p><div class="flex gap-2"><a href="clientes.html?return=herbicida.html" class="bg-white border border-emerald-300 text-emerald-800 px-3 py-2 rounded-lg text-xs font-bold">+ Cliente ou talhão</a><a href="produtos.html?return=herbicida.html" class="bg-white border border-emerald-300 text-emerald-800 px-3 py-2 rounded-lg text-xs font-bold">Catálogo central</a></div></div>
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="bg-emerald-800 px-6 py-4 border-b border-emerald-700 flex items-center justify-between"><h3 class="text-base font-bold text-white flex items-center gap-2.5"><span class="w-7 h-7 bg-emerald-600 rounded-lg flex items-center justify-center text-xs font-black">1</span> Seleção da Propriedade e Dados do Produtor</h3><span class="text-xs text-emerald-200">Passo 1</span></div>
+      <div class="p-6 space-y-4"><div class="space-y-1.5"><label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">Fazenda / Propriedade</label><select id="farmSelect" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-emerald-600 focus:outline-none"><option value="">-- Selecione a Fazenda --</option></select></div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-200"><div><label class="block text-xs font-bold uppercase text-slate-700 mb-1.5"><i class="fa-solid fa-user text-emerald-600 mr-1"></i> Nome do Produtor</label><input id="producer" readonly class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-sm"></div><div><label class="block text-xs font-bold uppercase text-slate-700 mb-1.5"><i class="fa-solid fa-id-card text-emerald-600 mr-1"></i> CPF</label><input id="cpf" readonly class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-sm"></div><div><label class="block text-xs font-bold uppercase text-slate-700 mb-1.5"><i class="fa-solid fa-location-dot text-emerald-600 mr-1"></i> Endereço / Localização</label><input id="address" readonly class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-sm"></div></div>
       </div>
-      <div class="status"><span class="dot"></span><span>Cadastro disponível offline neste aparelho</span></div>
     </section>
-    <section class="card">
-      <div class="eyebrow">Estrutura integrada</div><h2>Registro da prescrição</h2>
-      <div class="notice">Este módulo está conectado ao cadastro central da Do Campo. A identificação da propriedade já está pronta; os dados técnicos da prescrição devem ser definidos e conferidos pelo profissional habilitado.</div>
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="bg-emerald-800 px-6 py-4 border-b border-emerald-700 flex items-center justify-between"><h3 class="text-base font-bold text-white flex items-center gap-2.5"><span class="w-7 h-7 bg-emerald-600 rounded-lg flex items-center justify-center text-xs font-black">2</span> Cultura e Seleção dos Talhões</h3><span class="text-xs text-emerald-200">Passo 2</span></div>
+      <div class="p-6 space-y-6"><div class="grid grid-cols-1 md:grid-cols-3 gap-4 pb-5 border-b border-slate-200"><div><label class="block text-xs font-bold uppercase text-slate-700 mb-1.5"><i class="fa-solid fa-leaf text-emerald-600 mr-1"></i> Cultura</label><input id="crop" value="Café" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm font-bold"></div><div class="md:col-span-2"><label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">Observação do estágio / situação da área</label><input id="stage" placeholder="Registro descritivo do profissional" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm"></div></div>
+        <div class="space-y-4"><div class="flex items-center justify-between"><h4 class="font-bold text-sm text-slate-800 uppercase tracking-wider"><i class="fa-solid fa-map-location-dot text-emerald-600 mr-1"></i> Talhões da Propriedade Selecionada</h4><span class="text-xs font-bold text-emerald-700"><span id="selectedArea">0,00</span> ha selecionados</span></div><div id="fields" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"><div class="col-span-full py-8 text-center text-slate-400 italic bg-slate-50 border border-dashed border-slate-200 rounded-xl">Selecione uma fazenda para carregar os talhões.</div></div></div>
+      </div>
+    </section>
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="bg-emerald-800 px-6 py-4 border-b border-emerald-700 flex items-center justify-between"><h3 class="text-base font-bold text-white flex items-center gap-2.5"><span class="w-7 h-7 bg-emerald-600 rounded-lg flex items-center justify-center text-xs font-black">3</span> Registro Profissional</h3><span class="text-xs text-emerald-200">Passo 3</span></div>
+      <div class="p-6 space-y-5"><div class="bg-slate-50 p-4 rounded-xl border border-slate-200"><h4 class="font-bold text-sm text-slate-800 mb-2"><i class="fa-solid fa-list-check text-emerald-600 mr-1"></i> Catálogo central de produtos</h4><p class="text-xs text-slate-600 leading-relaxed">O catálogo é único para todos os módulos. Cadastros, edição e recuperação permanecem na tela central de Produtos.</p><a href="produtos.html?return=herbicida.html" class="inline-flex mt-3 bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-bold">Abrir catálogo central</a></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">Responsável pelo registro</label><input id="responsible" readonly class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold"></div><div><label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">Identificação / referência</label><input id="reference" placeholder="Número ou referência interna" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm"></div></div>
+        <div><label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">Observações administrativas</label><textarea id="notes" rows="4" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm" placeholder="Observações do registro"></textarea></div>
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-900 leading-relaxed"><strong>Conferência profissional:</strong> os dados técnicos da prescrição devem ser definidos e conferidos pelo profissional habilitado responsável.</div>
+        <div class="flex flex-col sm:flex-row justify-end gap-3 pt-2"><a href="index.html" class="text-center bg-slate-200 text-slate-700 font-bold px-6 py-3 rounded-xl">Voltar ao menu</a><a href="produtos.html?return=herbicida.html" class="text-center bg-amber-500 text-slate-900 font-bold px-6 py-3 rounded-xl shadow"><i class="fa-solid fa-list-check mr-2"></i>Consultar produtos cadastrados</a></div>
+      </div>
     </section>
   </main>
   <script src="unified-db.js"></script><script src="shared-data.js"></script><script src="registry-loader.js"></script><script src="app-shell.js"></script>
-  <script>
-  (function(){'use strict';const $=id=>document.getElementById(id);let farms=[];
-    function options(el,items,placeholder){el.innerHTML='';const first=document.createElement('option');first.value='';first.textContent=placeholder;el.appendChild(first);items.forEach(item=>{const op=document.createElement('option');op.value=item;op.textContent=item;el.appendChild(op)})}
-    async function load(){farms=(await DoCampoRegistry.all()).farms;const producers=[...new Set(farms.map(f=>f.producer||f.proprietor).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));options($('producerSelect'),producers,'Selecione');options($('farmSelect'),[],'Selecione');options($('fieldSelect'),[],'Selecione')}
-    $('producerSelect').onchange=()=>{const p=$('producerSelect').value,list=farms.filter(f=>(f.producer||f.proprietor)===p);options($('farmSelect'),list.map(f=>f.farm),'Selecione');options($('fieldSelect'),[],'Selecione');$('producer').value=p;$('farm').value='';$('field').value='';$('area').value=''};
-    $('farmSelect').onchange=()=>{const f=farms.find(x=>x.farm===$('farmSelect').value);if(!f)return;$('producer').value=f.producer||f.proprietor||'';$('farm').value=f.farm;options($('fieldSelect'),(f.fields||[]).map(x=>x.name),'Selecione');$('field').value='';$('area').value=''};
-    $('fieldSelect').onchange=()=>{const f=farms.find(x=>x.farm===$('farmSelect').value),field=f&&(f.fields||[]).find(x=>x.name===$('fieldSelect').value);$('field').value=$('fieldSelect').value;$('area').value=field&&field.area?field.area:''};
+  <script>(function(){'use strict';const $=id=>document.getElementById(id);let farms=[];dateDisplay.textContent=new Date().toLocaleDateString('pt-BR');responsible.value=window.DoCampoDB?DoCampoDB.user():'';
+    function option(el,value,label){const o=document.createElement('option');o.value=value;o.textContent=label;el.appendChild(o)}
+    async function load(){farms=(await DoCampoRegistry.all()).farms;farmSelect.innerHTML='';option(farmSelect,'','-- Selecione a Fazenda --');farms.slice().sort((a,b)=>String(a.farm).localeCompare(String(b.farm),'pt-BR')).forEach(f=>option(farmSelect,f.farm,`${f.farm} — ${f.producer||f.proprietor||''}`))}
+    function renderFields(f){fields.innerHTML='';if(!f||!(f.fields||[]).length){fields.innerHTML='<div class="col-span-full py-8 text-center text-slate-400 italic bg-slate-50 border border-dashed border-slate-200 rounded-xl">Nenhum talhão cadastrado para esta propriedade.</div>';selectedArea.textContent='0,00';return}(f.fields||[]).forEach((x,i)=>{const l=document.createElement('label');l.className='field-card flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-3 cursor-pointer';l.innerHTML=`<input type="checkbox" data-area="${Number(x.area)||0}" class="w-4 h-4"><span class="flex-1"><b class="block text-sm text-slate-800"></b><small class="text-slate-500"></small></span>`;l.querySelector('b').textContent=x.name;l.querySelector('small').textContent=(Number(x.area)||0).toLocaleString('pt-BR')+' ha';l.querySelector('input').addEventListener('change',sum);fields.appendChild(l)})}
+    function sum(){const n=[...fields.querySelectorAll('input:checked')].reduce((s,x)=>s+(Number(x.dataset.area)||0),0);selectedArea.textContent=n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
+    farmSelect.onchange=()=>{const f=farms.find(x=>x.farm===farmSelect.value);producer.value=f?(f.producer||f.proprietor||''):'';cpf.value=f?.cpf||'';address.value=f?.address||'';renderFields(f)};
     window.addEventListener('docampo:data-updated',load);window.addEventListener('docampo:sync-complete',load);load();
-  })();
-  </script>
+  })();</script>
 </body></html>
