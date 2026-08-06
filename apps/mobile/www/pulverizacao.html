@@ -523,7 +523,7 @@
                         </label>
                         <label id="crop-mode-new-card" class="flex items-center gap-3 bg-white border-2 border-slate-200 rounded-xl px-4 py-3 cursor-pointer shadow-sm">
                             <input type="radio" name="crop-mode" id="crop-mode-new" value="new" onchange="setCropMode()" class="w-4 h-4 text-agri-600 focus:ring-agri-500">
-                            <span><strong class="block text-sm text-slate-900">Lavoura nova</strong><small class="text-xs text-slate-600">Cálculo fixo com referência de 400 L/ha.</small></span>
+                            <span><strong class="block text-sm text-slate-900">Lavoura nova</strong><small class="text-xs text-slate-600">Aplica a regra específica de cálculo por tanque.</small></span>
                         </label>
                     </div>
                     <p id="crop-mode-note" class="text-xs font-semibold text-agri-800">Lavoura em produção — cálculo pelo volume de calda informado.</p>
@@ -829,7 +829,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                                     <strong>Tipo de Pulverização:</strong> <span id="pdf-spray-type" style="font-weight: 700; color: #15803d; display: block; margin-top: 1px;">--</span>
                                 </div>
                                 <div class="pdf-box" style="background-color: #f1f5f9; padding: 4px 6px;">
-                                    <strong>Volume de Calda / ha:</strong> <span id="pdf-volume-ha" style="font-weight: 700; display: block; margin-top: 1px;">400 L/ha</span>
+                                    <strong>Volume de Calda / ha:</strong> <span id="pdf-volume-ha" style="font-weight: 700; display: block; margin-top: 1px;">-- L/ha</span>
                                 </div>
                                 <div class="pdf-box" style="background-color: #f1f5f9; padding: 4px 6px;">
                                     <strong>Capacidade Tanque:</strong> <span id="pdf-tank-cap" style="font-weight: 700; display: block; margin-top: 1px;">2000 L</span>
@@ -1787,10 +1787,13 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             return !!(el && el.checked);
         }
 
-        function effectiveSprayVolume() {
-            if (isNewCropMode()) return 400;
+        function actualSprayVolume() {
             const el = document.getElementById('spray-volume-ha');
             return parseFloat(el ? el.value : 0) || 0;
+        }
+
+        function doseReferenceVolume() {
+            return isNewCropMode() ? 400 : actualSprayVolume();
         }
 
         function setCropMode() {
@@ -1800,11 +1803,11 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             const prodCard = document.getElementById('crop-mode-production-card');
             const newCard = document.getElementById('crop-mode-new-card');
             if (input) {
-                input.disabled = isNew;
-                input.classList.toggle('opacity-60', isNew);
+                input.disabled = false;
+                input.classList.remove('opacity-60');
             }
             if (note) note.textContent = isNew
-                ? 'Lavoura nova — cálculo por tanque usando referência fixa de 400 L/ha.'
+                ? 'Lavoura nova — regra especial de cálculo por tanque ativa.'
                 : 'Lavoura em produção — cálculo pelo volume de calda informado.';
             if (prodCard) prodCard.className = prodCard.className.replace(/border-(agri-500|slate-200)/g, isNew ? 'border-slate-200' : 'border-agri-500');
             if (newCard) newCard.className = newCard.className.replace(/border-(agri-500|slate-200)/g, isNew ? 'border-agri-500' : 'border-slate-200');
@@ -2623,7 +2626,8 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             const sprayVolEl = document.getElementById('spray-volume-ha');
             const tankCapEl = document.getElementById('tank-capacity');
 
-            const sprayVolHa = effectiveSprayVolume();
+            const sprayVolHa = actualSprayVolume();
+            const doseRefVolHa = doseReferenceVolume();
             const tankCapacity = parseFloat(tankCapEl ? tankCapEl.value : 0) || 0;
 
             const thTankQty = document.getElementById('th-tank-qty');
@@ -2636,6 +2640,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             }
 
             const haPerTank = sprayVolHa > 0 ? (tankCapacity / sprayVolHa) : 0;
+            const doseHaPerTank = doseRefVolHa > 0 ? (tankCapacity / doseRefVolHa) : 0;
             const totalSyrupVolume = totalArea * sprayVolHa;
             const totalTanks = tankCapacity > 0 ? (totalSyrupVolume / tankCapacity) : 0;
 
@@ -2679,8 +2684,8 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 const dose = parseFloat(doseEl ? doseEl.value : 0) || 0;
                 const unit = (unitEl ? unitEl.value : '') || 'L/ha';
 
-                const totalProdArea = dose * totalArea;
-                const qtyPerTank = dose * haPerTank;
+                const qtyPerTank = dose * doseHaPerTank;
+                const totalProdArea = isNewCropMode() ? (qtyPerTank * totalTanks) : (dose * totalArea);
 
                 const unitShort = unit.replace('/ha', '');
                 const totalAreaEl = document.getElementById(rowId + '-total-area');
@@ -2800,17 +2805,19 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
 
             const sprayVolEl = document.getElementById('spray-volume-ha');
             const tankCapEl = document.getElementById('tank-capacity');
-            const sprayVolHa = effectiveSprayVolume();
+            const sprayVolHa = actualSprayVolume();
+            const doseRefVolHa = doseReferenceVolume();
             const tankCapacity = parseFloat(tankCapEl ? tankCapEl.value : 0) || 0;
 
             const pdfVolHaEl = document.getElementById('pdf-volume-ha');
             const pdfTankCapEl = document.getElementById('pdf-tank-cap');
-            if (pdfVolHaEl) pdfVolHaEl.innerText = sprayVolHa + ' L/ha' + (isNewCropMode() ? ' • Lavoura nova' : ' • Em produção');
+            if (pdfVolHaEl) pdfVolHaEl.innerText = sprayVolHa + ' L/ha';
             if (pdfTankCapEl) pdfTankCapEl.innerText = tankCapacity + ' L';
 
             const totalSyrupVolume = totalArea * sprayVolHa;
             const totalTanks = tankCapacity > 0 ? (totalSyrupVolume / tankCapacity) : 0;
             const haPerTank = sprayVolHa > 0 ? (tankCapacity / sprayVolHa) : 0;
+            const doseHaPerTank = doseRefVolHa > 0 ? (tankCapacity / doseRefVolHa) : 0;
 
             const pdfTotalSyrupEl = document.getElementById('pdf-total-syrup');
             const pdfTotalTanksEl = document.getElementById('pdf-total-tanks');
@@ -2858,8 +2865,8 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
 
                 if (!prodName && dose === 0) return;
 
-                const totalProdArea = dose * totalArea;
-                const qtyPerTank = dose * haPerTank;
+                const qtyPerTank = dose * doseHaPerTank;
+                const totalProdArea = isNewCropMode() ? (qtyPerTank * totalTanks) : (dose * totalArea);
                 const unitShort = unit.replace('/ha', '');
 
                 if (pdfTbody) {
@@ -3052,7 +3059,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 fieldsCount: selectedFields.size,
                 totalArea: areaDisplayEl ? areaDisplayEl.innerText : '0,00',
                 cropMode: isNewCropMode() ? 'lavoura_nova' : 'em_producao',
-                sprayVolumeHa: effectiveSprayVolume(),
+                sprayVolumeHa: actualSprayVolume(),
                 tankCapacity: Number(document.getElementById('tank-capacity')?.value) || 0,
                 products: currentOrderedProducts()
             };
