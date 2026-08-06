@@ -513,6 +513,22 @@
                     </div>
                 </div>
 
+                <!-- Tipo de lavoura -->
+                <div class="bg-agri-50 border border-agri-200 rounded-xl p-4 space-y-2">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Fase da lavoura para o cálculo da calda</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label id="crop-mode-production-card" class="flex items-center gap-3 bg-white border-2 border-agri-500 rounded-xl px-4 py-3 cursor-pointer shadow-sm">
+                            <input type="radio" name="crop-mode" id="crop-mode-production" value="production" checked onchange="setCropMode()" class="w-4 h-4 text-agri-600 focus:ring-agri-500">
+                            <span><strong class="block text-sm text-slate-900">Lavoura em produção</strong><small class="text-xs text-slate-600">Usa o volume de calda informado abaixo.</small></span>
+                        </label>
+                        <label id="crop-mode-new-card" class="flex items-center gap-3 bg-white border-2 border-slate-200 rounded-xl px-4 py-3 cursor-pointer shadow-sm">
+                            <input type="radio" name="crop-mode" id="crop-mode-new" value="new" onchange="setCropMode()" class="w-4 h-4 text-agri-600 focus:ring-agri-500">
+                            <span><strong class="block text-sm text-slate-900">Lavoura nova</strong><small class="text-xs text-slate-600">Cálculo fixo com referência de 400 L/ha.</small></span>
+                        </label>
+                    </div>
+                    <p id="crop-mode-note" class="text-xs font-semibold text-agri-800">Lavoura em produção — cálculo pelo volume de calda informado.</p>
+                </div>
+
                 <!-- Spray Volume & Equipment Capacity Controls -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <div class="space-y-1.5">
@@ -556,7 +572,7 @@
                                     <th class="p-3 w-28">Unidade</th>
                                     <th class="p-3 w-32">Total Área</th>
                                     <th class="p-3 w-40 text-emerald-800 font-extrabold" id="th-tank-qty">Qtd. / Tanque (2000 L)</th>
-                                    <th class="p-3 w-10 text-center">Ações</th>
+                                    <th class="p-3 min-w-[118px] text-center">Ordem / Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="products-tbody" class="divide-y divide-slate-200">
@@ -1736,13 +1752,63 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 const unitStr = buyEl.getAttribute('data-unit') || '';
                 const qtyToBuy = Math.max(0, totalAreaVal - numStock);
 
-                buyEl.innerText = qtyToBuy.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ' + unitStr;
+                buyEl.innerText = formatSmartQty(qtyToBuy, unitStr);
                 if (qtyToBuy > 0) {
                     buyEl.className = 'text-xs font-mono text-amber-700 font-black';
                 } else {
                     buyEl.className = 'text-xs font-mono text-emerald-700 font-black';
                 }
             }
+        }
+
+        function formatSmartQty(qty, unit) {
+            const n = Number(qty) || 0;
+            const u = String(unit || '').replace('/ha', '');
+            if (u === 'L') {
+                if (n > 0 && n < 1) return (n * 1000).toLocaleString('pt-BR', {minimumFractionDigits: 0, maximumFractionDigits: 1}) + ' mL';
+                return n.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' L';
+            }
+            if (u === 'kg') {
+                if (n > 0 && n < 1) return (n * 1000).toLocaleString('pt-BR', {minimumFractionDigits: 0, maximumFractionDigits: 1}) + ' g';
+                return n.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' kg';
+            }
+            if (u === 'mL') return n.toLocaleString('pt-BR', {minimumFractionDigits: 0, maximumFractionDigits: 1}) + ' mL';
+            if (u === 'g') return n.toLocaleString('pt-BR', {minimumFractionDigits: 0, maximumFractionDigits: 1}) + ' g';
+            return n.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + (u ? ' ' + u : '');
+        }
+
+        function formatDosePerHa(qty, unit) {
+            const formatted = formatSmartQty(qty, unit);
+            return formatted + (String(unit || '').includes('/ha') ? '/ha' : '');
+        }
+
+        function isNewCropMode() {
+            const el = document.getElementById('crop-mode-new');
+            return !!(el && el.checked);
+        }
+
+        function effectiveSprayVolume() {
+            if (isNewCropMode()) return 400;
+            const el = document.getElementById('spray-volume-ha');
+            return parseFloat(el ? el.value : 0) || 0;
+        }
+
+        function setCropMode() {
+            const isNew = isNewCropMode();
+            const input = document.getElementById('spray-volume-ha');
+            const note = document.getElementById('crop-mode-note');
+            const prodCard = document.getElementById('crop-mode-production-card');
+            const newCard = document.getElementById('crop-mode-new-card');
+            if (input) {
+                input.disabled = isNew;
+                input.classList.toggle('opacity-60', isNew);
+            }
+            if (note) note.textContent = isNew
+                ? 'Lavoura nova — cálculo por tanque usando referência fixa de 400 L/ha.'
+                : 'Lavoura em produção — cálculo pelo volume de calda informado.';
+            if (prodCard) prodCard.className = prodCard.className.replace(/border-(agri-500|slate-200)/g, isNew ? 'border-slate-200' : 'border-agri-500');
+            if (newCard) newCard.className = newCard.className.replace(/border-(agri-500|slate-200)/g, isNew ? 'border-agri-500' : 'border-slate-200');
+            calculateTotals();
         }
 
         function selectAgronomist(index) {
@@ -2447,7 +2513,13 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 '<td class="p-2.5 font-bold font-mono text-agri-700 text-xs text-center bg-emerald-50/60 rounded-lg">' +
                     '<span id="' + rowId + '-total-tank">0,00 L</span>' +
                 '</td>' +
-                '<td class="p-2.5 text-center">' +
+                '<td class="p-2.5 text-center whitespace-nowrap">' +
+                    '<button type="button" onclick="moveProductRow(\'' + rowId + '\', -1)" class="text-agri-700 hover:bg-agri-50 p-1.5 rounded transition cursor-pointer" title="Subir produto na ordem de mistura">' +
+                        '<i class="fa-solid fa-arrow-up"></i>' +
+                    '</button>' +
+                    '<button type="button" onclick="moveProductRow(\'' + rowId + '\', 1)" class="text-agri-700 hover:bg-agri-50 p-1.5 rounded transition cursor-pointer" title="Descer produto na ordem de mistura">' +
+                        '<i class="fa-solid fa-arrow-down"></i>' +
+                    '</button>' +
                     '<button type="button" onclick="removeProductRow(\'' + rowId + '\')" class="text-slate-400 hover:text-red-500 p-1.5 transition cursor-pointer">' +
                         '<i class="fa-solid fa-trash-can"></i>' +
                     '</button>' +
@@ -2466,6 +2538,18 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 tr.remove();
                 calculateTotals();
             }
+        }
+
+        function moveProductRow(rowId, direction) {
+            const row = document.getElementById(rowId);
+            const tbody = document.getElementById('products-tbody');
+            if (!row || !tbody) return;
+            if (direction < 0 && row.previousElementSibling) {
+                tbody.insertBefore(row, row.previousElementSibling);
+            } else if (direction > 0 && row.nextElementSibling) {
+                tbody.insertBefore(row.nextElementSibling, row);
+            }
+            calculateTotals();
         }
 
         function onCategoryChange(rowId) {
@@ -2539,7 +2623,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             const sprayVolEl = document.getElementById('spray-volume-ha');
             const tankCapEl = document.getElementById('tank-capacity');
 
-            const sprayVolHa = parseFloat(sprayVolEl ? sprayVolEl.value : 0) || 0;
+            const sprayVolHa = effectiveSprayVolume();
             const tankCapacity = parseFloat(tankCapEl ? tankCapEl.value : 0) || 0;
 
             const thTankQty = document.getElementById('th-tank-qty');
@@ -2602,8 +2686,8 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 const totalAreaEl = document.getElementById(rowId + '-total-area');
                 const totalTankEl = document.getElementById(rowId + '-total-tank');
 
-                if (totalAreaEl) totalAreaEl.innerText = totalProdArea.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ' + unitShort;
-                if (totalTankEl) totalTankEl.innerText = qtyPerTank.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ' + unitShort;
+                if (totalAreaEl) totalAreaEl.innerText = formatSmartQty(totalProdArea, unitShort);
+                if (totalTankEl) totalTankEl.innerText = formatSmartQty(qtyPerTank, unitShort);
 
                 if (prodName && dose > 0) {
                     totalSummaryList.push({
@@ -2639,7 +2723,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                             '<div class="flex justify-between items-start gap-2 border-b border-slate-100 pb-2">' +
                                 '<div class="overflow-hidden min-w-0 flex-1">' +
                                     '<p class="text-xs font-bold text-slate-900 truncate">' + item.name + '</p>' +
-                                    '<p class="text-[10px] text-emerald-700 font-semibold">' + catLabel + ' • Dose: ' + item.dose.toLocaleString('pt-BR', {minimumFractionDigits: 2}) + ' ' + item.doseUnit + '</p>' +
+                                    '<p class="text-[10px] text-emerald-700 font-semibold">' + catLabel + ' • Dose: ' + formatDosePerHa(item.dose, item.doseUnit) + '</p>' +
                                     targetHtml +
                                     activeHtml +
                                 '</div>' +
@@ -2647,7 +2731,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                             '<div class="grid grid-cols-3 gap-2 items-center text-center bg-slate-50 p-2.5 rounded-lg border border-slate-200">' +
                                 '<div>' +
                                     '<span class="text-[10px] font-semibold text-slate-500 uppercase block">Total Área</span>' +
-                                    '<span class="text-xs font-black text-slate-800 font-mono">' + item.total.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ' + item.unit + '</span>' +
+                                    '<span class="text-xs font-black text-slate-800 font-mono">' + formatSmartQty(item.total, item.unit) + '</span>' +
                                 '</div>' +
                                 '<div>' +
                                     '<label class="text-[10px] font-bold text-emerald-800 uppercase block mb-0.5">Em Estoque</label>' +
@@ -2655,7 +2739,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                                 '</div>' +
                                 '<div>' +
                                     '<span class="text-[10px] font-bold text-amber-800 uppercase block">A Comprar</span>' +
-                                    '<span id="buy-qty-' + item.rowId + '" data-total="' + item.total + '" data-unit="' + item.unit + '" class="text-xs font-mono ' + buyBadgeClass + '">' + qtyToBuy.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ' + item.unit + '</span>' +
+                                    '<span id="buy-qty-' + item.rowId + '" data-total="' + item.total + '" data-unit="' + item.unit + '" class="text-xs font-mono ' + buyBadgeClass + '">' + formatSmartQty(qtyToBuy, item.unit) + '</span>' +
                                 '</div>' +
                             '</div>' +
                         '</div>';
@@ -2716,12 +2800,12 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
 
             const sprayVolEl = document.getElementById('spray-volume-ha');
             const tankCapEl = document.getElementById('tank-capacity');
-            const sprayVolHa = parseFloat(sprayVolEl ? sprayVolEl.value : 0) || 0;
+            const sprayVolHa = effectiveSprayVolume();
             const tankCapacity = parseFloat(tankCapEl ? tankCapEl.value : 0) || 0;
 
             const pdfVolHaEl = document.getElementById('pdf-volume-ha');
             const pdfTankCapEl = document.getElementById('pdf-tank-cap');
-            if (pdfVolHaEl) pdfVolHaEl.innerText = sprayVolHa + ' L/ha';
+            if (pdfVolHaEl) pdfVolHaEl.innerText = sprayVolHa + ' L/ha' + (isNewCropMode() ? ' • Lavoura nova' : ' • Em produção');
             if (pdfTankCapEl) pdfTankCapEl.innerText = tankCapacity + ' L';
 
             const totalSyrupVolume = totalArea * sprayVolHa;
@@ -2790,9 +2874,9 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                                 catLabel + targetText + activeText +
                             '</span>' +
                         '</td>' +
-                        '<td>' + dose.toLocaleString('pt-BR', {minimumFractionDigits: 2}) + ' ' + unit + '</td>' +
-                        '<td><strong>' + totalProdArea.toLocaleString('pt-BR', {minimumFractionDigits: 2}) + ' ' + unitShort + '</strong></td>' +
-                        '<td class="pdf-tank-highlight-td">' + qtyPerTank.toLocaleString('pt-BR', {minimumFractionDigits: 2}) + ' ' + unitShort + '</td>';
+                        '<td>' + formatDosePerHa(dose, unit) + '</td>' +
+                        '<td><strong>' + formatSmartQty(totalProdArea, unitShort) + '</strong></td>' +
+                        '<td class="pdf-tank-highlight-td">' + formatSmartQty(qtyPerTank, unitShort) + '</td>';
                     pdfTbody.appendChild(pdfTr);
                 }
 
@@ -2812,9 +2896,9 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                             '</div>' +
                         '</div>' +
                         '<div style="display: flex; justify-content: space-between; margin-top: 3px; padding-top: 2px; border-top: 1px dashed #cbd5e1; font-size: 8.5px;">' +
-                            '<span>Total: <strong style="font-family: monospace;">' + totalProdArea.toLocaleString('pt-BR', {minimumFractionDigits: 2}) + ' ' + unitShort + '</strong></span>' +
-                            '<span>Estoque: <strong style="font-family: monospace;">' + userStock.toLocaleString('pt-BR', {minimumFractionDigits: 2}) + ' ' + unitShort + '</strong></span>' +
-                            '<span style="font-weight: 800; color: ' + buyColor + ';">A Comprar: <span style="font-family: monospace;">' + qtyToBuy.toLocaleString('pt-BR', {minimumFractionDigits: 2}) + ' ' + unitShort + '</span></span>' +
+                            '<span>Total: <strong style="font-family: monospace;">' + formatSmartQty(totalProdArea, unitShort) + '</strong></span>' +
+                            '<span>Estoque: <strong style="font-family: monospace;">' + formatSmartQty(userStock, unitShort) + '</strong></span>' +
+                            '<span style="font-weight: 800; color: ' + buyColor + ';">A Comprar: <span style="font-family: monospace;">' + formatSmartQty(qtyToBuy, unitShort) + '</span></span>' +
                         '</div>' +
                     '</div>');
                 }
@@ -2941,6 +3025,17 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             if (wrapper) wrapper.classList.add('hidden');
         }
 
+        function currentOrderedProducts() {
+            return Array.from(document.querySelectorAll('#products-tbody tr')).map(function(tr) {
+                const rowId = tr.id;
+                const select = document.getElementById(rowId + '-prod-select');
+                const custom = document.getElementById(rowId + '-prod-custom');
+                const dose = document.getElementById(rowId + '-dose');
+                const unit = document.getElementById(rowId + '-unit');
+                return { name: select ? select.value : (custom ? custom.value.trim() : ''), dose: Number(dose ? dose.value : 0) || 0, unit: unit ? unit.value : '' };
+            }).filter(function(item) { return item.name && item.dose > 0; });
+        }
+
         function saveToHistory() {
             const history = JSON.parse(localStorage.getItem('agri_recommendations_history') || '[]');
             
@@ -2955,7 +3050,11 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 farm: selectedFarm,
                 producer: farmData ? farmData.producer : '',
                 fieldsCount: selectedFields.size,
-                totalArea: areaDisplayEl ? areaDisplayEl.innerText : '0,00'
+                totalArea: areaDisplayEl ? areaDisplayEl.innerText : '0,00',
+                cropMode: isNewCropMode() ? 'lavoura_nova' : 'em_producao',
+                sprayVolumeHa: effectiveSprayVolume(),
+                tankCapacity: Number(document.getElementById('tank-capacity')?.value) || 0,
+                products: currentOrderedProducts()
             };
 
             history.unshift(entry);
@@ -3030,6 +3129,9 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             if (sprayVolEl) sprayVolEl.value = 400;
             if (tankCapEl) tankCapEl.value = 2000;
             if (tbody) tbody.innerHTML = "";
+            if (document.getElementById('crop-mode-production')) document.getElementById('crop-mode-production').checked = true;
+            if (document.getElementById('crop-mode-new')) document.getElementById('crop-mode-new').checked = false;
+            setCropMode();
 
             if (document.getElementById('safety-notes')) document.getElementById('safety-notes').value = DEFAULT_SAFETY_TEXT;
             if (document.getElementById('first-aid-notes')) document.getElementById('first-aid-notes').value = DEFAULT_FIRST_AID_TEXT;
