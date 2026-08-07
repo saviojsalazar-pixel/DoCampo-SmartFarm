@@ -59,7 +59,7 @@
         </a>
         <a class="card" href="clientes.html"><span class="icon">♙</span><span><h3>Produtores, fazendas e talhões</h3><p>Consultar, cadastrar, alterar, excluir ou recuperar cadastros.</p></span><span class="arrow">›</span></a>
         <a class="card" href="produtos.html"><span class="icon">▤</span><span><h3>Produtos</h3><p>Catálogo completo, novos produtos, edição e recuperação.</p></span><span class="arrow">›</span></a>
-        <button type="button" class="card" id="openDocuments" style="width:100%;text-align:left"><span class="icon">▧</span><span><h3>Documentos gerados</h3><p>Consultar o registro dos PDFs emitidos neste aparelho.</p></span><span class="arrow">›</span></button>
+        <a class="card" href="documentos.html"><span class="icon">▧</span><span><h3>Documentos gerados</h3><p>Consultar PDFs seus e do outro responsável, inclusive offline após o download.</p></span><span class="arrow">›</span></a>
         <button type="button" class="card" id="openSync" style="width:100%;text-align:left"><span class="icon">↻</span><span><h3>Sincronizar</h3><p>Enviar registros pendentes e receber alterações do outro celular.</p></span><span class="arrow">›</span></button>
       </div>
 
@@ -69,7 +69,7 @@
         <div class="card future"><span class="icon">☂</span><span><h3>Meteorologia</h3><p>Chuva, sensores e condições de campo.</p><span class="tag">Em breve</span></span></div>
         <button type="button" class="card" id="openDataCenter" style="width:100%;text-align:left"><span class="icon">▦</span><span><h3>Dados salvos e sincronização</h3><p>Veja o que está armazenado e transfira os dados entre os celulares.</p><span class="tag">Disponível</span></span><span class="arrow">›</span></button>
       </div>
-      <footer><span class="status"><span class="dot"></span> Ferramentas disponíveis offline</span><br>Do Campo Agronegócios • Versão 1.9.7</footer>
+      <footer><span class="status"><span class="dot"></span> Ferramentas disponíveis offline</span><br>Do Campo Agronegócios • Versão 1.9.9</footer>
     </main>
   </div>
   <div id="dataModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="dataTitle">
@@ -108,6 +108,7 @@
   <script src="supabase-config.js"></script>
   <script src="unified-db.js"></script>
   <script src="cloud-auth.js"></script>
+  <script src="native-pdf.js"></script>
   <script src="sync-engine.js"></script>
   <script src="app-shell.js"></script>
   <script>
@@ -115,7 +116,6 @@
     function refreshSummary(){const s=DoCampoCentral.summary(),db=DoCampoDB.status();sumFarms.textContent=s.farms;sumProducts.textContent=s.products;sumVisits.textContent=s.visits;sumRecommendations.textContent=s.recommendations;currentUser.value=DoCampoDB.user();deviceIdentification.textContent='Aparelho: '+db.deviceId.slice(-12)}
     function refreshStatus(){const s=DoCampoDB.status(),a=DoCampoAuth.status();connectionStatus.textContent=s.online?(s.configured?(a.authenticated?'Online — pronto para sincronizar':'Online — entre na conta para sincronizar'):'Online — nuvem aguardando configuração'):'Offline — todos os recursos locais disponíveis';pendingStatus.textContent=s.pending+' registro(s) aguardando'+(s.conflicts?' • '+s.conflicts+' conflito(s)':'');authSignedOut.classList.toggle('hidden',a.authenticated);authSignedIn.classList.toggle('hidden',!a.authenticated);authAccount.textContent=a.email||'';cloudHint.textContent=a.authenticated?'Enviar registros pendentes e receber alterações.':'Entre na conta para enviar e receber registros.'}
     openDataCenter.onclick=()=>{refreshSummary();modal.classList.remove('hidden')};
-    openDocuments.onclick=()=>{refreshSummary();renderMaintenance('documents');modal.classList.remove('hidden')};
     openSync.onclick=()=>{refreshSummary();renderMaintenance('sync');modal.classList.remove('hidden')};
     closeDataCenter.onclick=()=>modal.classList.add('hidden');
     modal.onclick=e=>{if(e.target===modal)modal.classList.add('hidden')};

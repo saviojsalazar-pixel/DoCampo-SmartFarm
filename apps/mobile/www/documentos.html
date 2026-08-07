@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#075f3d">
+  <title>Documentos gerados • Do Campo</title>
+  <link rel="stylesheet" href="admin.css">
+  <style>
+    .doc-toolbar{display:grid;gap:9px;margin-bottom:14px}.filters{display:flex;gap:7px;overflow:auto;padding-bottom:2px}.filters button{white-space:nowrap}.doc-title{font-size:15px!important;line-height:1.35}.doc-meta{line-height:1.5!important}.badge{display:inline-flex;align-items:center;gap:5px;margin-top:8px;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:800}.ok{background:#e4f6eb;color:#087449}.wait{background:#fff2d9;color:#9a650d}.cloudonly{background:#e7f0fb;color:#23628f}.legacy{background:#eef1ef;color:#66726b}.empty{padding:25px;text-align:center;color:#637269}.doc-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}.doc-actions button{flex:1;min-width:125px}.sync-note{padding:11px 13px;border:1px solid #c8e4d5;background:#eff9f3;color:#285f46;border-radius:13px;font-size:11px;line-height:1.4;margin-bottom:13px}.spinner{opacity:.65;pointer-events:none}
+  </style>
+</head>
+<body>
+  <header><div class="head"><a class="back" href="index.html">‹</a><img class="logo" src="assets/logo.png"><div><h1>Documentos gerados</h1><p>Arquivo técnico da Do Campo Agronegócios</p></div></div></header>
+  <main>
+    <div class="sync-note" id="syncNote">Os documentos deste aparelho ficam disponíveis offline. Após sincronizar, os documentos dos dois responsáveis aparecem juntos.</div>
+    <div class="doc-toolbar">
+      <input id="search" placeholder="Pesquisar produtor, fazenda, talhão ou documento">
+      <div class="filters">
+        <button class="secondary on" data-filter="all">Todos</button>
+        <button class="secondary" data-filter="mine">Meus documentos</button>
+        <button class="secondary" data-filter="other">Outro responsável</button>
+        <button class="secondary" data-filter="pending">Aguardando sincronização</button>
+      </div>
+      <button id="sync" class="primary">↻ Sincronizar documentos</button>
+    </div>
+    <div id="list" class="list"></div>
+  </main>
+  <script src="supabase-config.js"></script>
+  <script src="unified-db.js"></script>
+  <script src="cloud-auth.js"></script>
+  <script src="native-pdf.js"></script>
+  <script src="sync-engine.js"></script>
+  <script src="app-shell.js"></script>
+  <script>
+  (function(){
+    'use strict';
+    const $=id=>document.getElementById(id),esc=v=>String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    let filter='all';
+    function label(d){return d.displayName||[d.producer,d.typeLabel||d.title,d.responsible||d.updatedBy].filter(Boolean).join(' — ')||d.name||'Documento Do Campo'}
+    function state(d){if(d.localAvailable&&d.remoteUploaded)return['ok','Sincronizado • disponível offline'];if(d.localAvailable)return['wait','Aguardando sincronização'];if(d.remoteUploaded)return['cloudonly','Sincronizado • toque para baixar'];if(d.remotePath)return['wait','Arquivo aguardando sincronização no aparelho de origem'];return['legacy','Registro de versão anterior']}
+    function docs(){const current=DoCampoDB.user(),q=$('search').value.trim().toLowerCase();return DoCampoDB.list('documents').filter(d=>{const mine=String(d.responsible||d.updatedBy||'')===String(current);if(filter==='mine'&&!mine)return false;if(filter==='other'&&mine)return false;if(filter==='pending'&&d.remoteUploaded)return false;return !q||JSON.stringify({label:label(d),producer:d.producer,farm:d.farm,fields:d.fields,type:d.typeLabel,responsible:d.responsible}).toLowerCase().includes(q)})}
+    function render(){const a=docs();$('list').innerHTML=a.length?a.map(d=>{const s=state(d),date=new Date(d.generatedAt||d.createdAt||Date.now()).toLocaleString('pt-BR'),fields=(d.fields||[]).join(', ');return `<div class="card" data-id="${esc(d.id)}"><div class="row"><div class="grow"><h2 class="doc-title">${esc(label(d))}</h2><p class="meta doc-meta">${[d.farm,fields,date].filter(Boolean).map(esc).join(' • ')}</p><span class="badge ${s[0]}">${s[1]}</span></div></div><div class="doc-actions"><button class="primary" data-open="${esc(d.id)}">Abrir PDF</button><button class="secondary" data-share="${esc(d.id)}">Compartilhar</button>${!d.localAvailable&&d.remotePath?`<button class="secondary" data-download="${esc(d.id)}">Baixar para offline</button>`:''}</div></div>`}).join(''):'<div class="empty">Nenhum documento encontrado.</div>';bind()}
+    async function act(id,mode,button){let d=DoCampoDB.get('documents',id);if(!d)return;const old=button.textContent;button.disabled=true;button.textContent=d.localAvailable?'Abrindo…':'Baixando…';try{if(mode==='download'){await DoCampoPDF.ensureLocal(d);render();return}await DoCampoPDF.shareDocument(d,mode==='open'?'Abrir PDF':'Compartilhar PDF');render()}catch(e){alert(e.message)}finally{button.disabled=false;button.textContent=old}}
+    function bind(){$('list').querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>act(b.dataset.open,'open',b));$('list').querySelectorAll('[data-share]').forEach(b=>b.onclick=()=>act(b.dataset.share,'share',b));$('list').querySelectorAll('[data-download]').forEach(b=>b.onclick=()=>act(b.dataset.download,'download',b))}
+    document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('on',x===b));render()});
+    $('search').oninput=render;
+    $('sync').onclick=async()=>{const b=$('sync'),old=b.textContent;b.disabled=true;b.textContent='Sincronizando…';try{await DoCampoSync.sync();$('syncNote').textContent='Sincronização concluída. O histórico dos dois aparelhos está atualizado.';render()}catch(e){alert(e.message)}finally{b.disabled=false;b.textContent=old}};
+    window.addEventListener('docampo:db-status',render);render();
+  })();
+  </script>
+</body>
+</html>

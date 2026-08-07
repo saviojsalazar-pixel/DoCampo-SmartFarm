@@ -134,7 +134,7 @@
 
             <form id="monitoramentoForm" class="p-6 md:p-8 space-y-8">
                 <!-- Painel de Gerenciamento de Propriedades -->
-                <div class="bg-gradient-to-r from-emerald-50 to-green-50/80 rounded-2xl p-4 md:p-5 border border-emerald-200/80 shadow-sm transition-all space-y-4">
+                <div class="hidden bg-gradient-to-r from-emerald-50 to-green-50/80 rounded-2xl p-4 md:p-5 border border-emerald-200/80 shadow-sm transition-all space-y-4">
                     <div class="flex items-center justify-between cursor-pointer" onclick="togglePainelNovaFazenda()">
                         <div class="flex items-center gap-2 text-agro-dark font-bold text-base md:text-lg">
                             <i class="fas fa-layer-group text-agro text-xl"></i>
@@ -1980,7 +1980,13 @@
             const nomeFazendaLimpo = fazendaNome.replace(/[^a-zA-Z0-9]/g, '_');
             const nomeArquivo = `Relatorio_Campo_${nomeFazendaLimpo}_${dataFormatada}.pdf`;
             if (window.DoCampoPDF) {
-                await window.DoCampoPDF.salvarECompartilhar(doc.output('datauristring'), nomeArquivo, 'Relatório de visita de campo');
+                await window.DoCampoPDF.salvarECompartilhar(doc.output('datauristring'), nomeArquivo, 'Checklist de Lavoura', {
+                    typeLabel: 'Checklist de Lavoura',
+                    producer: nomeProprietarioVal,
+                    farm: fazendaNome,
+                    fields: listaAvaliacoes.map(av => av.talhao),
+                    responsible: window.DoCampoDB ? DoCampoDB.user() : ''
+                });
             } else {
                 doc.save(nomeArquivo);
             }

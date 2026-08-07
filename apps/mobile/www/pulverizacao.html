@@ -338,8 +338,6 @@
             </div>
         </div>
 
-        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex flex-wrap gap-2 items-center justify-between"><p class="text-xs text-emerald-900 font-semibold">Os cadastros são mantidos em telas próprias e atualizados automaticamente neste receituário.</p><div class="flex gap-2"><a href="clientes.html?return=pulverizacao.html" class="bg-white border border-emerald-300 text-emerald-800 px-3 py-2 rounded-lg text-xs font-bold">+ Cliente ou talhão</a><a href="produtos.html?return=pulverizacao.html" class="bg-white border border-emerald-300 text-emerald-800 px-3 py-2 rounded-lg text-xs font-bold">+ Produto</a></div></div>
-
         <!-- PASSO 1: PROPRIEDADE -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="bg-emerald-800 px-6 py-4 border-b border-emerald-700 flex items-center justify-between">
@@ -357,13 +355,6 @@
                     <div class="flex items-center gap-2">
                         <select id="farm-select" onchange="onFarmChange()" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
                         </select>
-                        <button type="button" id="btn-edit-farm" onclick="location.href='clientes.html?return=pulverizacao.html'" class="hidden shrink-0 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-3.5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm" title="Abrir cadastro de propriedades">
-                            <i class="fa-solid fa-pen"></i><span class="hidden sm:inline">Editar</span>
-                        </button>
-                        <button type="button" id="btn-delete-farm" onclick="location.href='clientes.html?return=pulverizacao.html'" class="hidden shrink-0 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3.5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm" title="Abrir cadastro de propriedades">
-                            <i class="fa-solid fa-trash-can text-rose-600"></i>
-                            <span class="hidden sm:inline">Excluir Propriedade</span>
-                        </button>
                     </div>
                 </div>
 
@@ -553,9 +544,6 @@
                     <div class="flex items-center justify-between">
                         <h4 class="font-bold text-sm text-slate-800 uppercase tracking-wider">Insumos Recomendados</h4>
                         <div class="flex items-center gap-2">
-                            <button type="button" onclick="openManageProductsModal()" class="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
-                                <i class="fa-solid fa-list-check text-slate-500"></i> Gerenciar Catálogo
-                            </button>
                             <button type="button" onclick="addProductRow()" class="text-xs font-bold bg-agri-50 text-agri-700 hover:bg-agri-100 border border-agri-200 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
                                 <i class="fa-solid fa-plus"></i> Adicionar Produto
                             </button>
@@ -3006,7 +2994,16 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             setTimeout(function() {
                 if (typeof html2pdf !== 'undefined') {
                     html2pdf().set(opt).from(clonedContent).outputPdf('datauristring').then(async function(pdfData) {
-                        if (window.DoCampoPDF) await window.DoCampoPDF.salvarECompartilhar(pdfData, filename, 'Recomendação de pulverização');
+                        if (window.DoCampoPDF) {
+                            const docFarm = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+                            await window.DoCampoPDF.salvarECompartilhar(pdfData, filename, 'Receituário de Pulverização', {
+                                typeLabel: 'Receituário de Pulverização',
+                                producer: docFarm ? (docFarm.producer || docFarm.proprietor || '') : '',
+                                farm: selectedFarm,
+                                fields: Array.from(selectedFields),
+                                responsible: (document.getElementById('agronomist-name') || {}).value || (window.DoCampoDB ? DoCampoDB.user() : '')
+                            });
+                        }
                         else html2pdf().set(opt).from(clonedContent).save();
                         if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
                         if (wrapper) wrapper.classList.add('hidden');
