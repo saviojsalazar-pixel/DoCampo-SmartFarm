@@ -17,7 +17,7 @@ on storage.objects for select
 to authenticated
 using (
   bucket_id = 'docampo-documents'
-  and lower(auth.jwt() ->> 'email') in ('saviosalazar@gmail.com','glaucio.luciano.araujo@gmail.com')
+  and lower(auth.jwt() ->> 'email') in ('saviojsalazar@gmail.com','glaucio.luciano.araujo@gmail.com')
 );
 
 create policy "Do Campo documentos envio"
@@ -25,7 +25,7 @@ on storage.objects for insert
 to authenticated
 with check (
   bucket_id = 'docampo-documents'
-  and lower(auth.jwt() ->> 'email') in ('saviosalazar@gmail.com','glaucio.luciano.araujo@gmail.com')
+  and lower(auth.jwt() ->> 'email') in ('saviojsalazar@gmail.com','glaucio.luciano.araujo@gmail.com')
 );
 
 create policy "Do Campo documentos atualizacao"
@@ -33,9 +33,9 @@ on storage.objects for update
 to authenticated
 using (
   bucket_id = 'docampo-documents'
-  and lower(auth.jwt() ->> 'email') in ('saviosalazar@gmail.com','glaucio.luciano.araujo@gmail.com')
+  and lower(auth.jwt() ->> 'email') in ('saviojsalazar@gmail.com','glaucio.luciano.araujo@gmail.com')
 )
 with check (
   bucket_id = 'docampo-documents'
-  and lower(auth.jwt() ->> 'email') in ('saviosalazar@gmail.com','glaucio.luciano.araujo@gmail.com')
+  and lower(auth.jwt() ->> 'email') in ('saviojsalazar@gmail.com','glaucio.luciano.araujo@gmail.com')
 );

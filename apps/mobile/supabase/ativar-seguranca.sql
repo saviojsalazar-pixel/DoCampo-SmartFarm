@@ -10,7 +10,7 @@ for select
 to authenticated
 using (
   lower(auth.jwt() ->> 'email') in (
-    'saviosalazar@gmail.com',
+    'saviojsalazar@gmail.com',
     'glaucio.luciano.araujo@gmail.com'
   )
 );
@@ -21,7 +21,7 @@ for insert
 to authenticated
 with check (
   lower(auth.jwt() ->> 'email') in (
-    'saviosalazar@gmail.com',
+    'saviojsalazar@gmail.com',
     'glaucio.luciano.araujo@gmail.com'
   )
 );
