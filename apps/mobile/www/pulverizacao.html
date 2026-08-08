@@ -14,6 +14,8 @@
     <script src="supabase-config.js"></script>
     <script src="unified-db.js"></script>
     <script src="shared-data.js"></script>
+    <script src="registry-loader.js"></script>
+    <script src="checklist-filter.js"></script>
     <script src="sync-engine.js"></script>
     <script src="native-pdf.js"></script>
     <script src="app-shell.js"></script>
@@ -454,6 +456,16 @@
                             <button type="button" onclick="selectAllFields(true)" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg border border-emerald-200 transition font-semibold cursor-pointer">Marcar Todos</button>
                             <button type="button" onclick="selectAllFields(false)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg border border-slate-200 transition font-semibold cursor-pointer">Desmarcar Todos</button>
                         </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-3 no-print">
+                        <div>
+                            <div class="text-xs font-bold text-emerald-900">Indicações do Checklist</div>
+                            <div id="checklist-filter-status" class="text-[11px] text-emerald-700 mt-0.5">Filtro desligado — mostrando todos os talhões.</div>
+                        </div>
+                        <button id="checklist-filter-btn" type="button" onclick="toggleChecklistFilter()" class="text-xs bg-white hover:bg-emerald-100 text-emerald-800 px-3 py-2 rounded-lg border border-emerald-300 transition font-bold cursor-pointer">
+                            Usar indicação de Pulverização
+                        </button>
                     </div>
 
                     <div id="fields-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1528,6 +1540,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
 
         let selectedFarm = "";
         let selectedFields = new Set();
+        let checklistFilterEnabled = false;
         let productRowCounter = 0;
         let selectedAgronomistIndex = 0;
         let productStockMap = {};
@@ -1592,7 +1605,36 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             pendingConfirmCallback = null;
         }
 
-        function loadStoredData() {
+        async function loadStoredData() {
+            // A fonte principal e o cadastro central unificado. Ele combina o
+            // cadastro original completo com alteracoes locais/sincronizadas e
+            // preserva CPF, endereco e areas quando uma copia antiga estiver
+            // incompleta.
+            if (window.DoCampoRegistry) {
+                try {
+                    const central = await window.DoCampoRegistry.all();
+                    EMBEDDED_DATABASE.splice(0, EMBEDDED_DATABASE.length);
+                    (central.farms || []).forEach(function(farm) {
+                        EMBEDDED_DATABASE.push({
+                            farm: farm.farm,
+                            proprietor: farm.producer || farm.proprietor || '',
+                            producer: farm.producer || farm.proprietor || '',
+                            cpf: farm.cpf || '',
+                            address: farm.address || '',
+                            fields: (farm.fields || []).map(function(field) {
+                                return { name: field.name, area: Number(field.area) || 0 };
+                            })
+                        });
+                    });
+                    Object.keys(PRODUCT_CATALOG).forEach(function(cat) { delete PRODUCT_CATALOG[cat]; });
+                    Object.keys(central.products || {}).forEach(function(cat) {
+                        PRODUCT_CATALOG[cat] = (central.products[cat] || []).map(function(product) { return Object.assign({}, product); });
+                    });
+                    return;
+                } catch (centralError) {
+                    console.warn('Nao foi possivel carregar o cadastro central; usando a copia offline disponivel.', centralError);
+                }
+            }
             if (window.DoCampoData) {
                 window.DoCampoData.read().farms.forEach(function(shared) {
                     if (!shared || !shared.farm) return;
@@ -1830,8 +1872,8 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             });
         }
 
-        window.onload = function() {
-            loadStoredData();
+        window.onload = async function() {
+            await loadStoredData();
 
             const today = new Date();
             const dateStr = today.toLocaleDateString('pt-BR');
@@ -2348,6 +2390,44 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             showAlert('Talhão "' + fieldName + '" excluído com sucesso!', 'Talhão Excluído', true);
         }
 
+        function checklistFieldsFor(farmData) {
+            if (!checklistFilterEnabled || !farmData || !window.DoCampoChecklistFilter) return farmData ? farmData.fields : [];
+            const result = window.DoCampoChecklistFilter.get(farmData.farm, 'pulverizacao');
+            return (farmData.fields || []).filter(function(field) { return window.DoCampoChecklistFilter.matches(field.name, result); });
+        }
+
+        function updateChecklistFilterStatus(farmData) {
+            const status = document.getElementById('checklist-filter-status');
+            const btn = document.getElementById('checklist-filter-btn');
+            if (!status || !btn) return;
+            if (!selectedFarm || !farmData) {
+                status.textContent = checklistFilterEnabled ? 'Filtro ligado — selecione uma fazenda.' : 'Filtro desligado — mostrando todos os talhões.';
+                return;
+            }
+            const result = window.DoCampoChecklistFilter ? window.DoCampoChecklistFilter.get(farmData.farm, 'pulverizacao') : { fields: [] };
+            if (checklistFilterEnabled) {
+                status.textContent = 'Filtro ligado — ' + result.fields.length + ' talhão(ões) indicado(s) para Pulverização no checklist mais recente.';
+                btn.textContent = 'Mostrar todos os talhões';
+                btn.classList.add('bg-emerald-700','text-white');
+            } else {
+                status.textContent = result.fields.length ? 'Checklist: ' + result.fields.length + ' talhão(ões) com indicação de Pulverização.' : 'Filtro desligado — mostrando todos os talhões.';
+                btn.textContent = 'Usar indicação de Pulverização';
+                btn.classList.remove('bg-emerald-700','text-white');
+            }
+        }
+
+        function toggleChecklistFilter() {
+            if (!selectedFarm) { showAlert('Selecione uma fazenda antes de usar as indicações do checklist.'); return; }
+            checklistFilterEnabled = !checklistFilterEnabled;
+            const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+            const visible = checklistFieldsFor(farmData);
+            const visibleNames = new Set(visible.map(function(f) { return f.name; }));
+            if (checklistFilterEnabled) selectedFields.forEach(function(name) { if (!visibleNames.has(name)) selectedFields.delete(name); });
+            renderFields(visible);
+            updateChecklistFilterStatus(farmData);
+            calculateTotals();
+        }
+
         function onFarmChange() {
             const select = document.getElementById('farm-select');
             const btnDeleteFarm = document.getElementById('btn-delete-farm');
@@ -2375,6 +2455,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 if (producerCpfInput) producerCpfInput.value = "";
                 if (producerAddressInput) producerAddressInput.value = "";
                 renderFields([]);
+                updateChecklistFilterStatus(null);
                 calculateTotals();
                 return;
             }
@@ -2384,7 +2465,8 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 if (producerInput) producerInput.value = farmData.producer;
                 if (producerCpfInput) producerCpfInput.value = farmData.cpf || "--";
                 if (producerAddressInput) producerAddressInput.value = farmData.address || "--";
-                renderFields(farmData.fields);
+                renderFields(checklistFieldsFor(farmData));
+                updateChecklistFilterStatus(farmData);
             }
 
             calculateTotals();
@@ -2397,7 +2479,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
 
             if (fields.length === 0) {
                 container.innerHTML = '<div class="col-span-full py-8 text-center text-slate-400 italic bg-slate-50 border border-dashed border-slate-200 rounded-xl">' +
-                    'Selecione uma fazenda no Passo 1 acima para carregar a lista de talhões disponíveis.' +
+                    (selectedFarm && checklistFilterEnabled ? 'Nenhum talhão desta propriedade possui indicação de Pulverização no checklist mais recente.' : 'Selecione uma fazenda no Passo 1 acima para carregar a lista de talhões disponíveis.') +
                     '</div>';
                 return;
             }

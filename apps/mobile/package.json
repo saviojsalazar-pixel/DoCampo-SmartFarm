@@ -1,6 +1,6 @@
 {
   "name": "do-campo-smartfarm",
-  "version": "1.9.9",
+  "version": "1.9.12",
   "private": true,
   "scripts": {
     "android": "cap open android",

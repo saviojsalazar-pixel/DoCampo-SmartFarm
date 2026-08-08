@@ -1,6 +1,7 @@
 (function () {
     'use strict';
     const KEY = 'docampo_shared_v1';
+    const fieldCompare = (a, b) => String(a && a.name || '').localeCompare(String(b && b.name || ''), 'pt-BR', { numeric: true, sensitivity: 'base' });
     function read() {
         try {
             const value = JSON.parse(localStorage.getItem(KEY) || '{}');
@@ -16,7 +17,7 @@
     function mergeFarm(farm) {
         if (!farm || !String(farm.farm || '').trim()) return read();
         const data = read(), name = String(farm.farm).trim();
-        const normalized = { farm: name, producer: String(farm.producer || farm.proprietor || '').trim(), cpf: String(farm.cpf || '').trim(), address: String(farm.address || '').trim(), fields: Array.isArray(farm.fields) ? farm.fields.map(field => ({ name: String(field.name || field.talhao || field).trim(), area: Number(field.area) || 0 })).filter(field => field.name) : [] };
+        const normalized = { farm: name, producer: String(farm.producer || farm.proprietor || '').trim(), cpf: String(farm.cpf || '').trim(), address: String(farm.address || '').trim(), fields: Array.isArray(farm.fields) ? farm.fields.map(field => ({ name: String(field.name || field.talhao || field).trim(), area: Number(field.area) || 0 })).filter(field => field.name).sort(fieldCompare) : [] };
         const idx = data.farms.findIndex(item => String(item.farm).toLowerCase() === name.toLowerCase());
         if (idx >= 0) data.farms[idx] = Object.assign({}, data.farms[idx], normalized); else data.farms.unshift(normalized);
         try {
