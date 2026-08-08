@@ -463,8 +463,11 @@
                 </div>
 
                 <!-- Submit Button -->
-                <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold py-4 rounded-xl shadow-lg transition flex items-center justify-center text-base">
-                    <i class="fas fa-plus-circle text-xl mr-2"></i> Adicionar Talhão à Lista
+                <button id="btnSalvarAvaliacao" type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold py-4 rounded-xl shadow-lg transition flex items-center justify-center text-base">
+                    <i class="fas fa-plus-circle text-xl mr-2"></i> <span id="textoBtnSalvarAvaliacao">Adicionar Talhão à Lista</span>
+                </button>
+                <button id="btnCancelarEdicao" type="button" onclick="cancelarEdicao()" class="hidden w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition items-center justify-center text-sm">
+                    <i class="fas fa-times mr-2"></i> Cancelar edição
                 </button>
             </form>
         </div>
@@ -1583,6 +1586,7 @@
         };
 
         let agronomosSelecionados = ["01"];
+        let indiceEdicao = -1;
 
         function toggleAgronomo(id) {
             if (agronomosSelecionados.includes(id)) {
@@ -1678,7 +1682,7 @@
         });
 
         talhaoSelect.addEventListener('change', function() {
-            limparCamposFormulario();
+            if (indiceEdicao < 0) limparCamposFormulario();
         });
 
         function limparOutros(checkbox, groupName) {
@@ -1703,17 +1707,20 @@
                 obs: document.getElementById('observacoes').value.trim() || '-'
             };
 
-            if (listaAvaliacoes.some(av => av.talhao === avaliacao.talhao)) {
+            if (listaAvaliacoes.some((av,index) => index !== indiceEdicao && av.talhao === avaliacao.talhao)) {
                 exibirToast("Este talhão já foi adicionado!", "bg-red-600");
                 return;
             }
 
             fazendaSelect.disabled = true;
 
-            listaAvaliacoes.push(avaliacao);
+            const editando = indiceEdicao >= 0;
+            if (editando) listaAvaliacoes[indiceEdicao] = avaliacao;
+            else listaAvaliacoes.push(avaliacao);
+            indiceEdicao = -1;
             renderizarTabela();
             salvarAvaliacoes();
-            exibirToast("Talhão adicionado e salvo com sucesso!");
+            exibirToast(editando ? "Alterações do talhão salvas com sucesso!" : "Talhão adicionado e salvo com sucesso!");
 
             const dataSalva = document.getElementById('dataAvaliacao').value;
             const fazendaSalva = fazendaSelect.value;
@@ -1723,7 +1730,69 @@
             fazendaSelect.value = fazendaSalva;
             talhaoSelect.value = '';
             talhaoSelect.disabled = false;
+            atualizarModoEdicao();
         });
+
+        function valoresAvaliacao(texto, vazios = []) {
+            const valor = String(texto || '').trim();
+            if (!valor || vazios.includes(valor)) return [];
+            return valor.split(',').map(v => v.trim()).filter(Boolean);
+        }
+
+        function marcarGrupoAvaliacao(nome, valores) {
+            const set = new Set(valores);
+            document.querySelectorAll(`input[name="${nome}"]`).forEach(cb => { cb.checked = set.has(cb.value); });
+        }
+
+        function atualizarModoEdicao() {
+            const editando = indiceEdicao >= 0;
+            const texto = document.getElementById('textoBtnSalvarAvaliacao');
+            const icone = document.querySelector('#btnSalvarAvaliacao i');
+            const cancelar = document.getElementById('btnCancelarEdicao');
+            if (texto) texto.textContent = editando ? 'Salvar alterações do talhão' : 'Adicionar Talhão à Lista';
+            if (icone) icone.className = editando ? 'fas fa-save text-xl mr-2' : 'fas fa-plus-circle text-xl mr-2';
+            if (cancelar) {
+                cancelar.classList.toggle('hidden', !editando);
+                cancelar.classList.toggle('flex', editando);
+            }
+        }
+
+        function editarItem(index) {
+            const item = listaAvaliacoes[index];
+            if (!item) return;
+            indiceEdicao = index;
+            if (item.data) document.getElementById('dataAvaliacao').value = item.data;
+            talhaoSelect.disabled = false;
+            talhaoSelect.value = item.talhao || '';
+            limparCamposFormulario();
+
+            const pragas = valoresAvaliacao(item.pragas, ['Livre']);
+            const doencas = valoresAvaliacao(item.doencas, ['Livre']);
+            const mato = valoresAvaliacao(item.mato, ['Sem registro']);
+            const indicacoes = valoresAvaliacao(item.indicacoes, ['Talhão sem ações']);
+            renderizarPragasCustomizadas(pragas);
+            renderizarDoencasCustomizadas(doencas);
+            renderizarMatoCustomizados(mato);
+            renderizarAcoesCustomizadas(indicacoes);
+            marcarGrupoAvaliacao('pragas', pragas);
+            marcarGrupoAvaliacao('doencas', doencas);
+            marcarGrupoAvaliacao('mato', mato);
+            marcarGrupoAvaliacao('indicacoes', indicacoes);
+            document.getElementById('observacoes').value = item.obs === '-' ? '' : (item.obs || '');
+            atualizarModoEdicao();
+            document.getElementById('monitoramentoForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            exibirToast(`Editando o talhão ${item.talhao}. Altere e toque em Salvar.`, 'bg-blue-700');
+        }
+
+        function cancelarEdicao(mostrarToast = true) {
+            if (indiceEdicao < 0) return;
+            indiceEdicao = -1;
+            limparCamposFormulario();
+            talhaoSelect.value = '';
+            talhaoSelect.disabled = false;
+            atualizarModoEdicao();
+            if (mostrarToast) exibirToast('Edição cancelada.', 'bg-gray-700');
+        }
 
         function renderizarTabela() {
             const tbody = document.getElementById('tabelaCorpo');
@@ -1756,7 +1825,10 @@
                     <td class="p-3"><span class="px-2 py-1 rounded text-xs ${item.mato.includes('Livre') ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${item.mato}</span></td>
                     <td class="p-3 text-xs text-gray-700 font-medium">${item.indicacoes}</td>
                     <td class="p-3 text-xs text-gray-500 italic truncate max-w-xs">${item.obs}</td>
-                    <td class="p-3 text-center">
+                    <td class="p-3 text-center whitespace-nowrap">
+                        <button type="button" onclick="editarItem(${index})" class="text-blue-600 hover:text-blue-800 p-1 transition mr-2" title="Editar item">
+                            <i class="fas fa-pen"></i>
+                        </button>
                         <button type="button" onclick="removerItem(${index})" class="text-red-500 hover:text-red-700 p-1 transition" title="Remover item">
                             <i class="fas fa-trash-alt"></i>
                         </button>
@@ -1771,6 +1843,7 @@
         }
 
         function removerItem(index) {
+            if (indiceEdicao >= 0) cancelarEdicao(false);
             listaAvaliacoes.splice(index, 1);
             renderizarTabela();
             salvarAvaliacoes();
@@ -2128,6 +2201,8 @@
         window.limparCamposFormulario = limparCamposFormulario;
         window.iniciarNovaVisita = iniciarNovaVisita;
         window.renderizarTabela = renderizarTabela;
+        window.editarItem = editarItem;
+        window.cancelarEdicao = cancelarEdicao;
         window.toggleAgronomo = toggleAgronomo;
         window.removerItem = removerItem;
         window.gerarPDF = gerarPDF;

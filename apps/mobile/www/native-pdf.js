@@ -149,6 +149,46 @@
     });
   }
 
+  async function apagarArquivoLocal(doc) {
+    const p = plugins();
+    if (!p.native || !p.filesystem || !doc.localPath) return;
+    try { await p.filesystem.deleteFile({ path: doc.localPath, directory: 'DATA' }); }
+    catch (_) {}
+  }
+
+  async function apagarArquivoRemoto(doc) {
+    if (!doc.remotePath || !doc.remoteUploaded) return true;
+    if (!navigator.onLine) return false;
+    const url = DoCampoCloudConfig.url + '/storage/v1/object/' + BUCKET + '/' + encodeURIComponent(doc.remotePath).replace(/%2F/g, '/');
+    const response = await fetch(url, { method: 'DELETE', headers: await authHeaders() });
+    if (response.ok || response.status === 404) return true;
+    return false;
+  }
+
+  async function purgeExpiredDocuments(days) {
+    if (!window.DoCampoDB) return 0;
+    const prazo = Math.max(1, Number(days) || 30) * 86400000;
+    const limite = Date.now() - prazo;
+    const docs = DoCampoDB.list('documents', { deleted: true })
+      .filter(d => d.deletedAt && !d.purgedAt && new Date(d.deletedAt).getTime() <= limite);
+    let total = 0;
+    for (const doc of docs) {
+      const remotoOk = await apagarArquivoRemoto(doc).catch(() => false);
+      if (doc.remoteUploaded && doc.remotePath && !remotoOk) continue;
+      await apagarArquivoLocal(doc);
+      if (DoCampoDB.patchDocumentLocal) {
+        DoCampoDB.patchDocumentLocal(doc.id, {
+          purgedAt: new Date().toISOString(),
+          localAvailable: false,
+          localPath: '',
+          remoteUploaded: false
+        });
+      }
+      total++;
+    }
+    return total;
+  }
+
   async function salvarECompartilhar(dataUri, nome, titulo, meta) {
     nome = limparNome(nome);
     const base64 = String(dataUri).includes(',') ? String(dataUri).split(',')[1] : String(dataUri);
@@ -193,6 +233,7 @@
     uploadPendingDocuments,
     downloadOne,
     ensureLocal,
-    shareDocument
+    shareDocument,
+    purgeExpiredDocuments
   };
 })();

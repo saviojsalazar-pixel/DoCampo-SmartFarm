@@ -11,6 +11,7 @@ on conflict (id) do update set
 drop policy if exists "Do Campo documentos leitura" on storage.objects;
 drop policy if exists "Do Campo documentos envio" on storage.objects;
 drop policy if exists "Do Campo documentos atualizacao" on storage.objects;
+drop policy if exists "Do Campo documentos exclusao" on storage.objects;
 
 create policy "Do Campo documentos leitura"
 on storage.objects for select
@@ -36,6 +37,14 @@ using (
   and lower(auth.jwt() ->> 'email') in ('saviojsalazar@gmail.com','glaucio.luciano.araujo@gmail.com')
 )
 with check (
+  bucket_id = 'docampo-documents'
+  and lower(auth.jwt() ->> 'email') in ('saviojsalazar@gmail.com','glaucio.luciano.araujo@gmail.com')
+);
+
+create policy "Do Campo documentos exclusao"
+on storage.objects for delete
+to authenticated
+using (
   bucket_id = 'docampo-documents'
   and lower(auth.jwt() ->> 'email') in ('saviojsalazar@gmail.com','glaucio.luciano.araujo@gmail.com')
 );
