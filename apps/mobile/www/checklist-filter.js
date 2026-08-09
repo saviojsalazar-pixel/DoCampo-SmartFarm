@@ -14,7 +14,18 @@
   function sameFarm(a, b) { return norm(a) === norm(b); }
   function hasAction(item, kind) {
     const text = norm(item && item.indicacoes);
-    return kind === 'herbicida' ? text.includes('herbicida') : text.includes('pulverizacao');
+    if (kind === 'pulverizacao') return text.includes('pulverizacao');
+    if (kind === 'herbicida') return text.includes('herbicida');
+    if (kind === 'herbicida-pre') {
+      return text.includes('herbicida pre') && !text.includes('herbicida pre + pos') && !text.includes('herbicida pos+pre') && !text.includes('herbicida pre+pos');
+    }
+    if (kind === 'herbicida-pos') {
+      return text.includes('herbicida pos') && !text.includes('herbicida pre + pos') && !text.includes('herbicida pos+pre') && !text.includes('herbicida pre+pos');
+    }
+    if (kind === 'herbicida-pre-pos') {
+      return text.includes('herbicida pre + pos') || text.includes('herbicida pre+pos') || text.includes('herbicida pos+pre') || text.includes('herbicida pos + pre');
+    }
+    return false;
   }
 
   function currentVisitFor(farm) {

@@ -551,6 +551,18 @@
                     </div>
                 </div>
 
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input id="minimum-prep-enabled" type="checkbox" onchange="toggleMinimumPreparation(); calculateTotals()" class="mt-0.5 w-4 h-4 text-amber-700 focus:ring-amber-600 rounded border-slate-300">
+                        <span><strong class="block text-sm text-amber-950">Considerar volume mínimo de preparo</strong><span class="block text-xs text-amber-800 mt-0.5">A compra passa a considerar o menor volume que será realmente preparado, sem alterar a necessidade teórica do talhão.</span></span>
+                    </label>
+                    <div id="minimum-prep-panel" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-amber-200 pt-3">
+                        <div><label class="block text-xs font-bold text-amber-950 uppercase mb-1">Volume mínimo a preparar (L)</label><input id="minimum-prep-volume" type="number" min="1" step="10" value="200" oninput="calculateTotals()" class="w-full bg-white border border-amber-300 rounded-xl px-4 py-2.5 font-bold"></div>
+                        <div class="bg-white border border-amber-200 rounded-xl p-3"><span class="text-[10px] uppercase font-bold text-slate-500 block">Calda necessária no talhão</span><strong id="minimum-prep-needed-display" class="text-sm text-slate-800">0 L</strong></div>
+                        <div class="bg-white border border-amber-200 rounded-xl p-3"><span class="text-[10px] uppercase font-bold text-slate-500 block">Sobra estimada de calda</span><strong id="minimum-prep-leftover-display" class="text-sm text-amber-800">0 L</strong></div>
+                    </div>
+                </div>
+
                 <!-- Products Table -->
                 <div class="space-y-3">
                     <div class="flex items-center justify-between">
@@ -595,6 +607,14 @@
                     <div id="total-products-summary-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         <div class="text-xs text-emerald-700 italic col-span-full">Selecione os insumos e informe as dosagens acima para calcular a quantidade total necessária.</div>
                     </div>
+                </div>
+
+                <div class="bg-sky-50/70 border border-sky-200 rounded-xl p-5 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div><h4 class="font-bold text-sm text-slate-800 uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-flask text-sky-700"></i> Pré-diluição do produto <span class="text-[10px] font-semibold text-slate-500 normal-case">(opcional)</span></h4><p class="text-xs text-slate-600 mt-1">Selecione somente produtos já incluídos acima. É possível adicionar mais de uma pré-diluição.</p></div>
+                        <label class="inline-flex items-center gap-2 bg-white border border-sky-300 rounded-lg px-3 py-2 text-xs font-bold text-sky-900 cursor-pointer shrink-0"><input id="predilution-enabled" type="checkbox" onchange="togglePredilution()" class="w-4 h-4 text-sky-700 focus:ring-sky-600 rounded border-slate-300">Incluir pré-diluição</label>
+                    </div>
+                    <div id="predilution-panel" class="hidden space-y-4 border-t border-sky-200 pt-4"><div id="predilution-list" class="space-y-4"></div><button type="button" onclick="addPredilutionRow()" class="w-full sm:w-auto bg-white border border-sky-400 text-sky-800 hover:bg-sky-50 px-4 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2"><i class="fa-solid fa-plus"></i> Adicionar pré-diluição</button></div>
                 </div>
 
                 <!-- Operational Parameters Bar -->
@@ -921,6 +941,11 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                                     <span id="pdf-rec-id-p2" style="font-size: 9.5px; font-weight: 700; color: #15803d; display: block;">#DC-0000</span>
                                     <span style="font-size: 8.5px; color: #64748b;">Página 2 de 2</span>
                                 </div>
+                            </div>
+
+                            <div id="pdf-predilution-box-p2" class="pdf-box hidden" style="padding: 7px 9px; background-color: #f0f9ff !important; border-color: #7dd3fc !important;">
+                                <strong style="color: #075985; font-size: 9.5px; display: block; margin-bottom: 2px; text-transform: uppercase;">Pré-diluição do produto — opcional</strong>
+                                <div id="pdf-predilution-list-p2" style="color: #334155; font-size: 8.5px; line-height: 1.3;"></div>
                             </div>
 
                             <div class="pdf-box" style="padding: 7px 9px; background-color: #f8fafc;">
@@ -1547,6 +1572,105 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
         let pendingConfirmCallback = null;
         let editingProductOriginal = null;
         let editingFarmOriginal = null;
+        let currentRecommendationProducts = [];
+        let currentHaPerTank = 0;
+        let predilutionCounter = 0;
+
+        function toggleMinimumPreparation() {
+            const enabled = document.getElementById('minimum-prep-enabled');
+            const panel = document.getElementById('minimum-prep-panel');
+            if (enabled && panel) panel.classList.toggle('hidden', !enabled.checked);
+        }
+
+        function minimumPreparationContext(totalSyrupVolume) {
+            const enabled = !!document.getElementById('minimum-prep-enabled')?.checked;
+            const requested = Math.max(0, Number(document.getElementById('minimum-prep-volume')?.value) || 0);
+            const prepared = enabled ? Math.max(totalSyrupVolume, requested) : totalSyrupVolume;
+            const leftover = Math.max(0, prepared - totalSyrupVolume);
+            const neededEl = document.getElementById('minimum-prep-needed-display');
+            const leftoverEl = document.getElementById('minimum-prep-leftover-display');
+            if (neededEl) neededEl.textContent = totalSyrupVolume.toLocaleString('pt-BR', {maximumFractionDigits: 1}) + ' L';
+            if (leftoverEl) leftoverEl.textContent = leftover.toLocaleString('pt-BR', {maximumFractionDigits: 1}) + ' L';
+            return { enabled, requested, prepared, leftover };
+        }
+
+        function togglePredilution() {
+            const enabled = document.getElementById('predilution-enabled');
+            const panel = document.getElementById('predilution-panel');
+            if (!enabled || !panel) return;
+            panel.classList.toggle('hidden', !enabled.checked);
+            if (enabled.checked && !document.querySelector('.predilution-row')) addPredilutionRow();
+            refreshPredilutionProducts(currentRecommendationProducts, currentHaPerTank);
+        }
+
+        function normalizedPerTank(item) {
+            const raw = (Number(item?.dose) || 0) * (Number(currentHaPerTank) || 0);
+            const unit = item?.doseUnit || '';
+            if (unit === 'kg/ha' || unit === 'kg') return { qty: raw * 1000, unit: 'g' };
+            if (unit === 'g/ha' || unit === 'g') return { qty: raw, unit: 'g' };
+            if (unit === 'L/ha' || unit === 'L') return { qty: raw * 1000, unit: 'mL' };
+            if (unit === 'mL/ha' || unit === 'mL') return { qty: raw, unit: 'mL' };
+            return { qty: raw, unit: unit.replace('/ha', '') };
+        }
+
+        function refreshPredilutionProducts(items, haPerTank) {
+            currentRecommendationProducts = Array.isArray(items) ? items.slice() : [];
+            currentHaPerTank = Number(haPerTank) || 0;
+            document.querySelectorAll('.predilution-row').forEach(row => { populatePredilutionSelect(row.id); recalculatePredilution(row.id); });
+        }
+
+        function addPredilutionRow() {
+            const list = document.getElementById('predilution-list');
+            if (!list) return;
+            const rowId = 'predilution-' + (++predilutionCounter);
+            const row = document.createElement('div');
+            row.id = rowId;
+            row.className = 'predilution-row bg-white border border-sky-200 rounded-xl p-4 space-y-4 shadow-sm';
+            row.innerHTML = '<div class="flex items-center justify-between gap-3"><strong class="text-xs uppercase tracking-wider text-sky-900">Pré-diluição</strong><button type="button" onclick="removePredilutionRow(\'' + rowId + '\')" class="text-xs font-bold text-rose-700 border border-rose-200 rounded-lg px-2.5 py-1.5"><i class="fa-solid fa-trash-can"></i> Remover</button></div>' +
+                '<div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="md:col-span-2"><label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Produto já indicado no receituário</label><select id="' + rowId + '-product" onchange="recalculatePredilution(\'' + rowId + '\')" class="w-full bg-white border border-sky-300 rounded-xl px-4 py-2.5 text-sm font-semibold"></select></div>' +
+                '<div><label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Quantidade por tanque/bomba</label><div id="' + rowId + '-per-tank" class="bg-slate-100 rounded-xl px-4 py-2.5 text-sm font-black">--</div></div>' +
+                '<div><label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Água no recipiente (L)</label><input id="' + rowId + '-water" type="number" min="0.1" step="0.1" value="2" oninput="recalculatePredilution(\'' + rowId + '\')" class="w-full border border-sky-300 rounded-xl px-4 py-2.5 font-bold"></div>' +
+                '<div><label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Pré-diluição usada por tanque/bomba (mL)</label><input id="' + rowId + '-aliquot" type="number" min="1" step="10" value="200" oninput="recalculatePredilution(\'' + rowId + '\')" class="w-full border border-sky-300 rounded-xl px-4 py-2.5 font-bold"></div>' +
+                '<div><label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Produto na pré-diluição</label><div class="flex gap-2"><input id="' + rowId + '-product-qty" type="number" min="0" step="0.01" value="0" oninput="this.dataset.manual=\'true\'; updatePredilutionText(\'' + rowId + '\')" class="flex-1 border border-sky-300 rounded-xl px-4 py-2.5 font-black"><span id="' + rowId + '-unit" class="py-2.5 font-black">--</span></div></div></div>' +
+                '<div class="bg-sky-50 rounded-xl p-3"><span class="text-[10px] uppercase font-bold text-sky-800 block">Orientação no receituário</span><p id="' + rowId + '-text" class="text-sm text-slate-800">Selecione o produto.</p></div>';
+            list.appendChild(row); populatePredilutionSelect(rowId); renumberPredilutionRows();
+        }
+
+        function removePredilutionRow(id) { document.getElementById(id)?.remove(); renumberPredilutionRows(); }
+        function renumberPredilutionRows() { document.querySelectorAll('.predilution-row').forEach((row, i) => { const title = row.querySelector('strong'); if (title) title.textContent = 'Pré-diluição ' + (i + 1); }); }
+        function populatePredilutionSelect(id) {
+            const select = document.getElementById(id + '-product'); if (!select) return;
+            const oldName = select.value !== '' && select.options[select.selectedIndex] ? select.options[select.selectedIndex].textContent : '';
+            select.innerHTML = '<option value="">-- Selecione um produto indicado acima --</option>';
+            currentRecommendationProducts.forEach((item, i) => select.add(new Option(item.name, String(i))));
+            const idx = currentRecommendationProducts.findIndex(item => item.name === oldName); if (idx >= 0) select.value = String(idx);
+        }
+
+        function recalculatePredilution(id) {
+            const select = document.getElementById(id + '-product'), qtyEl = document.getElementById(id + '-product-qty'), unitEl = document.getElementById(id + '-unit'), perEl = document.getElementById(id + '-per-tank');
+            if (!select || !qtyEl || !unitEl || !perEl) return;
+            const item = select.value === '' ? null : currentRecommendationProducts[Number(select.value)];
+            if (!item) { perEl.textContent = '--'; qtyEl.value = 0; unitEl.textContent = '--'; updatePredilutionText(id); return; }
+            const per = normalizedPerTank(item), water = Math.max(0, Number(document.getElementById(id + '-water')?.value) || 0), aliquot = Math.max(0, Number(document.getElementById(id + '-aliquot')?.value) || 0);
+            const signature = [item.name, per.qty, water, aliquot].join('|'), row = document.getElementById(id);
+            perEl.textContent = per.qty.toLocaleString('pt-BR', {maximumFractionDigits: 2}) + ' ' + per.unit;
+            if (qtyEl.dataset.manual !== 'true' || row?.dataset.calcSignature !== signature) { qtyEl.value = aliquot > 0 ? (per.qty * water * 1000 / aliquot).toFixed(2) : 0; qtyEl.dataset.manual = 'false'; }
+            if (row) row.dataset.calcSignature = signature; unitEl.textContent = per.unit; updatePredilutionText(id);
+        }
+
+        function getPredilutionData() {
+            if (!document.getElementById('predilution-enabled')?.checked) return [];
+            const tankCapacity = Math.max(0, Number(document.getElementById('tank-capacity')?.value) || 0);
+            return Array.from(document.querySelectorAll('.predilution-row')).map(row => {
+                const id = row.id, select = document.getElementById(id + '-product'); if (!select || select.value === '') return null;
+                const item = currentRecommendationProducts[Number(select.value)]; if (!item) return null;
+                const per = normalizedPerTank(item);
+                return { rowId:id, product:item.name, perTankQty:per.qty, unit:per.unit, waterL:Math.max(0,Number(document.getElementById(id+'-water')?.value)||0), aliquotMl:Math.max(0,Number(document.getElementById(id+'-aliquot')?.value)||0), productQty:Math.max(0,Number(document.getElementById(id+'-product-qty')?.value)||0), tankCapacity };
+            }).filter(Boolean);
+        }
+
+        function predilutionInstruction(d) { return d ? 'Produto: ' + d.product + '. Em ' + d.waterL.toLocaleString('pt-BR') + ' L de água, adicionar ' + d.productQty.toLocaleString('pt-BR', {maximumFractionDigits:2}) + ' ' + d.unit + ' e homogeneizar. Utilizar ' + d.aliquotMl.toLocaleString('pt-BR') + ' mL da pré-diluição por tanque/bomba (' + d.tankCapacity.toLocaleString('pt-BR') + ' L).' : ''; }
+        function updatePredilutionText(id) { const el = document.getElementById(id + '-text'); if (!el) return; const data = getPredilutionData().find(x => x.rowId === id); el.textContent = data ? predilutionInstruction(data) : 'Selecione o produto.'; }
 
         const AGRONOMISTS_LIST = [
             {
@@ -2713,6 +2837,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             const doseHaPerTank = doseRefVolHa > 0 ? (tankCapacity / doseRefVolHa) : 0;
             const totalSyrupVolume = totalArea * sprayVolHa;
             const totalTanks = tankCapacity > 0 ? (totalSyrupVolume / tankCapacity) : 0;
+            const minimumPrep = minimumPreparationContext(totalSyrupVolume);
 
             const totalSyrupEl = document.getElementById('total-syrup-volume');
             const totalTanksEl = document.getElementById('total-tanks-count');
@@ -2756,6 +2881,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
 
                 const qtyPerTank = dose * doseHaPerTank;
                 const totalProdArea = isNewCropMode() ? (qtyPerTank * totalTanks) : (dose * totalArea);
+                const minimumPrepTotal = doseRefVolHa > 0 ? dose * (minimumPrep.prepared / doseRefVolHa) : totalProdArea;
 
                 const unitShort = unit.replace('/ha', '');
                 const totalAreaEl = document.getElementById(rowId + '-total-area');
@@ -2770,6 +2896,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                         name: prodName,
                         category: cat,
                         total: totalProdArea,
+                        minimumTotal: minimumPrepTotal,
                         unit: unitShort,
                         dose: dose,
                         doseUnit: unit,
@@ -2791,7 +2918,8 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                         const catLabel = item.category || 'Insumo';
                         const rawStock = productStockMap[item.rowId] !== undefined ? productStockMap[item.rowId] : '';
                         const userStockNum = parseFloat(String(rawStock).replace(',', '.')) || 0;
-                        const qtyToBuy = Math.max(0, item.total - userStockNum);
+                        const purchaseBasis = minimumPrep.enabled ? item.minimumTotal : item.total;
+                        const qtyToBuy = Math.max(0, purchaseBasis - userStockNum);
                         const buyBadgeClass = qtyToBuy > 0 ? 'text-amber-700 font-black' : 'text-emerald-700 font-black';
 
                         summaryHtml += '<div class="bg-white border border-emerald-200 p-4 rounded-xl shadow-sm space-y-3">' +
@@ -2803,6 +2931,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                                     activeHtml +
                                 '</div>' +
                             '</div>' +
+                            (minimumPrep.enabled ? '<div class="text-[10px] bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 text-amber-900"><strong>Mínimo para o preparo:</strong> ' + formatSmartQty(item.minimumTotal, item.unit) + '</div>' : '') +
                             '<div class="grid grid-cols-3 gap-2 items-center text-center bg-slate-50 p-2.5 rounded-lg border border-slate-200">' +
                                 '<div>' +
                                     '<span class="text-[10px] font-semibold text-slate-500 uppercase block">Total Área</span>' +
@@ -2814,7 +2943,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                                 '</div>' +
                                 '<div>' +
                                     '<span class="text-[10px] font-bold text-amber-800 uppercase block">A Comprar</span>' +
-                                    '<span id="buy-qty-' + item.rowId + '" data-total="' + item.total + '" data-unit="' + item.unit + '" class="text-xs font-mono ' + buyBadgeClass + '">' + formatSmartQty(qtyToBuy, item.unit) + '</span>' +
+                                    '<span id="buy-qty-' + item.rowId + '" data-total="' + purchaseBasis + '" data-unit="' + item.unit + '" class="text-xs font-mono ' + buyBadgeClass + '">' + formatSmartQty(qtyToBuy, item.unit) + '</span>' +
                                 '</div>' +
                             '</div>' +
                         '</div>';
@@ -2822,6 +2951,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                     summaryContainer.innerHTML = summaryHtml;
                 }
             }
+            refreshPredilutionProducts(totalSummaryList, doseHaPerTank);
         }
 
         function updatePDFPreview() {
@@ -2888,6 +3018,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             const totalTanks = tankCapacity > 0 ? (totalSyrupVolume / tankCapacity) : 0;
             const haPerTank = sprayVolHa > 0 ? (tankCapacity / sprayVolHa) : 0;
             const doseHaPerTank = doseRefVolHa > 0 ? (tankCapacity / doseRefVolHa) : 0;
+            const minimumPrep = minimumPreparationContext(totalSyrupVolume);
 
             const pdfTotalSyrupEl = document.getElementById('pdf-total-syrup');
             const pdfTotalTanksEl = document.getElementById('pdf-total-tanks');
@@ -2937,6 +3068,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
 
                 const qtyPerTank = dose * doseHaPerTank;
                 const totalProdArea = isNewCropMode() ? (qtyPerTank * totalTanks) : (dose * totalArea);
+                const minimumPrepTotal = doseRefVolHa > 0 ? dose * (minimumPrep.prepared / doseRefVolHa) : totalProdArea;
                 const unitShort = unit.replace('/ha', '');
 
                 if (pdfTbody) {
@@ -2960,7 +3092,8 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 if (prodName && dose > 0) {
                     const userStockRaw = productStockMap[rowId] !== undefined ? productStockMap[rowId] : 0;
                     const userStock = parseFloat(String(userStockRaw).replace(',', '.')) || 0;
-                    const qtyToBuy = Math.max(0, totalProdArea - userStock);
+                    const purchaseBasis = minimumPrep.enabled ? minimumPrepTotal : totalProdArea;
+                    const qtyToBuy = Math.max(0, purchaseBasis - userStock);
                     const targetPdf = targetInfo ? '<span style="font-size: 8px; color: #334155; display: block;">Alvo: ' + targetInfo + '</span>' : '';
                     const activePdf = activeIng ? '<span style="font-size: 8px; color: #15803d; font-weight: 600; display: block;">I.A.: ' + activeIng + '</span>' : '';
                     const buyColor = qtyToBuy > 0 ? '#b45309' : '#15803d';
@@ -2973,7 +3106,8 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                             '</div>' +
                         '</div>' +
                         '<div style="display: flex; justify-content: space-between; margin-top: 3px; padding-top: 2px; border-top: 1px dashed #cbd5e1; font-size: 8.5px;">' +
-                            '<span>Total: <strong style="font-family: monospace;">' + formatSmartQty(totalProdArea, unitShort) + '</strong></span>' +
+                            '<span>Total talhão: <strong style="font-family: monospace;">' + formatSmartQty(totalProdArea, unitShort) + '</strong></span>' +
+                            (minimumPrep.enabled ? '<span>Mínimo preparo: <strong style="font-family: monospace;">' + formatSmartQty(minimumPrepTotal, unitShort) + '</strong></span>' : '') +
                             '<span>Estoque: <strong style="font-family: monospace;">' + formatSmartQty(userStock, unitShort) + '</strong></span>' +
                             '<span style="font-weight: 800; color: ' + buyColor + ';">A Comprar: <span style="font-family: monospace;">' + formatSmartQty(qtyToBuy, unitShort) + '</span></span>' +
                         '</div>' +
@@ -2988,6 +3122,12 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                     pdfSummaryContainer.innerHTML = pdfSummaryItems.join('');
                 }
             }
+
+            const predilutionData = getPredilutionData();
+            const predBox = document.getElementById('pdf-predilution-box-p2');
+            const predList = document.getElementById('pdf-predilution-list-p2');
+            if (predBox) predBox.classList.toggle('hidden', predilutionData.length === 0);
+            if (predList) predList.innerHTML = predilutionData.map(function(data, index) { return '<p style="margin:2px 0"><strong>' + (index + 1) + '.</strong> ' + predilutionInstruction(data) + '</p>'; }).join('');
 
             const pdfSafetyNotes = document.getElementById('pdf-safety-notes');
             const pdfFirstAidNotes = document.getElementById('pdf-first-aid-notes');
@@ -3028,6 +3168,15 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             if (selectedFields.size === 0) {
                 showAlert("Por favor, selecione ao menos um talhão para a pulverização.");
                 return;
+            }
+
+            if (document.getElementById('predilution-enabled')?.checked) {
+                const predData = getPredilutionData();
+                const predRows = document.querySelectorAll('.predilution-row');
+                if (!predRows.length || predData.length !== predRows.length || predData.some(d => d.waterL <= 0 || d.aliquotMl <= 0 || d.productQty <= 0)) {
+                    showAlert('Confira todos os campos da pré-diluição antes de gerar o PDF.');
+                    return;
+                }
             }
 
             updatePDFPreview();
@@ -3140,7 +3289,12 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 cropMode: isNewCropMode() ? 'lavoura_nova' : 'em_producao',
                 sprayVolumeHa: actualSprayVolume(),
                 tankCapacity: Number(document.getElementById('tank-capacity')?.value) || 0,
-                products: currentOrderedProducts()
+                minimumPreparation: {
+                    enabled: !!document.getElementById('minimum-prep-enabled')?.checked,
+                    volume: Number(document.getElementById('minimum-prep-volume')?.value) || 0
+                },
+                products: currentOrderedProducts(),
+                predilution: getPredilutionData()
             };
 
             history.unshift(entry);
@@ -3218,6 +3372,17 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             if (document.getElementById('crop-mode-production')) document.getElementById('crop-mode-production').checked = true;
             if (document.getElementById('crop-mode-new')) document.getElementById('crop-mode-new').checked = false;
             setCropMode();
+            const minPrepEnabled = document.getElementById('minimum-prep-enabled');
+            if (minPrepEnabled) minPrepEnabled.checked = false;
+            if (document.getElementById('minimum-prep-volume')) document.getElementById('minimum-prep-volume').value = 200;
+            toggleMinimumPreparation();
+            const predEnabled = document.getElementById('predilution-enabled');
+            const predPanel = document.getElementById('predilution-panel');
+            const predList = document.getElementById('predilution-list');
+            if (predEnabled) predEnabled.checked = false;
+            if (predPanel) predPanel.classList.add('hidden');
+            if (predList) predList.innerHTML = '';
+            predilutionCounter = 0;
 
             if (document.getElementById('safety-notes')) document.getElementById('safety-notes').value = DEFAULT_SAFETY_TEXT;
             if (document.getElementById('first-aid-notes')) document.getElementById('first-aid-notes').value = DEFAULT_FIRST_AID_TEXT;

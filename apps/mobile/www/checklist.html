@@ -442,7 +442,7 @@
                         <label><input type="checkbox" name="indicacoes" value="Trilhação"><span class="checkbox-label">Trilhação</span></label>
                         <label><input type="checkbox" name="indicacoes" value="Herbicida Pós"><span class="checkbox-label">Herbicida Pós</span></label>
                         <label><input type="checkbox" name="indicacoes" value="Herbicida Pré"><span class="checkbox-label">Herbicida Pré</span></label>
-                        <label><input type="checkbox" name="indicacoes" value="Herbicida Pós+Pré"><span class="checkbox-label">Herbicida Pós+Pré</span></label>
+                        <label><input type="checkbox" name="indicacoes" value="Herbicida Pré + Pós"><span class="checkbox-label">Herbicida Pré + Pós</span></label>
                         <label><input type="checkbox" name="indicacoes" value="Retirar Cipó"><span class="checkbox-label">Retirar Cipó</span></label>
                         <label><input type="checkbox" name="indicacoes" value="Pulverização"><span class="checkbox-label">Pulverização</span></label>
                         <label><input type="checkbox" name="indicacoes" value="Via Solo"><span class="checkbox-label">Via Solo</span></label>
@@ -455,6 +455,17 @@
                         <label><input type="checkbox" name="indicacoes" value="Plantio"><span class="checkbox-label">Plantio</span></label>
                         <label><input type="checkbox" name="indicacoes" value="Replantio"><span class="checkbox-label">Replantio</span></label>
                     </div>
+                </div>
+
+                <div>
+                    <label for="situacaoColheita" class="block text-sm font-semibold text-gray-700 mb-1">Situação da colheita (opcional):</label>
+                    <select id="situacaoColheita" class="w-full p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-agro transition shadow-sm bg-white">
+                        <option value="">Deixar em branco</option>
+                        <option value="Colhendo">Colhendo</option>
+                        <option value="Parcialmente colhido">Parcialmente colhido</option>
+                        <option value="Colhido">Colhido</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Se ficar em branco, esta informação não aparecerá no relatório.</p>
                 </div>
 
                 <div>
@@ -1536,6 +1547,8 @@
             });
             const obs = document.getElementById('observacoes');
             if (obs) obs.value = '';
+            const colheita = document.getElementById('situacaoColheita');
+            if (colheita) colheita.value = '';
 
             renderizarPragasCustomizadas([]);
             renderizarDoencasCustomizadas([]);
@@ -1704,6 +1717,7 @@
                 doencas: Array.from(document.querySelectorAll('input[name="doencas"]:checked')).map(cb => cb.value).join(', ') || 'Livre',
                 mato: Array.from(document.querySelectorAll('input[name="mato"]:checked')).map(cb => cb.value).join(', ') || 'Sem registro',
                 indicacoes: Array.from(document.querySelectorAll('input[name="indicacoes"]:checked')).map(cb => cb.value).join(', ') || 'Talhão sem ações',
+                situacaoColheita: document.getElementById('situacaoColheita').value || '',
                 obs: document.getElementById('observacoes').value.trim() || '-'
             };
 
@@ -1778,6 +1792,7 @@
             marcarGrupoAvaliacao('doencas', doencas);
             marcarGrupoAvaliacao('mato', mato);
             marcarGrupoAvaliacao('indicacoes', indicacoes);
+            document.getElementById('situacaoColheita').value = item.situacaoColheita || '';
             document.getElementById('observacoes').value = item.obs === '-' ? '' : (item.obs || '');
             atualizarModoEdicao();
             document.getElementById('monitoramentoForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1823,7 +1838,7 @@
                     <td class="p-3"><span class="px-2 py-1 rounded text-xs ${item.pragas.includes('Livre') ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800 font-semibold'}">${item.pragas}</span></td>
                     <td class="p-3"><span class="px-2 py-1 rounded text-xs ${item.doencas.includes('Livre') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800 font-semibold'}">${item.doencas}</span></td>
                     <td class="p-3"><span class="px-2 py-1 rounded text-xs ${item.mato.includes('Livre') ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${item.mato}</span></td>
-                    <td class="p-3 text-xs text-gray-700 font-medium">${item.indicacoes}</td>
+                    <td class="p-3 text-xs text-gray-700 font-medium">${item.indicacoes}${item.situacaoColheita ? `<div class="mt-1"><span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800">${item.situacaoColheita}</span></div>` : ''}</td>
                     <td class="p-3 text-xs text-gray-500 italic truncate max-w-xs">${item.obs}</td>
                     <td class="p-3 text-center whitespace-nowrap">
                         <button type="button" onclick="editarItem(${index})" class="text-blue-600 hover:text-blue-800 p-1 transition mr-2" title="Editar item">
@@ -1884,25 +1899,24 @@
 
             const todosTalhoesFazenda = talhoesPorFazenda[fazendaNome] || [];
             let dadosTabela = [];
+            const incluirColheita = listaAvaliacoes.some(av => String(av.situacaoColheita || '').trim());
+            const linhaTabela = (av) => incluirColheita
+                ? [av.talhao, av.pragas, av.doencas, av.mato, av.situacaoColheita || '-', av.indicacoes, av.obs]
+                : [av.talhao, av.pragas, av.doencas, av.mato, av.indicacoes, av.obs];
 
             if (incluirTodos) {
                 todosTalhoesFazenda.forEach(t => {
                     const av = listaAvaliacoes.find(i => i.talhao === t);
                     if (av) {
-                        dadosTabela.push([av.talhao, av.pragas, av.doencas, av.mato, av.indicacoes, av.obs]);
+                        dadosTabela.push(linhaTabela(av));
                     } else {
-                        dadosTabela.push([t, "-", "-", "-", "Sem Ações / Não Avaliado", "-"]);
+                        dadosTabela.push(incluirColheita
+                            ? [t, "-", "-", "-", "-", "Sem Ações / Não Avaliado", "-"]
+                            : [t, "-", "-", "-", "Sem Ações / Não Avaliado", "-"]);
                     }
                 });
             } else {
-                dadosTabela = listaAvaliacoes.map(av => [
-                    av.talhao,
-                    av.pragas,
-                    av.doencas,
-                    av.mato,
-                    av.indicacoes,
-                    av.obs
-                ]);
+                dadosTabela = listaAvaliacoes.map(linhaTabela);
             }
 
             const totalTalhoesFazenda = todosTalhoesFazenda.length;
@@ -1965,7 +1979,9 @@
 
             doc.autoTable({
                 startY: 34,
-                head: [['Talhão', 'Monitoramento de Pragas', 'Doenças Identificadas', 'Situação do Mato', 'Indicações de Manejo', 'Observações']],
+                head: [incluirColheita
+                    ? ['Talhão', 'Monitoramento de Pragas', 'Doenças Identificadas', 'Situação do Mato', 'Situação da Colheita', 'Indicações de Manejo', 'Observações']
+                    : ['Talhão', 'Monitoramento de Pragas', 'Doenças Identificadas', 'Situação do Mato', 'Indicações de Manejo', 'Observações']],
                 body: dadosTabela,
                 theme: 'grid',
                 headStyles: {
@@ -1981,7 +1997,15 @@
                     textColor: [40, 40, 40],
                     cellPadding: 1.8
                 },
-                columnStyles: {
+                columnStyles: incluirColheita ? {
+                    0: { cellWidth: 32, fontStyle: 'bold' },
+                    1: { cellWidth: 37 },
+                    2: { cellWidth: 37 },
+                    3: { cellWidth: 31 },
+                    4: { cellWidth: 34 },
+                    5: { cellWidth: 56 },
+                    6: { cellWidth: 42, fontStyle: 'italic' }
+                } : {
                     0: { cellWidth: 42, fontStyle: 'bold' },
                     1: { cellWidth: 42 },
                     2: { cellWidth: 42 },
@@ -2144,15 +2168,20 @@
             const fazendaNome = fazendaSelect.value;
             const nomeProprietarioVal = document.getElementById('nomeProprietario').value.trim();
 
-            let csv = `Do Campo Agronegócios\nRelatório de Visita de Campo\nFazenda: ${fazendaNome}\nProprietário: ${nomeProprietarioVal || 'Não informado'}\nData: ${dataHoje}\n\nTalhão;Pragas;Doenças;Mato;Indicações;Observações\n`;
+            const incluirColheitaCsv = listaAvaliacoes.some(av => String(av.situacaoColheita || '').trim());
+            let csv = `Do Campo Agronegócios\nRelatório de Visita de Campo\nFazenda: ${fazendaNome}\nProprietário: ${nomeProprietarioVal || 'Não informado'}\nData: ${dataHoje}\n\n${incluirColheitaCsv ? 'Talhão;Pragas;Doenças;Mato;Situação da Colheita;Indicações;Observações' : 'Talhão;Pragas;Doenças;Mato;Indicações;Observações'}\n`;
             
             const todosTalhoes = talhoesPorFazenda[fazendaNome] || [];
             todosTalhoes.forEach(t => {
                 const av = listaAvaliacoes.find(i => i.talhao === t);
                 if (av) {
-                    csv += `"${av.talhao}";"${av.pragas}";"${av.doencas}";"${av.mato}";"${av.indicacoes}";"${av.obs}"\n`;
+                    csv += incluirColheitaCsv
+                        ? `"${av.talhao}";"${av.pragas}";"${av.doencas}";"${av.mato}";"${av.situacaoColheita || '-'}";"${av.indicacoes}";"${av.obs}"\n`
+                        : `"${av.talhao}";"${av.pragas}";"${av.doencas}";"${av.mato}";"${av.indicacoes}";"${av.obs}"\n`;
                 } else {
-                    csv += `"${t}";"-";"-";"-";"Sem Ações / Não Avaliado";"-"\n`;
+                    csv += incluirColheitaCsv
+                        ? `"${t}";"-";"-";"-";"-";"Sem Ações / Não Avaliado";"-"\n`
+                        : `"${t}";"-";"-";"-";"Sem Ações / Não Avaliado";"-"\n`;
                 }
             });
 

@@ -479,9 +479,16 @@
                             <div class="text-xs font-bold text-emerald-900">Indicações do Checklist</div>
                             <div id="checklist-filter-status" class="text-[11px] text-emerald-700 mt-0.5">Filtro desligado — mostrando todos os talhões.</div>
                         </div>
-                        <button id="checklist-filter-btn" type="button" onclick="toggleChecklistFilter()" class="text-xs bg-white hover:bg-emerald-100 text-emerald-800 px-3 py-2 rounded-lg border border-emerald-300 transition font-bold cursor-pointer">
-                            Usar indicação de Herbicida
-                        </button>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <select id="checklist-filter-kind" onchange="onChecklistFilterKindChange()" class="text-xs bg-white text-emerald-900 px-3 py-2 rounded-lg border border-emerald-300 font-bold">
+                                <option value="herbicida-pre">Herbicida Pré</option>
+                                <option value="herbicida-pos">Herbicida Pós</option>
+                                <option value="herbicida-pre-pos">Herbicida Pré + Pós</option>
+                            </select>
+                            <button id="checklist-filter-btn" type="button" onclick="toggleChecklistFilter()" class="text-xs bg-white hover:bg-emerald-100 text-emerald-800 px-3 py-2 rounded-lg border border-emerald-300 transition font-bold cursor-pointer">
+                                Aplicar filtro do checklist
+                            </button>
+                        </div>
                     </div>
 
                     <div id="fields-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -564,6 +571,18 @@
                             <input type="number" id="tank-capacity" value="600" step="50" min="1" oninput="calculateTotals()" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
                             <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-400">Litros</span>
                         </div>
+                    </div>
+                </div>
+
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input id="minimum-prep-enabled" type="checkbox" onchange="toggleMinimumPreparation(); calculateTotals()" class="mt-0.5 w-4 h-4 text-amber-700 focus:ring-amber-600 rounded border-slate-300">
+                        <span><strong class="block text-sm text-amber-950">Considerar volume mínimo de preparo</strong><span class="block text-xs text-amber-800 mt-0.5">Útil quando o volume real do talhão é menor que o menor volume que será preparado.</span></span>
+                    </label>
+                    <div id="minimum-prep-panel" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-amber-200 pt-3">
+                        <div><label class="block text-xs font-bold text-amber-950 uppercase mb-1">Volume mínimo a preparar (L)</label><input id="minimum-prep-volume" type="number" min="1" step="10" value="200" oninput="calculateTotals()" class="w-full bg-white border border-amber-300 rounded-xl px-4 py-2.5 font-bold"></div>
+                        <div class="bg-white border border-amber-200 rounded-xl p-3"><span class="text-[10px] uppercase font-bold text-slate-500 block">Calda necessária no talhão</span><strong id="minimum-prep-needed-display" class="text-sm text-slate-800">0 L</strong></div>
+                        <div class="bg-white border border-amber-200 rounded-xl p-3"><span class="text-[10px] uppercase font-bold text-slate-500 block">Sobra estimada de calda</span><strong id="minimum-prep-leftover-display" class="text-sm text-amber-800">0 L</strong></div>
                     </div>
                 </div>
 
@@ -910,9 +929,9 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                                 </div>
                             </div>
 
-                            <div id="pdf-predilution-box" class="pdf-box hidden" style="padding: 5px 7px; background-color: #f0f9ff !important; border-color: #7dd3fc !important;">
+                            <div id="pdf-predilution-box-p1" class="pdf-box hidden" style="padding: 5px 7px; background-color: #f0f9ff !important; border-color: #7dd3fc !important;">
                                 <strong style="color: #075985; font-size: 9.5px; display: block; margin-bottom: 2px; text-transform: uppercase;">Pré-diluição do produto — opcional</strong>
-                                <div id="pdf-predilution-list" style="color: #334155; font-size: 8.5px; line-height: 1.3;"></div>
+                                <div id="pdf-predilution-list-p1" style="color: #334155; font-size: 8.5px; line-height: 1.3;"></div>
                             </div>
 
                             <div class="pdf-box" style="padding: 5px 7px; background-color: #fffbeb !important; border-color: #fcd34d !important;">
@@ -966,6 +985,11 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                                     <span id="pdf-rec-id-p2" style="font-size: 9.5px; font-weight: 700; color: #15803d; display: block;">#DC-0000</span>
                                     <span style="font-size: 8.5px; color: #64748b;">Página 2 de 2</span>
                                 </div>
+                            </div>
+
+                            <div id="pdf-predilution-box-p2" class="pdf-box hidden" style="padding: 7px 9px; background-color: #f0f9ff !important; border-color: #7dd3fc !important;">
+                                <strong style="color: #075985; font-size: 9.5px; display: block; margin-bottom: 2px; text-transform: uppercase;">Pré-diluição do produto — opcional</strong>
+                                <div id="pdf-predilution-list-p2" style="color: #334155; font-size: 8.5px; line-height: 1.3;"></div>
                             </div>
 
                             <div class="pdf-box" style="padding: 7px 9px; background-color: #f8fafc;">
@@ -1426,6 +1450,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
         let selectedFarm = "";
         let selectedFields = new Set();
         let checklistFilterEnabled = false;
+        let checklistFilterKind = 'herbicida-pre';
         let productRowCounter = 0;
         let selectedAgronomistIndex = 0;
         let productStockMap = {};
@@ -1433,6 +1458,24 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
         let currentRecommendationProducts = [];
         let currentHaPerTank = 0;
         let predilutionCounter = 0;
+
+        function toggleMinimumPreparation() {
+            const enabled = document.getElementById('minimum-prep-enabled');
+            const panel = document.getElementById('minimum-prep-panel');
+            if (enabled && panel) panel.classList.toggle('hidden', !enabled.checked);
+        }
+
+        function minimumPreparationContext(totalSyrupVolume) {
+            const enabled = !!document.getElementById('minimum-prep-enabled')?.checked;
+            const requested = Math.max(0, Number(document.getElementById('minimum-prep-volume')?.value) || 0);
+            const prepared = enabled ? Math.max(totalSyrupVolume, requested) : totalSyrupVolume;
+            const leftover = Math.max(0, prepared - totalSyrupVolume);
+            const neededEl = document.getElementById('minimum-prep-needed-display');
+            const leftoverEl = document.getElementById('minimum-prep-leftover-display');
+            if (neededEl) neededEl.textContent = totalSyrupVolume.toLocaleString('pt-BR', {maximumFractionDigits: 1}) + ' L';
+            if (leftoverEl) leftoverEl.textContent = leftover.toLocaleString('pt-BR', {maximumFractionDigits: 1}) + ' L';
+            return { enabled, requested, prepared, leftover };
+        }
 
         const AGRONOMISTS_LIST = [
             {
@@ -2331,8 +2374,13 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
 
         function checklistFieldsFor(farmData) {
             if (!checklistFilterEnabled || !farmData || !window.DoCampoChecklistFilter) return farmData ? farmData.fields : [];
-            const result = window.DoCampoChecklistFilter.get(farmData.farm, 'herbicida');
+            const result = window.DoCampoChecklistFilter.get(farmData.farm, checklistFilterKind);
             return (farmData.fields || []).filter(function(field) { return window.DoCampoChecklistFilter.matches(field.name, result); });
+        }
+
+        function checklistKindLabel() {
+            return checklistFilterKind === 'herbicida-pre' ? 'Herbicida Pré' :
+                (checklistFilterKind === 'herbicida-pos' ? 'Herbicida Pós' : 'Herbicida Pré + Pós');
         }
 
         function updateChecklistFilterStatus(farmData) {
@@ -2343,20 +2391,22 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                 status.textContent = checklistFilterEnabled ? 'Filtro ligado — selecione uma fazenda.' : 'Filtro desligado — mostrando todos os talhões.';
                 return;
             }
-            const result = window.DoCampoChecklistFilter ? window.DoCampoChecklistFilter.get(farmData.farm, 'herbicida') : { fields: [] };
+            const result = window.DoCampoChecklistFilter ? window.DoCampoChecklistFilter.get(farmData.farm, checklistFilterKind) : { fields: [] };
             if (checklistFilterEnabled) {
-                status.textContent = 'Filtro ligado — ' + result.fields.length + ' talhão(ões) indicado(s) para Herbicida no checklist mais recente.';
+                status.textContent = 'Filtro ligado — ' + result.fields.length + ' talhão(ões) indicado(s) para ' + checklistKindLabel() + ' no checklist mais recente.';
                 btn.textContent = 'Mostrar todos os talhões';
                 btn.classList.add('bg-emerald-700','text-white');
             } else {
-                status.textContent = result.fields.length ? 'Checklist: ' + result.fields.length + ' talhão(ões) com indicação de Herbicida.' : 'Filtro desligado — mostrando todos os talhões.';
-                btn.textContent = 'Usar indicação de Herbicida';
+                status.textContent = result.fields.length ? 'Checklist: ' + result.fields.length + ' talhão(ões) com indicação de ' + checklistKindLabel() + '.' : 'Filtro desligado — mostrando todos os talhões.';
+                btn.textContent = 'Aplicar filtro do checklist';
                 btn.classList.remove('bg-emerald-700','text-white');
             }
         }
 
         function toggleChecklistFilter() {
             if (!selectedFarm) { showAlert('Selecione uma fazenda antes de usar as indicações do checklist.'); return; }
+            const kindSelect = document.getElementById('checklist-filter-kind');
+            if (kindSelect) checklistFilterKind = kindSelect.value || 'herbicida-pre';
             checklistFilterEnabled = !checklistFilterEnabled;
             const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
             const visible = checklistFieldsFor(farmData);
@@ -2365,6 +2415,20 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
             renderFields(visible);
             updateChecklistFilterStatus(farmData);
             calculateTotals();
+        }
+
+        function onChecklistFilterKindChange() {
+            const kindSelect = document.getElementById('checklist-filter-kind');
+            if (kindSelect) checklistFilterKind = kindSelect.value || 'herbicida-pre';
+            const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+            if (checklistFilterEnabled && farmData) {
+                const visible = checklistFieldsFor(farmData);
+                const visibleNames = new Set(visible.map(function(f) { return f.name; }));
+                selectedFields.forEach(function(name) { if (!visibleNames.has(name)) selectedFields.delete(name); });
+                renderFields(visible);
+                calculateTotals();
+            }
+            updateChecklistFilterStatus(farmData);
         }
 
         function onFarmChange() {
@@ -2742,6 +2806,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
             const haPerTank = sprayVolHa > 0 ? (tankCapacity / sprayVolHa) : 0;
             const totalSyrupVolume = totalArea * sprayVolHa;
             const totalTanks = tankCapacity > 0 ? (totalSyrupVolume / tankCapacity) : 0;
+            const minimumPrep = minimumPreparationContext(totalSyrupVolume);
 
             const totalSyrupEl = document.getElementById('total-syrup-volume');
             const totalTanksEl = document.getElementById('total-tanks-count');
@@ -2784,6 +2849,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
 
                 const totalProdArea = dose * totalArea;
                 const qtyPerTank = dose * haPerTank;
+                const minimumPrepTotal = sprayVolHa > 0 ? dose * (minimumPrep.prepared / sprayVolHa) : totalProdArea;
 
                 const unitShort = unit.replace('/ha', '');
                 const totalAreaEl = document.getElementById(rowId + '-total-area');
@@ -2798,6 +2864,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                         name: prodName,
                         category: cat,
                         total: totalProdArea,
+                        minimumTotal: minimumPrepTotal,
                         unit: unitShort,
                         dose: dose,
                         doseUnit: unit,
@@ -2819,7 +2886,8 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                         const catLabel = item.category || 'Herbicida';
                         const rawStock = productStockMap[item.rowId] !== undefined ? productStockMap[item.rowId] : '';
                         const userStockNum = parseFloat(String(rawStock).replace(',', '.')) || 0;
-                        const qtyToBuy = Math.max(0, item.total - userStockNum);
+                        const purchaseBasis = minimumPrep.enabled ? item.minimumTotal : item.total;
+                        const qtyToBuy = Math.max(0, purchaseBasis - userStockNum);
                         const buyBadgeClass = qtyToBuy > 0 ? 'text-amber-700 font-black' : 'text-emerald-700 font-black';
 
                         summaryHtml += '<div class="bg-white border border-emerald-200 p-4 rounded-xl shadow-sm space-y-3">' +
@@ -2831,6 +2899,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                                     activeHtml +
                                 '</div>' +
                             '</div>' +
+                            (minimumPrep.enabled ? '<div class="text-[10px] bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 text-amber-900"><strong>Mínimo para o preparo:</strong> ' + formatTankQty(item.minimumTotal, item.unit) + '</div>' : '') +
                             '<div class="grid grid-cols-3 gap-2 items-center text-center bg-slate-50 p-2.5 rounded-lg border border-slate-200">' +
                                 '<div>' +
                                     '<span class="text-[10px] font-semibold text-slate-500 uppercase block">Total Área</span>' +
@@ -2842,7 +2911,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                                 '</div>' +
                                 '<div>' +
                                     '<span class="text-[10px] font-bold text-amber-800 uppercase block">A Comprar</span>' +
-                                    '<span id="buy-qty-' + item.rowId + '" data-total="' + item.total + '" data-unit="' + item.unit + '" class="text-xs font-mono ' + buyBadgeClass + '">' + qtyToBuy.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ' + item.unit + '</span>' +
+                                    '<span id="buy-qty-' + item.rowId + '" data-total="' + purchaseBasis + '" data-unit="' + item.unit + '" class="text-xs font-mono ' + buyBadgeClass + '">' + formatTankQty(qtyToBuy, item.unit) + '</span>' +
                                 '</div>' +
                             '</div>' +
                         '</div>';
@@ -2908,6 +2977,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
             const totalSyrupVolume = totalArea * sprayVolHa;
             const totalTanks = tankCapacity > 0 ? (totalSyrupVolume / tankCapacity) : 0;
             const haPerTank = sprayVolHa > 0 ? (tankCapacity / sprayVolHa) : 0;
+            const minimumPrep = minimumPreparationContext(totalSyrupVolume);
 
             const pdfTotalSyrupEl = document.getElementById('pdf-total-syrup');
             const pdfTotalTanksEl = document.getElementById('pdf-total-tanks');
@@ -2957,6 +3027,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
 
                 const totalProdArea = dose * totalArea;
                 const qtyPerTank = dose * haPerTank;
+                const minimumPrepTotal = sprayVolHa > 0 ? dose * (minimumPrep.prepared / sprayVolHa) : totalProdArea;
                 const unitShort = unit.replace('/ha', '');
 
                 if (pdfTbody) {
@@ -2980,7 +3051,8 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                 if (prodName && dose > 0) {
                     const userStockRaw = productStockMap[rowId] !== undefined ? productStockMap[rowId] : 0;
                     const userStock = parseFloat(String(userStockRaw).replace(',', '.')) || 0;
-                    const qtyToBuy = Math.max(0, totalProdArea - userStock);
+                    const purchaseBasis = minimumPrep.enabled ? minimumPrepTotal : totalProdArea;
+                    const qtyToBuy = Math.max(0, purchaseBasis - userStock);
                     const targetPdf = targetInfo ? '<span style="font-size: 8px; color: #334155; display: block;">Alvo: ' + targetInfo + '</span>' : '';
                     const activePdf = activeIng ? '<span style="font-size: 8px; color: #15803d; font-weight: 600; display: block;">I.A.: ' + activeIng + '</span>' : '';
                     const buyColor = qtyToBuy > 0 ? '#b45309' : '#15803d';
@@ -2993,7 +3065,8 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                             '</div>' +
                         '</div>' +
                         '<div style="display: flex; justify-content: space-between; margin-top: 3px; padding-top: 2px; border-top: 1px dashed #cbd5e1; font-size: 8.5px;">' +
-                            '<span>Total: <strong style="font-family: monospace;">' + totalProdArea.toLocaleString('pt-BR', {minimumFractionDigits: 2}) + ' ' + unitShort + '</strong></span>' +
+                            '<span>Total talhão: <strong style="font-family: monospace;">' + formatTankQty(totalProdArea, unit) + '</strong></span>' +
+                            (minimumPrep.enabled ? '<span>Mínimo preparo: <strong style="font-family: monospace;">' + formatTankQty(minimumPrepTotal, unit) + '</strong></span>' : '') +
                             '<span>Estoque: <strong style="font-family: monospace;">' + userStock.toLocaleString('pt-BR', {minimumFractionDigits: 2}) + ' ' + unitShort + '</strong></span>' +
                             '<span style="font-weight: 800; color: ' + buyColor + ';">A Comprar: <span style="font-family: monospace;">' + qtyToBuy.toLocaleString('pt-BR', {minimumFractionDigits: 2}) + ' ' + unitShort + '</span></span>' +
                         '</div>' +
@@ -3009,15 +3082,18 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                 }
             }
 
-            const pdfPredilutionBox = document.getElementById('pdf-predilution-box');
-            const pdfPredilutionList = document.getElementById('pdf-predilution-list');
             const predilutionData = getPredilutionData();
-            if (pdfPredilutionBox) pdfPredilutionBox.classList.toggle('hidden', predilutionData.length === 0);
-            if (pdfPredilutionList) {
-                pdfPredilutionList.innerHTML = predilutionData.map(function(data, index) {
+            const predHtml = predilutionData.map(function(data, index) {
                     return '<p style="margin: 2px 0;"><strong>' + (index + 1) + '.</strong> ' + predilutionInstruction(data) + '</p>';
                 }).join('');
-            }
+            const movePredilutionToPage2 = rows.length > 3;
+            ['p1','p2'].forEach(function(page) {
+                const box = document.getElementById('pdf-predilution-box-' + page);
+                const list = document.getElementById('pdf-predilution-list-' + page);
+                const show = predilutionData.length > 0 && ((page === 'p2') === movePredilutionToPage2);
+                if (box) box.classList.toggle('hidden', !show);
+                if (list) list.innerHTML = predHtml;
+            });
 
             const pdfSafetyNotes = document.getElementById('pdf-safety-notes');
             const pdfFirstAidNotes = document.getElementById('pdf-first-aid-notes');
@@ -3181,6 +3257,10 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                 fieldsCount: selectedFields.size,
                 totalArea: areaDisplayEl ? areaDisplayEl.innerText : '0,00',
                 products: currentOrderedProducts(),
+                minimumPreparation: {
+                    enabled: !!document.getElementById('minimum-prep-enabled')?.checked,
+                    volume: Number(document.getElementById('minimum-prep-volume')?.value) || 0
+                },
                 predilution: getPredilutionData()
             };
 
@@ -3251,6 +3331,10 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
 
             if (sprayVolEl) sprayVolEl.value = 200;
             if (tankCapEl) tankCapEl.value = 600;
+            const minPrepEnabled = document.getElementById('minimum-prep-enabled');
+            if (minPrepEnabled) minPrepEnabled.checked = false;
+            if (document.getElementById('minimum-prep-volume')) document.getElementById('minimum-prep-volume').value = 200;
+            toggleMinimumPreparation();
             if (tbody) tbody.innerHTML = "";
 
             if (document.getElementById('safety-notes')) document.getElementById('safety-notes').value = DEFAULT_SAFETY_TEXT;
