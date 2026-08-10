@@ -110,6 +110,12 @@
             overflow-wrap: break-word;
         }
 
+        /* O nível 3 preserva a diagramação validada. Os demais níveis
+           ajustam somente o conteúdo técnico, mantendo cabeçalho e assinatura. */
+        .pdf-font-control {
+            min-width: 172px;
+        }
+
         .pdf-tank-highlight-th {
             background-color: #166534 !important;
             color: #ffffff !important;
@@ -749,7 +755,21 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                     </div>
                 </div>
 
-                <div class="pt-6 border-t border-slate-200 flex justify-end">
+                <div class="pt-6 border-t border-slate-200 flex flex-col sm:flex-row sm:items-end sm:justify-end gap-3">
+                    <label class="pdf-font-control block">
+                        <span class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Tamanho da letra no PDF</span>
+                        <select id="pdf-font-level" onchange="setPdfFontLevel(this.value)" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="1">1 — Muito compacto</option>
+                            <option value="2">2 — Compacto</option>
+                            <option value="3" selected>3 — Padrão (recomendado)</option>
+                            <option value="4">4 — Grande</option>
+                            <option value="5">5 — Muito grande</option>
+                        </select>
+                    </label>
+                    <button type="button" onclick="openPDFPreview()" class="w-full sm:w-auto flex items-center justify-center gap-3 bg-white hover:bg-emerald-50 text-emerald-800 font-bold px-6 py-3.5 rounded-xl shadow-sm transition border-2 border-emerald-600 text-base cursor-pointer">
+                        <i class="fa-solid fa-eye text-lg"></i>
+                        <span>Visualizar prévia</span>
+                    </button>
                     <button id="btn-pdf-generate" onclick="downloadPDF()" class="w-full sm:w-auto flex items-center justify-center gap-3 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold px-8 py-3.5 rounded-xl shadow-md transition border border-amber-400 text-base cursor-pointer">
                         <i class="fa-solid fa-file-pdf text-xl"></i>
                         <span id="btn-pdf-text">Gerar Relatório PDF</span>
@@ -775,14 +795,23 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
     <!-- MODAL DE VISUALIZAÇÃO DO PDF -->
     <div id="pdf-content-wrapper" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto hidden no-print">
         <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full p-4 space-y-3 max-h-[95vh] overflow-y-auto">
-            <div class="flex items-center justify-between border-b border-slate-200 pb-2 no-print">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2 no-print">
                 <span class="font-bold text-slate-700 text-xs flex items-center gap-2">
                     <i class="fa-solid fa-file-pdf text-amber-500 text-base"></i>
                     Visualização do Relatório PDF (Página 1 e Página 2)
                 </span>
-                <button onclick="closePDFModal()" class="text-slate-400 hover:text-slate-600 text-sm font-bold px-2 py-1 rounded-lg cursor-pointer">
-                    <i class="fa-solid fa-xmark"></i> Fechar
-                </button>
+                <div class="flex flex-wrap items-center gap-2">
+                    <label class="flex items-center gap-2 text-xs font-bold text-slate-600">
+                        Letra
+                        <select id="pdf-font-level-preview" onchange="setPdfFontLevel(this.value)" class="border border-slate-300 rounded-lg px-2 py-1.5 bg-white">
+                            <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option>
+                        </select>
+                    </label>
+                    <button type="button" onclick="downloadPDF()" class="bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold px-3 py-2 rounded-lg cursor-pointer"><i class="fa-solid fa-file-pdf mr-1"></i> Gerar PDF</button>
+                    <button onclick="closePDFModal()" class="text-slate-500 hover:text-slate-700 text-sm font-bold px-2 py-1 rounded-lg cursor-pointer">
+                        <i class="fa-solid fa-xmark"></i> Fechar
+                    </button>
+                </div>
             </div>
 
             <div class="overflow-x-auto w-full flex justify-center bg-slate-100/60 p-3 rounded-xl border border-slate-200">
@@ -3159,6 +3188,51 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             if (pdfCreaDisplay) pdfCreaDisplay.innerText = (creaNumInput ? creaNumInput.value : '') || '';
         }
 
+        const PDF_FONT_STORAGE_KEY = 'docampo_pdf_font_pulverizacao';
+        const PDF_FONT_FACTORS = { 1: 0.82, 2: 0.91, 3: 1, 4: 1.10, 5: 1.20 };
+        let pdfFontLevel = Math.min(5, Math.max(1, Number(localStorage.getItem(PDF_FONT_STORAGE_KEY)) || 3));
+
+        function applyPdfFontLevel() {
+            const content = document.getElementById('pdf-content');
+            if (!content) return;
+            const factor = PDF_FONT_FACTORS[pdfFontLevel] || 1;
+            content.setAttribute('data-font-level', String(pdfFontLevel));
+            content.querySelectorAll('.pdf-box *, .pdf-table th, .pdf-table td').forEach(function(el) {
+                if (el.tagName === 'IMG' || el.id === 'pdf-agronomist-display' || el.id === 'pdf-crea-display') return;
+                if (!el.dataset.pdfBaseFontSize) {
+                    const base = parseFloat(window.getComputedStyle(el).fontSize);
+                    if (base > 0) el.dataset.pdfBaseFontSize = String(base);
+                }
+                const base = Number(el.dataset.pdfBaseFontSize);
+                if (base > 0) el.style.fontSize = (base * factor).toFixed(2) + 'px';
+            });
+        }
+
+        function setPdfFontLevel(value) {
+            pdfFontLevel = Math.min(5, Math.max(1, Number(value) || 3));
+            localStorage.setItem(PDF_FONT_STORAGE_KEY, String(pdfFontLevel));
+            const mainSelect = document.getElementById('pdf-font-level');
+            const previewSelect = document.getElementById('pdf-font-level-preview');
+            if (mainSelect) mainSelect.value = String(pdfFontLevel);
+            if (previewSelect) previewSelect.value = String(pdfFontLevel);
+            applyPdfFontLevel();
+        }
+
+        function openPDFPreview() {
+            if (!selectedFarm) {
+                showAlert("Por favor, selecione uma fazenda antes de visualizar o relatório.");
+                return;
+            }
+            if (selectedFields.size === 0) {
+                showAlert("Por favor, selecione ao menos um talhão para visualizar o relatório.");
+                return;
+            }
+            updatePDFPreview();
+            const wrapper = document.getElementById('pdf-content-wrapper');
+            if (wrapper) wrapper.classList.remove('hidden');
+            setPdfFontLevel(pdfFontLevel);
+        }
+
         async function downloadPDF() {
             if (!selectedFarm) {
                 showAlert("Por favor, selecione uma fazenda antes de gerar o relatório PDF.");
@@ -3180,6 +3254,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             }
 
             updatePDFPreview();
+            applyPdfFontLevel();
             saveToHistory();
 
             const btnText = document.getElementById('btn-pdf-text');
@@ -3232,6 +3307,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                                 producer: docFarm ? (docFarm.producer || docFarm.proprietor || '') : '',
                                 farm: selectedFarm,
                                 fields: Array.from(selectedFields),
+                                fontLevel: pdfFontLevel,
                                 responsible: (document.getElementById('agronomist-name') || {}).value || (window.DoCampoDB ? DoCampoDB.user() : '')
                             });
                         }
@@ -3259,6 +3335,10 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             const wrapper = document.getElementById('pdf-content-wrapper');
             if (wrapper) wrapper.classList.add('hidden');
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setPdfFontLevel(pdfFontLevel);
+        });
 
         function currentOrderedProducts() {
             return Array.from(document.querySelectorAll('#products-tbody tr')).map(function(tr) {

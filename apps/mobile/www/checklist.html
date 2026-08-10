@@ -473,6 +473,20 @@
                     <textarea id="observacoes" rows="2" placeholder="Digite detalhes adicionais sobre este talhão..." class="w-full p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-agro transition shadow-sm"></textarea>
                 </div>
 
+                <div class="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 space-y-3">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <h3 class="text-sm font-bold text-emerald-900 flex items-center gap-2"><i class="fas fa-location-dot"></i> Localização do problema <span class="font-normal text-gray-500">(opcional)</span></h3>
+                            <p class="text-xs text-gray-600 mt-1">Registre somente quando precisar indicar ao produtor um ponto específico dentro do talhão.</p>
+                        </div>
+                        <button id="btnCapturarGps" type="button" onclick="capturarLocalizacaoGps()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition flex items-center gap-2 shadow-sm">
+                            <i class="fas fa-location-crosshairs"></i> Marcar localização atual
+                        </button>
+                    </div>
+                    <div id="listaPontosGps" class="space-y-3"></div>
+                    <p id="statusGps" class="hidden text-xs font-semibold text-emerald-800"></p>
+                </div>
+
                 <!-- Submit Button -->
                 <button id="btnSalvarAvaliacao" type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold py-4 rounded-xl shadow-lg transition flex items-center justify-center text-base">
                     <i class="fas fa-plus-circle text-xl mr-2"></i> <span id="textoBtnSalvarAvaliacao">Adicionar Talhão à Lista</span>
@@ -576,6 +590,9 @@
                     </button>
                     <button onclick="gerarPDF()" class="flex-1 md:flex-none bg-gradient-to-r from-agro-dark to-green-800 hover:from-green-900 hover:to-agro-deep text-white font-bold py-3 px-6 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm">
                         <i class="fas fa-file-pdf text-red-300 text-lg"></i> Gerar Relatório PDF
+                    </button>
+                    <button id="btnEnviarSincronizacao" onclick="enviarChecklistParaSincronizacao()" class="flex-1 md:flex-none bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-5 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm">
+                        <i class="fas fa-cloud-arrow-up text-lg"></i> Enviar para sincronização
                     </button>
                 </div>
             </div>
@@ -693,6 +710,7 @@
         let matoCustomizados = [];
         let confirmCallbackAction = null;
         let listaAvaliacoes = [];
+        let pontosGpsEmEdicao = [];
 
         function carregarTudoDoLocalStorage() {
             try {
@@ -1549,6 +1567,13 @@
             if (obs) obs.value = '';
             const colheita = document.getElementById('situacaoColheita');
             if (colheita) colheita.value = '';
+            pontosGpsEmEdicao = [];
+            renderizarPontosGps();
+            const statusGps = document.getElementById('statusGps');
+            if (statusGps) {
+                statusGps.textContent = '';
+                statusGps.classList.add('hidden');
+            }
 
             renderizarPragasCustomizadas([]);
             renderizarDoencasCustomizadas([]);
@@ -1706,6 +1731,91 @@
             }
         }
 
+        function escaparHtmlGps(valor) {
+            return String(valor || '').replace(/[&<>"']/g, caractere => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+            })[caractere]);
+        }
+
+        function urlMapaGps(ponto) {
+            return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${ponto.latitude},${ponto.longitude}`)}`;
+        }
+
+        function renderizarPontosGps() {
+            const lista = document.getElementById('listaPontosGps');
+            if (!lista) return;
+            lista.innerHTML = pontosGpsEmEdicao.map((ponto, index) => `
+                <div class="rounded-xl bg-white border border-emerald-200 p-3 space-y-2">
+                    <div class="flex items-center justify-between gap-3">
+                        <strong class="text-xs text-emerald-900"><i class="fas fa-map-pin mr-1"></i> Ponto ${index + 1}</strong>
+                        <div class="flex items-center gap-3">
+                            <a href="${urlMapaGps(ponto)}" target="_blank" rel="noopener" class="text-xs font-bold text-blue-700 hover:underline">Abrir no mapa</a>
+                            <button type="button" onclick="removerPontoGps(${index})" class="text-red-600 p-1" title="Remover localização"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <input type="text" value="${escaparHtmlGps(ponto.descricao || '')}" oninput="atualizarDescricaoGps(${index}, this.value)" placeholder="Identificação do ponto (ex.: foco de ferrugem)" class="w-full p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                    <div class="text-xs text-gray-600">${Number(ponto.latitude).toFixed(6)}, ${Number(ponto.longitude).toFixed(6)}${Number.isFinite(Number(ponto.precisao)) ? ` • precisão aproximada: ${Math.round(Number(ponto.precisao))} m` : ''}</div>
+                </div>
+            `).join('');
+        }
+
+        function atualizarDescricaoGps(index, valor) {
+            if (pontosGpsEmEdicao[index]) pontosGpsEmEdicao[index].descricao = String(valor || '').trimStart();
+        }
+
+        function removerPontoGps(index) {
+            pontosGpsEmEdicao.splice(index, 1);
+            renderizarPontosGps();
+            exibirToast('Localização removida.', 'bg-gray-700');
+        }
+
+        function obterPosicaoNavegador() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) return reject(new Error('GPS não disponível neste aparelho.'));
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true, timeout: 20000, maximumAge: 0
+                });
+            });
+        }
+
+        async function capturarLocalizacaoGps() {
+            const botao = document.getElementById('btnCapturarGps');
+            const status = document.getElementById('statusGps');
+            botao.disabled = true;
+            status.classList.remove('hidden');
+            status.textContent = 'Obtendo localização do aparelho…';
+            try {
+                let posicao;
+                const pluginGps = window.Capacitor?.Plugins?.Geolocation;
+                if (pluginGps) {
+                    await pluginGps.requestPermissions();
+                    posicao = await pluginGps.getCurrentPosition({ enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+                } else {
+                    posicao = await obterPosicaoNavegador();
+                }
+                const coordenadas = posicao.coords || posicao;
+                pontosGpsEmEdicao.push({
+                    id: 'gps-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7),
+                    latitude: Number(coordenadas.latitude),
+                    longitude: Number(coordenadas.longitude),
+                    precisao: Number(coordenadas.accuracy),
+                    descricao: '',
+                    registradoEm: new Date().toISOString()
+                });
+                renderizarPontosGps();
+                status.textContent = 'Localização registrada. Você pode identificar o problema ou adicionar outro ponto.';
+                exibirToast('Localização registrada com sucesso!');
+            } catch (erro) {
+                const negado = String(erro?.message || erro || '').toLowerCase().includes('denied');
+                status.textContent = negado
+                    ? 'Permissão de localização negada. Autorize o GPS nas configurações do aplicativo.'
+                    : 'Não foi possível obter o ponto. Vá para uma área aberta, ative o GPS e tente novamente.';
+                exibirToast(status.textContent, 'bg-red-700');
+            } finally {
+                botao.disabled = false;
+            }
+        }
+
         document.getElementById('monitoramentoForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
@@ -1718,7 +1828,8 @@
                 mato: Array.from(document.querySelectorAll('input[name="mato"]:checked')).map(cb => cb.value).join(', ') || 'Sem registro',
                 indicacoes: Array.from(document.querySelectorAll('input[name="indicacoes"]:checked')).map(cb => cb.value).join(', ') || 'Talhão sem ações',
                 situacaoColheita: document.getElementById('situacaoColheita').value || '',
-                obs: document.getElementById('observacoes').value.trim() || '-'
+                obs: document.getElementById('observacoes').value.trim() || '-',
+                pontosGps: JSON.parse(JSON.stringify(pontosGpsEmEdicao))
             };
 
             if (listaAvaliacoes.some((av,index) => index !== indiceEdicao && av.talhao === avaliacao.talhao)) {
@@ -1794,6 +1905,8 @@
             marcarGrupoAvaliacao('indicacoes', indicacoes);
             document.getElementById('situacaoColheita').value = item.situacaoColheita || '';
             document.getElementById('observacoes').value = item.obs === '-' ? '' : (item.obs || '');
+            pontosGpsEmEdicao = Array.isArray(item.pontosGps) ? JSON.parse(JSON.stringify(item.pontosGps)) : [];
+            renderizarPontosGps();
             atualizarModoEdicao();
             document.getElementById('monitoramentoForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
             exibirToast(`Editando o talhão ${item.talhao}. Altere e toque em Salvar.`, 'bg-blue-700');
@@ -1839,7 +1952,7 @@
                     <td class="p-3"><span class="px-2 py-1 rounded text-xs ${item.doencas.includes('Livre') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800 font-semibold'}">${item.doencas}</span></td>
                     <td class="p-3"><span class="px-2 py-1 rounded text-xs ${item.mato.includes('Livre') ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${item.mato}</span></td>
                     <td class="p-3 text-xs text-gray-700 font-medium">${item.indicacoes}${item.situacaoColheita ? `<div class="mt-1"><span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800">${item.situacaoColheita}</span></div>` : ''}</td>
-                    <td class="p-3 text-xs text-gray-500 italic truncate max-w-xs">${item.obs}</td>
+                    <td class="p-3 text-xs text-gray-500 italic max-w-xs">${item.obs}${Array.isArray(item.pontosGps) && item.pontosGps.length ? `<div class="mt-2 text-emerald-700 not-italic font-bold"><i class="fas fa-location-dot mr-1"></i>${item.pontosGps.length} localização(ões) registrada(s)</div>` : ''}</td>
                     <td class="p-3 text-center whitespace-nowrap">
                         <button type="button" onclick="editarItem(${index})" class="text-blue-600 hover:text-blue-800 p-1 transition mr-2" title="Editar item">
                             <i class="fas fa-pen"></i>
@@ -1882,6 +1995,35 @@
             });
         }
 
+        async function enviarChecklistParaSincronizacao() {
+            if (!listaAvaliacoes.length) {
+                exibirToast('Adicione pelo menos um talhão antes de sincronizar.', 'bg-amber-600');
+                return;
+            }
+            if (!localStorage.getItem('docampo_current_visit_id')) salvarAvaliacoes();
+            if (!navigator.onLine) {
+                exibirToast('Checklist salvo no aparelho e aguardando internet.', 'bg-amber-600');
+                return;
+            }
+            if (!window.DoCampoAuth?.status()?.authenticated) {
+                exibirToast('Checklist salvo. Entre na conta pelo menu para sincronizar.', 'bg-amber-600');
+                return;
+            }
+            const botao = document.getElementById('btnEnviarSincronizacao');
+            const conteudoOriginal = botao.innerHTML;
+            botao.disabled = true;
+            botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando…';
+            try {
+                await window.DoCampoSync.sync();
+                exibirToast('Checklist enviado e dados dos dois celulares atualizados!', 'bg-green-700');
+            } catch (erro) {
+                exibirToast(erro.message || 'Não foi possível sincronizar agora.', 'bg-red-700');
+            } finally {
+                botao.disabled = false;
+                botao.innerHTML = conteudoOriginal;
+            }
+        }
+
         async function gerarPDF() {
             if (listaAvaliacoes.length === 0) {
                 exibirToast("Adicione pelo menos um talhão antes de gerar o PDF!", "bg-amber-600");
@@ -1900,9 +2042,22 @@
             const todosTalhoesFazenda = talhoesPorFazenda[fazendaNome] || [];
             let dadosTabela = [];
             const incluirColheita = listaAvaliacoes.some(av => String(av.situacaoColheita || '').trim());
+            const localizacoesPorTalhao = {};
+            listaAvaliacoes.forEach(av => {
+                if (Array.isArray(av.pontosGps) && av.pontosGps.length) localizacoesPorTalhao[av.talhao] = av.pontosGps;
+            });
+            const observacaoPdf = (av) => {
+                let texto = av.obs || '-';
+                (Array.isArray(av.pontosGps) ? av.pontosGps : []).forEach((ponto, index) => {
+                    const identificacao = String(ponto.descricao || '').trim();
+                    texto += `\nLocalização ${index + 1}${identificacao ? ` - ${identificacao}` : ''}: abrir no mapa`;
+                    texto += `\n${Number(ponto.latitude).toFixed(6)}, ${Number(ponto.longitude).toFixed(6)}`;
+                });
+                return texto;
+            };
             const linhaTabela = (av) => incluirColheita
-                ? [av.talhao, av.pragas, av.doencas, av.mato, av.situacaoColheita || '-', av.indicacoes, av.obs]
-                : [av.talhao, av.pragas, av.doencas, av.mato, av.indicacoes, av.obs];
+                ? [av.talhao, av.pragas, av.doencas, av.mato, av.situacaoColheita || '-', av.indicacoes, observacaoPdf(av)]
+                : [av.talhao, av.pragas, av.doencas, av.mato, av.indicacoes, observacaoPdf(av)];
 
             if (incluirTodos) {
                 todosTalhoesFazenda.forEach(t => {
@@ -2023,6 +2178,22 @@
                             data.cell.styles.textColor = [150, 150, 150];
                         }
                     }
+                },
+                didDrawCell: function(data) {
+                    const colunaObservacao = incluirColheita ? 6 : 5;
+                    if (data.section !== 'body' || data.column.index !== colunaObservacao) return;
+                    const talhao = Array.isArray(data.row.raw) ? data.row.raw[0] : '';
+                    const pontos = localizacoesPorTalhao[talhao] || [];
+                    if (!pontos.length) return;
+                    const linhas = Array.isArray(data.cell.text) ? data.cell.text : [];
+                    pontos.forEach((ponto, index) => {
+                        const marcador = `Localização ${index + 1}`;
+                        const linha = linhas.findIndex(texto => String(texto).includes(marcador));
+                        if (linha < 0) return;
+                        const alturaLinha = 3.5;
+                        const y = data.cell.y + 1.3 + linha * alturaLinha;
+                        doc.link(data.cell.x + 1, y, data.cell.width - 2, alturaLinha, { url: urlMapaGps(ponto) });
+                    });
                 },
                 margin: { left: 14, right: 14, top: 21, bottom: 15 }
             });
@@ -2235,6 +2406,10 @@
         window.toggleAgronomo = toggleAgronomo;
         window.removerItem = removerItem;
         window.gerarPDF = gerarPDF;
+        window.enviarChecklistParaSincronizacao = enviarChecklistParaSincronizacao;
+        window.capturarLocalizacaoGps = capturarLocalizacaoGps;
+        window.removerPontoGps = removerPontoGps;
+        window.atualizarDescricaoGps = atualizarDescricaoGps;
         window.exportarCSV = exportarCSV;
 
         // Start initialization

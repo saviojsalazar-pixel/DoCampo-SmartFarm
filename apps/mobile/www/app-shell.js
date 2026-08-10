@@ -5,6 +5,25 @@
 
   function goHome() { location.replace('index.html'); }
 
+  let ultimaSincronizacaoAutomatica = 0;
+  async function sincronizarAoAbrir() {
+    if (Date.now() - ultimaSincronizacaoAutomatica < 30000) return;
+    if (!navigator.onLine || !window.DoCampoSync || !window.DoCampoDB || !window.DoCampoAuth) return;
+    const statusBanco = DoCampoDB.status();
+    const statusConta = DoCampoAuth.status();
+    if (!statusBanco.configured || !statusConta.authenticated) return;
+    ultimaSincronizacaoAutomatica = Date.now();
+    try { await DoCampoSync.sync(); }
+    catch (erro) { console.warn('Sincronização automática aguardando nova tentativa:', erro.message || erro); }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(sincronizarAoAbrir, 700);
+  });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') setTimeout(sincronizarAoAbrir, 500);
+  });
+
   if (!isHome) {
     document.addEventListener('DOMContentLoaded', function () {
       if (document.querySelector('[data-docampo-back], .back')) return;

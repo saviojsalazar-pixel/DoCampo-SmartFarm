@@ -1,6 +1,6 @@
 {
   "name": "do-campo-smartfarm",
-  "version": "1.9.16",
+  "version": "1.9.18",
   "private": true,
   "scripts": {
     "android": "cap open android",
@@ -10,6 +10,7 @@
     "@capacitor/android": "7.4.3",
     "@capacitor/core": "7.4.3",
     "@capacitor/filesystem": "^7.1.8",
+    "@capacitor/geolocation": "^7.1.8",
     "@capacitor/share": "^7.0.4",
     "pdfjs-dist": "^3.11.174"
   },
