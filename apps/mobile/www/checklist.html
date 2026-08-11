@@ -585,8 +585,21 @@
                 </div>
                 
                 <div class="flex flex-wrap w-full md:w-auto gap-3">
+                    <label class="flex-1 md:flex-none min-w-[180px]">
+                        <span class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tamanho da letra no PDF</span>
+                        <select id="checklistPdfFontLevel" onchange="definirFonteChecklist(this.value)" class="w-full bg-white border border-gray-300 rounded-xl py-3 px-3 text-sm font-semibold text-gray-700 focus:ring-2 focus:ring-agro focus:outline-none">
+                            <option value="1">1 — Muito compacto</option>
+                            <option value="2">2 — Compacto</option>
+                            <option value="3" selected>3 — Padrão</option>
+                            <option value="4">4 — Grande</option>
+                            <option value="5">5 — Muito grande</option>
+                        </select>
+                    </label>
                     <button onclick="exportarCSV()" class="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-5 rounded-xl shadow transition flex items-center justify-center gap-2 text-sm">
                         <i class="fas fa-file-excel"></i> Exportar CSV
+                    </button>
+                    <button onclick="visualizarPreviaChecklist()" class="flex-1 md:flex-none bg-white hover:bg-emerald-50 text-agro-dark border-2 border-agro-dark font-bold py-3 px-5 rounded-xl shadow transition flex items-center justify-center gap-2 text-sm">
+                        <i class="fas fa-eye text-lg"></i> Visualizar prévia
                     </button>
                     <button onclick="gerarPDF()" class="flex-1 md:flex-none bg-gradient-to-r from-agro-dark to-green-800 hover:from-green-900 hover:to-agro-deep text-white font-bold py-3 px-6 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm">
                         <i class="fas fa-file-pdf text-red-300 text-lg"></i> Gerar Relatório PDF
@@ -598,6 +611,25 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- Prévia fiel do PDF: abrir não salva nem envia o documento -->
+    <div id="checklistPdfPreviewModal" class="fixed inset-0 z-[100] hidden bg-gray-950/80 backdrop-blur-sm p-3 md:p-5">
+        <div class="bg-white rounded-2xl shadow-2xl h-full max-w-7xl mx-auto flex flex-col overflow-hidden">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 px-4 py-3">
+                <div class="font-bold text-gray-800 flex items-center gap-2"><i class="fas fa-file-pdf text-red-600"></i> Prévia do Checklist de Lavoura</div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <label class="flex items-center gap-2 text-xs font-bold text-gray-600">Letra
+                        <select id="checklistPdfFontLevelPreview" onchange="definirFonteChecklist(this.value)" class="border border-gray-300 rounded-lg px-2 py-1.5 bg-white">
+                            <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option>
+                        </select>
+                    </label>
+                    <button onclick="gerarPDF(false)" class="bg-agro-dark hover:bg-green-900 text-white text-xs font-bold px-3 py-2 rounded-lg"><i class="fas fa-file-pdf mr-1"></i> Gerar PDF</button>
+                    <button onclick="fecharPreviaChecklist()" class="text-gray-600 hover:text-gray-900 text-sm font-bold px-2 py-2 rounded-lg"><i class="fas fa-times"></i> Fechar</button>
+                </div>
+            </div>
+            <iframe id="checklistPdfPreviewFrame" title="Prévia do PDF do checklist" class="w-full flex-1 bg-gray-100 border-0"></iframe>
+        </div>
     </div>
 
     <script type="module">
@@ -2024,7 +2056,37 @@
             }
         }
 
-        async function gerarPDF() {
+        const CHECKLIST_FONT_STORAGE_KEY = 'docampo_pdf_font_checklist';
+        const CHECKLIST_FONT_FACTORS = { 1: 0.82, 2: 0.91, 3: 1, 4: 1.10, 5: 1.20 };
+        let checklistPdfFontLevel = Math.min(5, Math.max(1, Number(localStorage.getItem(CHECKLIST_FONT_STORAGE_KEY)) || 3));
+
+        function sincronizarSeletoresFonteChecklist() {
+            const principal = document.getElementById('checklistPdfFontLevel');
+            const previa = document.getElementById('checklistPdfFontLevelPreview');
+            if (principal) principal.value = String(checklistPdfFontLevel);
+            if (previa) previa.value = String(checklistPdfFontLevel);
+        }
+
+        function definirFonteChecklist(value) {
+            checklistPdfFontLevel = Math.min(5, Math.max(1, Number(value) || 3));
+            localStorage.setItem(CHECKLIST_FONT_STORAGE_KEY, String(checklistPdfFontLevel));
+            sincronizarSeletoresFonteChecklist();
+            const modal = document.getElementById('checklistPdfPreviewModal');
+            if (modal && !modal.classList.contains('hidden')) gerarPDF(true);
+        }
+
+        function visualizarPreviaChecklist() {
+            gerarPDF(true);
+        }
+
+        function fecharPreviaChecklist() {
+            const modal = document.getElementById('checklistPdfPreviewModal');
+            const frame = document.getElementById('checklistPdfPreviewFrame');
+            if (modal) modal.classList.add('hidden');
+            if (frame) frame.removeAttribute('src');
+        }
+
+        async function gerarPDF(somentePrevia = false) {
             if (listaAvaliacoes.length === 0) {
                 exibirToast("Adicione pelo menos um talhão antes de gerar o PDF!", "bg-amber-600");
                 return;
@@ -2033,6 +2095,7 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
             const logoChecklist = await carregarLogoChecklist();
+            const fontFactor = CHECKLIST_FONT_FACTORS[checklistPdfFontLevel] || 1;
 
             const fazendaNome = fazendaSelect.value;
             const nomeProprietarioVal = document.getElementById('nomeProprietario').value.trim();
@@ -2110,7 +2173,7 @@
             doc.roundedRect(14, 22, 269, 10, 1.5, 1.5, 'FD');
 
             doc.setTextColor(40, 40, 40);
-            doc.setFontSize(8);
+            doc.setFontSize(8 * fontFactor);
             
             doc.setFont('helvetica', 'bold');
             doc.text("PROPRIEDADE / FAZENDA:", 17, 26);
@@ -2143,12 +2206,12 @@
                     fillColor: [27, 94, 32],
                     textColor: [255, 255, 255],
                     fontStyle: 'bold',
-                    fontSize: 8.5,
+                    fontSize: 8.5 * fontFactor,
                     cellPadding: 2,
                     halign: 'left'
                 },
                 bodyStyles: {
-                    fontSize: 8,
+                    fontSize: 8 * fontFactor,
                     textColor: [40, 40, 40],
                     cellPadding: 1.8
                 },
@@ -2247,18 +2310,31 @@
             const dataFormatada = document.getElementById('dataAvaliacao').value;
             const nomeFazendaLimpo = fazendaNome.replace(/[^a-zA-Z0-9]/g, '_');
             const nomeArquivo = `Relatorio_Campo_${nomeFazendaLimpo}_${dataFormatada}.pdf`;
+            const pdfData = doc.output('datauristring');
+
+            if (somentePrevia) {
+                const modal = document.getElementById('checklistPdfPreviewModal');
+                const frame = document.getElementById('checklistPdfPreviewFrame');
+                sincronizarSeletoresFonteChecklist();
+                if (frame) frame.src = pdfData;
+                if (modal) modal.classList.remove('hidden');
+                return;
+            }
+
             if (window.DoCampoPDF) {
-                await window.DoCampoPDF.salvarECompartilhar(doc.output('datauristring'), nomeArquivo, 'Checklist de Lavoura', {
+                await window.DoCampoPDF.salvarECompartilhar(pdfData, nomeArquivo, 'Checklist de Lavoura', {
                     typeLabel: 'Checklist de Lavoura',
                     producer: nomeProprietarioVal,
                     farm: fazendaNome,
                     fields: listaAvaliacoes.map(av => av.talhao),
+                    fontLevel: checklistPdfFontLevel,
                     responsible: window.DoCampoDB ? DoCampoDB.user() : ''
                 });
             } else {
                 doc.save(nomeArquivo);
             }
-            
+
+            fecharPreviaChecklist();
             exibirToast("PDF gerado com sucesso!", "bg-green-700");
         }
 
@@ -2406,6 +2482,9 @@
         window.toggleAgronomo = toggleAgronomo;
         window.removerItem = removerItem;
         window.gerarPDF = gerarPDF;
+        window.visualizarPreviaChecklist = visualizarPreviaChecklist;
+        window.fecharPreviaChecklist = fecharPreviaChecklist;
+        window.definirFonteChecklist = definirFonteChecklist;
         window.enviarChecklistParaSincronizacao = enviarChecklistParaSincronizacao;
         window.capturarLocalizacaoGps = capturarLocalizacaoGps;
         window.removerPontoGps = removerPontoGps;
@@ -2413,6 +2492,7 @@
         window.exportarCSV = exportarCSV;
 
         // Start initialization
+        sincronizarSeletoresFonteChecklist();
         initFirebase();
     </script>
 </body>

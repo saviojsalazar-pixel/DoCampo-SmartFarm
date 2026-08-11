@@ -571,9 +571,15 @@
 
                 <!-- Products Table -->
                 <div class="space-y-3">
-                    <div class="flex items-center justify-between">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <h4 class="font-bold text-sm text-slate-800 uppercase tracking-wider">Insumos Recomendados</h4>
-                        <div class="flex items-center gap-2">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button" onclick="addGenericAdjuvant('adjuvant')" class="text-xs font-bold bg-teal-50 text-teal-800 hover:bg-teal-100 border border-teal-300 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer shadow-sm">
+                                <i class="fa-solid fa-droplet text-teal-600"></i> + Adjuvante Genérico (0,05%)
+                            </button>
+                            <button type="button" onclick="addGenericAdjuvant('oil')" class="text-xs font-bold bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-300 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer shadow-sm">
+                                <i class="fa-solid fa-oil-can text-amber-600"></i> + Óleo Mineral/Vegetal (0,25%)
+                            </button>
                             <button type="button" onclick="addProductRow()" class="text-xs font-bold bg-agri-50 text-agri-700 hover:bg-agri-100 border border-agri-200 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
                                 <i class="fa-solid fa-plus"></i> Adicionar Produto
                             </button>
@@ -2712,6 +2718,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                         '<option value="Inseticida-Acaricida" ' + (category === 'Inseticida-Acaricida' ? 'selected' : '') + '>Inseticida-Acaricida</option>' +
                         '<option value="Nutricional" ' + (category === 'Nutricional' ? 'selected' : '') + '>Nutricional</option>' +
                         '<option value="Hormonal" ' + (category === 'Hormonal' ? 'selected' : '') + '>Hormonal</option>' +
+                        '<option value="Adjuvantes / Antideriva / Corretores" ' + (category === 'Adjuvantes / Antideriva / Corretores' ? 'selected' : '') + '>Adjuvantes / Antideriva / Corretores</option>' +
                         '<option value="Outros">Outros / Personalizado</option>' +
                     '</select>' +
                 '</td>' +
@@ -2817,7 +2824,19 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             if (!prodSelect) return;
 
             const selectedProdName = prodSelect.value;
-            if (PRODUCT_CATALOG[category]) {
+            if (selectedProdName === "Adjuvante Genérico") {
+                const sprayVolHa = actualSprayVolume() || 400;
+                const doseEl = document.getElementById(rowId + '-dose');
+                const unitEl = document.getElementById(rowId + '-unit');
+                if (doseEl) doseEl.value = parseFloat((sprayVolHa * 0.0005).toFixed(4));
+                if (unitEl) unitEl.value = "L/ha";
+            } else if (selectedProdName === "Óleo Mineral/Vegetal Genérico") {
+                const sprayVolHa = actualSprayVolume() || 400;
+                const doseEl = document.getElementById(rowId + '-dose');
+                const unitEl = document.getElementById(rowId + '-unit');
+                if (doseEl) doseEl.value = parseFloat((sprayVolHa * 0.0025).toFixed(4));
+                if (unitEl) unitEl.value = "L/ha";
+            } else if (PRODUCT_CATALOG[category]) {
                 const prodData = PRODUCT_CATALOG[category].find(function(p) { return p.name === selectedProdName; });
                 if (prodData) {
                     const doseEl = document.getElementById(rowId + '-dose');
@@ -2827,6 +2846,59 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 }
             }
 
+            calculateTotals();
+        }
+
+        function addGenericAdjuvant(type) {
+            const sprayVolHa = actualSprayVolume() || 400;
+            const category = "Adjuvantes / Antideriva / Corretores";
+            const prodName = type === 'oil' ? "Óleo Mineral/Vegetal Genérico" : "Adjuvante Genérico";
+            const factor = type === 'oil' ? 0.0025 : 0.0005;
+            const calculatedDose = parseFloat((sprayVolHa * factor).toFixed(4));
+
+            if (!PRODUCT_CATALOG[category]) PRODUCT_CATALOG[category] = [];
+            if (!PRODUCT_CATALOG[category].some(function(item) { return item.name === prodName; })) {
+                PRODUCT_CATALOG[category].push({
+                    name: prodName,
+                    dose: calculatedDose,
+                    unit: "L/ha",
+                    target: type === 'oil' ? "Óleo Mineral/Vegetal (0,25% v/v)" : "Espalhante / Adjuvante (0,05% v/v)",
+                    active: type === 'oil' ? "Cálculo em função do volume de calda (0,25%)" : "Cálculo em função do volume de calda (0,05%)"
+                });
+            }
+
+            let targetRowId = null;
+            document.querySelectorAll('#products-tbody tr').forEach(function(tr) {
+                if (targetRowId) return;
+                const catEl = document.getElementById(tr.id + '-cat');
+                const prodSelect = document.getElementById(tr.id + '-prod-select');
+                if (catEl && !catEl.value && prodSelect && !prodSelect.value) targetRowId = tr.id;
+            });
+
+            if (!targetRowId) {
+                addProductRow(category);
+                const rows = document.querySelectorAll('#products-tbody tr');
+                targetRowId = rows[rows.length - 1].id;
+            } else {
+                const catSelect = document.getElementById(targetRowId + '-cat');
+                catSelect.value = category;
+                onCategoryChange(targetRowId);
+            }
+
+            const prodSelect = document.getElementById(targetRowId + '-prod-select');
+            if (prodSelect) {
+                if (!Array.from(prodSelect.options).some(function(opt) { return opt.value === prodName; })) {
+                    const option = document.createElement('option');
+                    option.value = prodName;
+                    option.textContent = prodName;
+                    prodSelect.appendChild(option);
+                }
+                prodSelect.value = prodName;
+            }
+            const doseEl = document.getElementById(targetRowId + '-dose');
+            const unitEl = document.getElementById(targetRowId + '-unit');
+            if (doseEl) doseEl.value = calculatedDose;
+            if (unitEl) unitEl.value = "L/ha";
             calculateTotals();
         }
 
