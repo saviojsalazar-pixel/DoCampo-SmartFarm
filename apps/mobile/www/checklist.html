@@ -10,6 +10,7 @@
     <!-- jsPDF and AutoTable Libraries for PDF Generation -->
     <script src="vendor/pdf/jspdf.umd.min.js"></script>
     <script src="vendor/pdf/jspdf.plugin.autotable.min.js"></script>
+    <script src="vendor/pdfjs/pdf.min.js"></script>
     <script src="supabase-config.js"></script>
     <script src="unified-db.js"></script>
     <script src="shared-data.js"></script>
@@ -628,7 +629,9 @@
                     <button onclick="fecharPreviaChecklist()" class="text-gray-600 hover:text-gray-900 text-sm font-bold px-2 py-2 rounded-lg"><i class="fas fa-times"></i> Fechar</button>
                 </div>
             </div>
-            <iframe id="checklistPdfPreviewFrame" title="Prévia do PDF do checklist" class="w-full flex-1 bg-gray-100 border-0"></iframe>
+            <div id="checklistPdfPreviewPages" class="w-full flex-1 min-h-0 overflow-auto bg-gray-100 p-3 md:p-5 space-y-4">
+                <div class="h-full min-h-[320px] flex items-center justify-center text-gray-500 text-sm font-semibold">A prévia será exibida aqui.</div>
+            </div>
         </div>
     </div>
 
@@ -2081,9 +2084,49 @@
 
         function fecharPreviaChecklist() {
             const modal = document.getElementById('checklistPdfPreviewModal');
-            const frame = document.getElementById('checklistPdfPreviewFrame');
+            const pages = document.getElementById('checklistPdfPreviewPages');
             if (modal) modal.classList.add('hidden');
-            if (frame) frame.removeAttribute('src');
+            if (pages) pages.innerHTML = '<div class="h-full min-h-[320px] flex items-center justify-center text-gray-500 text-sm font-semibold">A prévia será exibida aqui.</div>';
+        }
+
+        async function renderizarPaginasPreviaChecklist(pdfArrayBuffer) {
+            const modal = document.getElementById('checklistPdfPreviewModal');
+            const pages = document.getElementById('checklistPdfPreviewPages');
+            if (!pages) return;
+
+            if (modal) modal.classList.remove('hidden');
+            pages.innerHTML = '<div class="min-h-[320px] flex items-center justify-center text-agro-dark text-sm font-bold"><i class="fas fa-spinner fa-spin mr-2"></i> Preparando prévia…</div>';
+
+            if (!window.pdfjsLib) {
+                pages.innerHTML = '<div class="min-h-[320px] flex items-center justify-center text-red-700 text-sm font-bold px-5 text-center">O visualizador offline não foi carregado. Feche esta tela e tente novamente.</div>';
+                return;
+            }
+
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdfjs/pdf.worker.min.js';
+            const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(pdfArrayBuffer) }).promise;
+            pages.innerHTML = '';
+
+            for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+                const page = await pdf.getPage(pageNumber);
+                const viewport = page.getViewport({ scale: 1.6 });
+                const sheet = document.createElement('div');
+                sheet.className = 'bg-white shadow-lg border border-gray-300 rounded-md overflow-hidden mx-auto';
+                sheet.style.width = 'fit-content';
+                sheet.style.maxWidth = '100%';
+
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d', { alpha: false });
+                canvas.width = Math.ceil(viewport.width);
+                canvas.height = Math.ceil(viewport.height);
+                canvas.style.display = 'block';
+                canvas.style.width = '100%';
+                canvas.style.height = 'auto';
+                canvas.setAttribute('aria-label', 'Página ' + pageNumber + ' da prévia do checklist');
+                sheet.appendChild(canvas);
+                pages.appendChild(sheet);
+
+                await page.render({ canvasContext: context, viewport: viewport }).promise;
+            }
         }
 
         async function gerarPDF(somentePrevia = false) {
@@ -2313,11 +2356,16 @@
             const pdfData = doc.output('datauristring');
 
             if (somentePrevia) {
-                const modal = document.getElementById('checklistPdfPreviewModal');
-                const frame = document.getElementById('checklistPdfPreviewFrame');
                 sincronizarSeletoresFonteChecklist();
-                if (frame) frame.src = pdfData;
-                if (modal) modal.classList.remove('hidden');
+                try {
+                    await renderizarPaginasPreviaChecklist(doc.output('arraybuffer'));
+                } catch (erroPrevia) {
+                    console.error('Falha ao renderizar prévia do checklist:', erroPrevia);
+                    const pages = document.getElementById('checklistPdfPreviewPages');
+                    const modal = document.getElementById('checklistPdfPreviewModal');
+                    if (modal) modal.classList.remove('hidden');
+                    if (pages) pages.innerHTML = '<div class="min-h-[320px] flex items-center justify-center text-red-700 text-sm font-bold px-5 text-center">Não foi possível montar a prévia. O PDF ainda pode ser gerado normalmente.</div>';
+                }
                 return;
             }
 
