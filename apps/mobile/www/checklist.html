@@ -16,6 +16,7 @@
     <script src="shared-data.js"></script>
     <script src="sync-engine.js"></script>
     <script src="native-pdf.js"></script>
+    <script src="document-code.js"></script>
     <script src="app-shell.js"></script>
     
     <script>
@@ -234,6 +235,17 @@
                             </div>
                         </div>
 
+                    </div>
+                    <div id="visitaCompartilhadaPainel" class="hidden rounded-xl border border-blue-200 bg-blue-50 p-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <p class="font-bold text-blue-900"><i class="fas fa-mobile-screen-button mr-2"></i>Visita em andamento encontrada</p>
+                                <p id="visitaCompartilhadaResumo" class="text-xs text-blue-800 mt-1"></p>
+                            </div>
+                            <button type="button" id="btnContinuarVisitaCompartilhada" class="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap">
+                                Continuar esta visita
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -469,9 +481,27 @@
                     <p class="text-xs text-gray-500 mt-1">Se ficar em branco, esta informação não aparecerá no relatório.</p>
                 </div>
 
+                <div class="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 space-y-4">
+                    <div>
+                        <h3 class="text-base font-bold text-emerald-900 flex items-center gap-2"><i class="fas fa-list-check"></i> Tarefas adicionais do talhão <span class="font-normal text-gray-500 text-xs">(opcional)</span></h3>
+                        <p class="text-xs text-gray-600 mt-1">As ações marcadas acima já viram tarefas automaticamente. Use este espaço para orientações específicas que não estejam na lista.</p>
+                    </div>
+                    <div id="listaTarefasAutomaticas" class="space-y-2"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="md:col-span-2"><label for="novaTarefaTitulo" class="block text-xs font-bold text-gray-700 mb-1">Tarefa</label><input id="novaTarefaTitulo" type="text" maxlength="180" placeholder="Ex.: Conferir vazamento na linha principal" class="w-full p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 bg-white"></div>
+                        <div class="md:col-span-2"><label for="novaTarefaDetalhes" class="block text-xs font-bold text-gray-700 mb-1">Detalhes <span class="font-normal text-gray-500">(opcional)</span></label><textarea id="novaTarefaDetalhes" rows="3" maxlength="500" placeholder="Explique o que deve ser feito ou conferido." class="w-full min-h-[86px] resize-y p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 bg-white"></textarea></div>
+                        <div><label for="novaTarefaPrazo" class="block text-xs font-bold text-gray-700 mb-1">Prazo <span class="font-normal text-gray-500">(opcional)</span></label><input id="novaTarefaPrazo" type="date" class="w-full p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 bg-white"></div>
+                        <div><label for="novaTarefaPrioridade" class="block text-xs font-bold text-gray-700 mb-1">Prioridade</label><select id="novaTarefaPrioridade" class="w-full p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 bg-white"><option value="normal">Normal</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></div>
+                        <div class="md:col-span-2"><label for="novaTarefaResponsavel" class="block text-xs font-bold text-gray-700 mb-1">Responsável <span class="font-normal text-gray-500">(opcional)</span></label><input id="novaTarefaResponsavel" type="text" maxlength="120" placeholder="Ex.: produtor, gerente ou funcionário" class="w-full p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 bg-white"></div>
+                    </div>
+                    <button type="button" onclick="adicionarTarefaManual()" class="w-full md:w-auto bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-5 py-3 rounded-xl text-sm transition shadow-sm"><i class="fas fa-plus mr-2"></i>Adicionar tarefa</button>
+                    <div id="listaTarefasManuais" class="space-y-3"></div>
+                    <div id="tarefasRemovidasPainel" class="hidden border-t border-emerald-200 pt-3"><p class="text-xs font-bold text-gray-600 mb-2"><i class="fas fa-trash-can-arrow-up mr-1"></i>Tarefas removidas — toque para recuperar</p><div id="listaTarefasRemovidas" class="space-y-2"></div></div>
+                </div>
+
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1">Observações do Campo:</label>
-                    <textarea id="observacoes" rows="2" placeholder="Digite detalhes adicionais sobre este talhão..." class="w-full p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-agro transition shadow-sm"></textarea>
+                    <textarea id="observacoes" rows="6" oninput="autoExpandirTexto(this)" placeholder="Descreva as condições observadas, o local do problema e orientações específicas deste talhão..." class="w-full min-h-[150px] resize-y p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-agro transition shadow-sm"></textarea>
                 </div>
 
                 <div class="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 space-y-3">
@@ -534,6 +564,13 @@
                     </thead>
                     <tbody id="tabelaCorpo" class="divide-y divide-gray-200"></tbody>
                 </table>
+            </div>
+
+            <!-- Seleção do Engenheiro Agrônomo Responsável -->
+            <div class="p-5 border-t border-gray-100 bg-emerald-50/40 space-y-2">
+                <label for="observacoesGerais" class="block text-sm font-bold text-agro-dark"><i class="fas fa-clipboard mr-2"></i>Observações gerais da propriedade <span class="font-normal text-gray-500">(opcional)</span></label>
+                <p class="text-xs text-gray-600">Use para orientações que valem para toda a fazenda. Este bloco só aparecerá no PDF quando houver conteúdo.</p>
+                <textarea id="observacoesGerais" rows="8" oninput="autoExpandirTexto(this)" onblur="salvarAvaliacoes()" placeholder="Ex.: prioridades gerais, organização das operações, pontos para conferir na próxima visita..." class="w-full min-h-[190px] resize-y p-4 border border-emerald-200 rounded-xl outline-none focus:ring-2 focus:ring-agro bg-white shadow-sm text-base"></textarea>
             </div>
 
             <!-- Seleção do Engenheiro Agrônomo Responsável -->
@@ -746,6 +783,47 @@
         let confirmCallbackAction = null;
         let listaAvaliacoes = [];
         let pontosGpsEmEdicao = [];
+        let tarefasManuaisEmEdicao = [];
+        let statusTarefasAutomaticasEmEdicao = {};
+        let visitaCompartilhadaCandidata = null;
+
+        function autoExpandirTexto(elemento) {
+            if (!elemento) return;
+            elemento.style.height = 'auto';
+            elemento.style.height = Math.max(elemento.scrollHeight, elemento.id === 'observacoesGerais' ? 190 : 150) + 'px';
+        }
+
+        function carregarVisitaNoFormulario(visita) {
+            if (!visita) return;
+            localStorage.setItem('docampo_current_visit_id', visita.id);
+            listaAvaliacoes = JSON.parse(JSON.stringify(visita.checklist || []));
+            localStorage.setItem('docampo_listaAvaliacoes', JSON.stringify(listaAvaliacoes));
+            if (visita.visitDate) document.getElementById('dataAvaliacao').value = visita.visitDate;
+            if (visita.producerName) {
+                document.getElementById('nomeProprietario').value = visita.producerName;
+                localStorage.setItem('docampo_nomeProprietario', visita.producerName);
+            }
+            const gerais = document.getElementById('observacoesGerais');
+            if (gerais) { gerais.value = visita.generalNotes || ''; autoExpandirTexto(gerais); }
+            renderizarTabela();
+            visitaCompartilhadaCandidata = null;
+            document.getElementById('visitaCompartilhadaPainel')?.classList.add('hidden');
+            exibirToast('Visita compartilhada carregada. Você pode continuar de onde parou.', 'bg-blue-700');
+        }
+
+        function procurarVisitaCompartilhada(fazenda) {
+            const painel = document.getElementById('visitaCompartilhadaPainel');
+            if (!painel || !window.DoCampoDB || !fazenda) { painel?.classList.add('hidden'); return; }
+            const atualId = localStorage.getItem('docampo_current_visit_id');
+            const candidatas = DoCampoDB.list('visits')
+                .filter(v => v.status === 'em_andamento' && v.farmName === fazenda && v.id !== atualId && Array.isArray(v.checklist) && v.checklist.length)
+                .sort((a,b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+            visitaCompartilhadaCandidata = candidatas[0] || null;
+            if (!visitaCompartilhadaCandidata) { painel.classList.add('hidden'); return; }
+            const data = visitaCompartilhadaCandidata.visitDate ? visitaCompartilhadaCandidata.visitDate.split('-').reverse().join('/') : 'data não informada';
+            document.getElementById('visitaCompartilhadaResumo').textContent = `${visitaCompartilhadaCandidata.producerName || fazenda} • ${data} • ${visitaCompartilhadaCandidata.checklist.length} talhão(ões) já preenchido(s) • atualizado por ${visitaCompartilhadaCandidata.updatedBy || 'outro aparelho'}.`;
+            painel.classList.remove('hidden');
+        }
 
         function carregarTudoDoLocalStorage() {
             try {
@@ -806,6 +884,17 @@
             renderizarMatoCustomizados();
             renderizarAcoesCustomizadas();
             renderizarTabela();
+            const visitaAtualId = localStorage.getItem('docampo_current_visit_id');
+            const visitaAtual = visitaAtualId && window.DoCampoDB ? DoCampoDB.get('visits', visitaAtualId) : null;
+            if (visitaAtual && visitaAtual.status === 'em_andamento') {
+                if (visitaAtual.farmName && talhoesPorFazenda[visitaAtual.farmName]) {
+                    fazendaSelect.value = visitaAtual.farmName;
+                    fazendaSelect.dispatchEvent(new Event('change'));
+                }
+                carregarVisitaNoFormulario(visitaAtual);
+            }
+            document.getElementById('btnContinuarVisitaCompartilhada')?.addEventListener('click', () => carregarVisitaNoFormulario(visitaCompartilhadaCandidata));
+            window.addEventListener('docampo:sync-complete', () => procurarVisitaCompartilhada(fazendaSelect.value));
             console.info('Modo de campo offline ativo: dados salvos neste aparelho.');
         }
 
@@ -963,7 +1052,8 @@
                     producerName: document.getElementById('nomeProprietario')?.value || '',
                     farmName: document.getElementById('fazenda')?.value || '',
                     visitDate: document.getElementById('dataAvaliacao')?.value || '',
-                    checklist: JSON.parse(JSON.stringify(listaAvaliacoes))
+                    checklist: JSON.parse(JSON.stringify(listaAvaliacoes)),
+                    generalNotes: document.getElementById('observacoesGerais')?.value.trim() || ''
                 });
                 localStorage.setItem('docampo_current_visit_id', visit.id);
             }
@@ -1604,6 +1694,10 @@
             if (colheita) colheita.value = '';
             pontosGpsEmEdicao = [];
             renderizarPontosGps();
+            tarefasManuaisEmEdicao = [];
+            renderizarTarefasManuais();
+            statusTarefasAutomaticasEmEdicao = {};
+            renderizarTarefasAutomaticas();
             const statusGps = document.getElementById('statusGps');
             if (statusGps) {
                 statusGps.textContent = '';
@@ -1616,6 +1710,36 @@
             renderizarAcoesCustomizadas([]);
         }
 
+        function idTarefaChecklist() { return 'task-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8); }
+        function atualizarStatusTarefaAutomatica(indicacao, status){statusTarefasAutomaticasEmEdicao[indicacao]=status;renderizarTarefasAutomaticas();}
+        function renderizarTarefasAutomaticas(){
+            const lista=document.getElementById('listaTarefasAutomaticas');if(!lista)return;
+            const indicacoes=Array.from(document.querySelectorAll('input[name="indicacoes"]:checked')).map(cb=>cb.value);
+            lista.innerHTML=indicacoes.length?'<p class="text-xs font-bold text-emerald-900">Tarefas criadas pelas indicações</p>'+indicacoes.map(indicacao=>{const status=statusTarefasAutomaticasEmEdicao[indicacao]||'pendente';return `<div class="flex flex-col sm:flex-row sm:items-center gap-2 rounded-lg border border-emerald-200 bg-white p-2.5"><span class="flex-1 text-xs font-semibold text-gray-700">${escaparHtmlGps(textoTarefaChecklist(indicacao))}</span><select data-indicacao="${escaparHtmlGps(indicacao)}" class="p-2 border border-gray-300 rounded-lg text-xs bg-white"><option value="pendente" ${status==='pendente'?'selected':''}>Pendente</option><option value="concluida" ${status==='concluida'?'selected':''}>Concluída</option><option value="nao_realizada" ${status==='nao_realizada'?'selected':''}>Não realizada</option></select></div>`;}).join(''):'<p class="text-xs text-gray-500 italic">Marque uma indicação acima para criar automaticamente as tarefas deste talhão.</p>';
+            lista.querySelectorAll('select[data-indicacao]').forEach(select=>{select.onchange=()=>atualizarStatusTarefaAutomatica(select.dataset.indicacao,select.value);});
+        }
+        function tarefaManualNormalizada(tarefa) {
+            const agora = new Date().toISOString();
+            return { id:tarefa?.id||idTarefaChecklist(), source:'manual', title:String(tarefa?.title||tarefa?.titulo||'').trim(), details:String(tarefa?.details||tarefa?.detalhes||'').trim(), dueDate:String(tarefa?.dueDate||tarefa?.prazo||''), priority:['normal','alta','urgente'].includes(tarefa?.priority)?tarefa.priority:'normal', assignedTo:String(tarefa?.assignedTo||tarefa?.responsavel||'').trim(), status:['pendente','concluida','nao_realizada'].includes(tarefa?.status)?tarefa.status:'pendente', createdAt:tarefa?.createdAt||agora, updatedAt:tarefa?.updatedAt||agora, completedAt:tarefa?.completedAt||null, deletedAt:tarefa?.deletedAt||null };
+        }
+        function adicionarTarefaManual() {
+            const titulo=document.getElementById('novaTarefaTitulo').value.trim();
+            if(!titulo){exibirToast('Informe o nome da tarefa.','bg-amber-600');return;}
+            tarefasManuaisEmEdicao.push(tarefaManualNormalizada({title:titulo,details:document.getElementById('novaTarefaDetalhes').value.trim(),dueDate:document.getElementById('novaTarefaPrazo').value,priority:document.getElementById('novaTarefaPrioridade').value,assignedTo:document.getElementById('novaTarefaResponsavel').value.trim()}));
+            ['novaTarefaTitulo','novaTarefaDetalhes','novaTarefaPrazo','novaTarefaResponsavel'].forEach(id=>document.getElementById(id).value='');
+            document.getElementById('novaTarefaPrioridade').value='normal';renderizarTarefasManuais();exibirToast('Tarefa adicionada ao talhão.','bg-emerald-700');
+        }
+        function atualizarTarefaManual(id,campo,valor){const tarefa=tarefasManuaisEmEdicao.find(item=>item.id===id);if(!tarefa)return;tarefa[campo]=String(valor||'').trim();tarefa.updatedAt=new Date().toISOString();if(campo==='status'){tarefa.completedAt=valor==='concluida'?new Date().toISOString():null;renderizarTarefasManuais();}}
+        function removerTarefaManual(id){const tarefa=tarefasManuaisEmEdicao.find(item=>item.id===id);if(!tarefa)return;tarefa.deletedAt=new Date().toISOString();tarefa.updatedAt=tarefa.deletedAt;renderizarTarefasManuais();}
+        function restaurarTarefaManual(id){const tarefa=tarefasManuaisEmEdicao.find(item=>item.id===id);if(!tarefa)return;tarefa.deletedAt=null;tarefa.updatedAt=new Date().toISOString();renderizarTarefasManuais();}
+        function renderizarTarefasManuais(){
+            const lista=document.getElementById('listaTarefasManuais'),removidasLista=document.getElementById('listaTarefasRemovidas'),removidasPainel=document.getElementById('tarefasRemovidasPainel');if(!lista||!removidasLista||!removidasPainel)return;
+            const ativas=tarefasManuaisEmEdicao.filter(t=>!t.deletedAt),removidas=tarefasManuaisEmEdicao.filter(t=>t.deletedAt);
+            lista.innerHTML=ativas.length?ativas.map(t=>`<div class="rounded-xl border ${t.status==='concluida'?'border-green-300 bg-green-50':t.status==='nao_realizada'?'border-red-200 bg-red-50':'border-gray-200 bg-white'} p-3 space-y-3"><div class="flex items-start gap-2"><input value="${escaparHtmlGps(t.title)}" oninput="atualizarTarefaManual('${t.id}','title',this.value)" maxlength="180" class="flex-1 p-2.5 border border-gray-300 rounded-lg font-semibold text-sm bg-white"><button type="button" onclick="removerTarefaManual('${t.id}')" class="text-red-600 p-2" title="Remover e permitir recuperação"><i class="fas fa-trash"></i></button></div><textarea oninput="atualizarTarefaManual('${t.id}','details',this.value)" rows="2" maxlength="500" placeholder="Detalhes da tarefa" class="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white resize-y">${escaparHtmlGps(t.details)}</textarea><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2"><select onchange="atualizarTarefaManual('${t.id}','status',this.value)" class="p-2.5 border border-gray-300 rounded-lg text-xs bg-white"><option value="pendente" ${t.status==='pendente'?'selected':''}>Pendente</option><option value="concluida" ${t.status==='concluida'?'selected':''}>Concluída</option><option value="nao_realizada" ${t.status==='nao_realizada'?'selected':''}>Não realizada</option></select><select onchange="atualizarTarefaManual('${t.id}','priority',this.value)" class="p-2.5 border border-gray-300 rounded-lg text-xs bg-white"><option value="normal" ${t.priority==='normal'?'selected':''}>Prioridade normal</option><option value="alta" ${t.priority==='alta'?'selected':''}>Prioridade alta</option><option value="urgente" ${t.priority==='urgente'?'selected':''}>Urgente</option></select><input type="date" value="${escaparHtmlGps(t.dueDate)}" onchange="atualizarTarefaManual('${t.id}','dueDate',this.value)" class="p-2.5 border border-gray-300 rounded-lg text-xs bg-white"><input value="${escaparHtmlGps(t.assignedTo)}" oninput="atualizarTarefaManual('${t.id}','assignedTo',this.value)" placeholder="Responsável" maxlength="120" class="p-2.5 border border-gray-300 rounded-lg text-xs bg-white"></div></div>`).join(''):'<p class="text-xs text-gray-500 italic">Nenhuma tarefa adicional. As indicações marcadas continuarão gerando as tarefas automáticas.</p>';
+            removidasPainel.classList.toggle('hidden',!removidas.length);removidasLista.innerHTML=removidas.map(t=>`<button type="button" onclick="restaurarTarefaManual('${t.id}')" class="w-full flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white p-2.5 text-left text-xs"><span class="truncate text-gray-600">${escaparHtmlGps(t.title)}</span><span class="font-bold text-emerald-700 shrink-0"><i class="fas fa-rotate-left mr-1"></i>Recuperar</span></button>`).join('');
+        }
+        document.getElementById('gridIndicacoes')?.addEventListener('change',renderizarTarefasAutomaticas);
+
         function iniciarNovaVisita() {
             abrirConfirmModal(
                 'Iniciar Nova Visita',
@@ -1623,7 +1747,7 @@
                 () => {
                     try { localStorage.removeItem('docampo_current_visit_id'); } catch(e){}
                     listaAvaliacoes = [];
-                    salvarAvaliacoes();
+                    localStorage.setItem('docampo_listaAvaliacoes', '[]');
                     renderizarTabela();
                     limparCamposFormulario();
                     
@@ -1640,6 +1764,8 @@
                         talhaoSelect.value = '';
                         talhaoSelect.disabled = true;
                     }
+                    const gerais = document.getElementById('observacoesGerais');
+                    if (gerais) gerais.value = '';
 
                     document.getElementById('dataAvaliacao').valueAsDate = new Date();
                     exibirToast("Nova visita iniciada com sucesso. Dados da visita anterior apagados!", "bg-emerald-700");
@@ -1745,12 +1871,14 @@
                     propInputEl.value = produtorSugerido;
                     try { localStorage.setItem('docampo_nomeProprietario', produtorSugerido); } catch(e){}
                 }
+                procurarVisitaCompartilhada(this.value);
             } else {
                 talhaoSelect.disabled = true;
                 if (propInputEl) {
                     propInputEl.value = '';
                     try { localStorage.removeItem('docampo_nomeProprietario'); } catch(e){}
                 }
+                document.getElementById('visitaCompartilhadaPainel')?.classList.add('hidden');
             }
         });
 
@@ -1864,7 +1992,9 @@
                 indicacoes: Array.from(document.querySelectorAll('input[name="indicacoes"]:checked')).map(cb => cb.value).join(', ') || 'Talhão sem ações',
                 situacaoColheita: document.getElementById('situacaoColheita').value || '',
                 obs: document.getElementById('observacoes').value.trim() || '-',
-                pontosGps: JSON.parse(JSON.stringify(pontosGpsEmEdicao))
+                pontosGps: JSON.parse(JSON.stringify(pontosGpsEmEdicao)),
+                manualTasks: tarefasManuaisEmEdicao.map(tarefaManualNormalizada),
+                automaticTaskStatus: JSON.parse(JSON.stringify(statusTarefasAutomaticasEmEdicao))
             };
 
             if (listaAvaliacoes.some((av,index) => index !== indiceEdicao && av.talhao === avaliacao.talhao)) {
@@ -1942,6 +2072,10 @@
             document.getElementById('observacoes').value = item.obs === '-' ? '' : (item.obs || '');
             pontosGpsEmEdicao = Array.isArray(item.pontosGps) ? JSON.parse(JSON.stringify(item.pontosGps)) : [];
             renderizarPontosGps();
+            tarefasManuaisEmEdicao = Array.isArray(item.manualTasks) ? item.manualTasks.map(tarefaManualNormalizada) : [];
+            renderizarTarefasManuais();
+            statusTarefasAutomaticasEmEdicao = item.automaticTaskStatus && typeof item.automaticTaskStatus === 'object' ? JSON.parse(JSON.stringify(item.automaticTaskStatus)) : {};
+            renderizarTarefasAutomaticas();
             atualizarModoEdicao();
             document.getElementById('monitoramentoForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
             exibirToast(`Editando o talhão ${item.talhao}. Altere e toque em Salvar.`, 'bg-blue-700');
@@ -1986,7 +2120,7 @@
                     <td class="p-3"><span class="px-2 py-1 rounded text-xs ${item.pragas.includes('Livre') ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800 font-semibold'}">${item.pragas}</span></td>
                     <td class="p-3"><span class="px-2 py-1 rounded text-xs ${item.doencas.includes('Livre') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800 font-semibold'}">${item.doencas}</span></td>
                     <td class="p-3"><span class="px-2 py-1 rounded text-xs ${item.mato.includes('Livre') ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${item.mato}</span></td>
-                    <td class="p-3 text-xs text-gray-700 font-medium">${item.indicacoes}${item.situacaoColheita ? `<div class="mt-1"><span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800">${item.situacaoColheita}</span></div>` : ''}</td>
+                    <td class="p-3 text-xs text-gray-700 font-medium">${item.indicacoes}${item.situacaoColheita ? `<div class="mt-1"><span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800">${item.situacaoColheita}</span></div>` : ''}${Array.isArray(item.manualTasks) && item.manualTasks.some(t=>!t.deletedAt) ? `<div class="mt-1 text-purple-700 font-bold"><i class="fas fa-list-check mr-1"></i>${item.manualTasks.filter(t=>!t.deletedAt).length} tarefa(s) adicional(is)</div>` : ''}</td>
                     <td class="p-3 text-xs text-gray-500 italic max-w-xs">${item.obs}${Array.isArray(item.pontosGps) && item.pontosGps.length ? `<div class="mt-2 text-emerald-700 not-italic font-bold"><i class="fas fa-location-dot mr-1"></i>${item.pontosGps.length} localização(ões) registrada(s)</div>` : ''}</td>
                     <td class="p-3 text-center whitespace-nowrap">
                         <button type="button" onclick="editarItem(${index})" class="text-blue-600 hover:text-blue-800 p-1 transition mr-2" title="Editar item">
@@ -2129,7 +2263,7 @@
             }
         }
 
-        async function gerarPDF(somentePrevia = false) {
+        async function gerarPDFLegado(somentePrevia = false) {
             if (listaAvaliacoes.length === 0) {
                 exibirToast("Adicione pelo menos um talhão antes de gerar o PDF!", "bg-amber-600");
                 return;
@@ -2451,6 +2585,175 @@
                 doc.setTextColor(100, 100, 100);
                 doc.text("Produtor Rural / Proprietário", 222, startY + 13, { align: 'center' });
             }
+        }
+
+        function textoTarefaChecklist(indicacao) {
+            const mapa = {
+                'Análise de Solo': 'Realizar a coleta e a análise de solo conforme orientação técnica.',
+                'Calagem': 'Realizar a calagem em área total conforme recomendação.',
+                '1ª Adubação': 'Realizar a 1ª adubação conforme recomendação.',
+                '2ª Adubação': 'Realizar a 2ª adubação conforme recomendação.',
+                '3ª Adubação': 'Realizar a 3ª adubação conforme recomendação.',
+                '4ª Adubação': 'Realizar a 4ª adubação conforme recomendação.',
+                'Capina': 'Realizar a capina nas áreas indicadas.',
+                'Roçada': 'Realizar a roçada nas áreas indicadas.',
+                'Trilhação': 'Realizar a trilhação nas áreas indicadas.',
+                'Herbicida Pós': 'Executar a aplicação de herbicida pós-emergente conforme receituário.',
+                'Herbicida Pré': 'Executar a aplicação de herbicida pré-emergente conforme receituário.',
+                'Herbicida Pré + Pós': 'Executar as aplicações pré e pós-emergente conforme receituário.',
+                'Retirar Cipó': 'Retirar os cipós das quadras indicadas.',
+                'Pulverização': 'Executar a pulverização conforme receituário.',
+                'Via Solo': 'Realizar a aplicação via solo conforme recomendação.',
+                'Desbrota': 'Realizar a desbrota nas áreas indicadas.',
+                'Esqueletamento': 'Realizar o esqueletamento conforme orientação técnica.',
+                'Recepa': 'Realizar a recepa conforme orientação técnica.',
+                'Arrancar': 'Realizar o arranquio das plantas indicadas.',
+                'Decote': 'Realizar o decote conforme orientação técnica.',
+                'Colheita': 'Executar a colheita e registrar a conclusão.',
+                'Plantio': 'Realizar o plantio conforme planejamento técnico.',
+                'Replantio': 'Realizar o replantio das falhas identificadas.'
+            };
+            return mapa[indicacao] || indicacao;
+        }
+
+        function tarefasChecklist(avaliacao) {
+            const automaticas=valoresAvaliacao(avaliacao.indicacoes,['Talhão sem ações','Sem Ações / Não Avaliado']).map(indicacao=>({id:'auto-'+indicacao,text:textoTarefaChecklist(indicacao),status:avaliacao.automaticTaskStatus?.[indicacao]||'pendente',source:'automatic'}));
+            const manuais=(Array.isArray(avaliacao.manualTasks)?avaliacao.manualTasks:[]).filter(t=>!t.deletedAt&&String(t.title||'').trim()).map(t=>{const c=[];if(t.details)c.push(t.details);if(t.dueDate)c.push('Prazo: '+t.dueDate.split('-').reverse().join('/'));if(t.assignedTo)c.push('Responsável: '+t.assignedTo);if(t.priority&&t.priority!=='normal')c.push('Prioridade: '+t.priority);return{id:t.id,text:t.title+(c.length?' — '+c.join(' | '):''),status:t.status||'pendente',source:'manual'};});
+            return automaticas.concat(manuais);
+        }
+
+        async function gerarPDF(somentePrevia = false) {
+            if (!listaAvaliacoes.length) {
+                exibirToast('Adicione pelo menos um talhão antes de gerar o PDF!', 'bg-amber-600');
+                return;
+            }
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const logo = await carregarLogoChecklist();
+            const fator = CHECKLIST_FONT_FACTORS[checklistPdfFontLevel] || 1;
+            const fazenda = fazendaSelect.value;
+            const produtor = document.getElementById('nomeProprietario').value.trim() || 'Produtor não informado';
+            const dataIso = document.getElementById('dataAvaliacao').value || new Date().toISOString().slice(0,10);
+            const dataBr = dataIso.split('-').reverse().join('/');
+            const nomesResponsaveis = agronomosSelecionados.map(id => agronomos[id]?.nome).filter(Boolean);
+            const responsavel = nomesResponsaveis.join(' / ') || (window.DoCampoDB ? DoCampoDB.user() : 'Equipe Do Campo');
+            const emitente = window.DoCampoDB ? DoCampoDB.user() : responsavel;
+            const codigo = somentePrevia ? DoCampoDocumentCode.previa('CHK', emitente) : DoCampoDocumentCode.reservar('CHK', emitente);
+            const observacoesGerais = document.getElementById('observacoesGerais')?.value.trim() || '';
+            const margem = 14, largura = 182, limiteY = 278;
+            let y = 0;
+
+            function cabecalho(continuacao) {
+                if (logo) doc.addImage(logo, 'PNG', margem, 8, 17, 17, undefined, 'FAST');
+                doc.setTextColor(8, 79, 55); doc.setFont('helvetica','bold'); doc.setFontSize(continuacao ? 12 : 15);
+                doc.text('DO CAMPO AGRONEGÓCIOS', 35, 15);
+                doc.setFontSize(8.2); doc.text(continuacao ? 'RELATÓRIO DE CAMPO — CONTINUAÇÃO' : 'RELATÓRIO TÉCNICO DE VISITA A CAMPO', 35, 20);
+                doc.setFontSize(8); doc.setTextColor(70); doc.text(codigo, 196, 13, {align:'right'}); doc.text(dataBr, 196, 18, {align:'right'});
+                doc.setDrawColor(8,79,55); doc.setLineWidth(.5); doc.line(margem, 28, 196, 28);
+                y = 34;
+            }
+            function novaPagina() { doc.addPage(); cabecalho(true); }
+            function garantir(altura) { if (y + altura > limiteY) novaPagina(); }
+            function linhas(texto, larguraTexto, tamanho) { doc.setFontSize(tamanho); return doc.splitTextToSize(String(texto || ''), larguraTexto); }
+
+            cabecalho(false);
+            doc.setFillColor(241,248,244); doc.setDrawColor(190,220,204); doc.roundedRect(margem, y, largura, 25, 2, 2, 'FD');
+            doc.setTextColor(25); doc.setFontSize(9*fator); doc.setFont('helvetica','bold'); doc.text('PROPRIEDADE', 18, y+6); doc.text('PRODUTOR', 18, y+15);
+            doc.setFont('helvetica','normal'); doc.text(linhas(fazenda, 52, 9*fator), 48, y+6); doc.text(linhas(produtor, 52, 9*fator), 48, y+15);
+            doc.setFont('helvetica','bold'); doc.text('RESPONSÁVEL', 111, y+6); doc.text('TALHÕES', 111, y+15);
+            doc.setFont('helvetica','normal'); doc.text(linhas(responsavel, 50, 8.5*fator), 139, y+6); doc.text(`${listaAvaliacoes.length} avaliado(s)`, 139, y+15);
+            y += 31;
+
+            const avaliacoes = [...listaAvaliacoes];
+            if (document.getElementById('incluirNaoAvaliados').checked) {
+                (talhoesPorFazenda[fazenda] || []).forEach(nome => {
+                    if (!avaliacoes.some(av => av.talhao === nome)) avaliacoes.push({ talhao:nome, pragas:'-', doencas:'-', mato:'-', indicacoes:'Sem Ações / Não Avaliado', obs:'', pontosGps:[] });
+                });
+            }
+
+            avaliacoes.forEach((av, indice) => {
+                const tarefas = tarefasChecklist(av);
+                const obs = av.obs && av.obs !== '-' ? av.obs : '';
+                const pontos = Array.isArray(av.pontosGps) ? av.pontosGps : [];
+                const resumo = [
+                    ['Pragas', av.pragas || '-'], ['Doenças', av.doencas || '-'],
+                    ['Mato', av.mato || '-'], ['Colheita', av.situacaoColheita || 'Não informada']
+                ];
+                const linhasResumo = resumo.map(item => linhas(`${item[0]}: ${item[1]}`, 82, 7.7*fator));
+                let alturaResumo = Math.max(12, Math.max(linhasResumo[0].length, linhasResumo[1].length) * 3.6 + Math.max(linhasResumo[2].length, linhasResumo[3].length) * 3.6 + 3);
+                let alturaTarefas = 10;
+                tarefas.forEach(t => { alturaTarefas += linhas('☐  ' + t.text, tarefas.length > 1 && t.text.length < 72 ? 82 : 172, 8.2*fator).length * 4 + 2; });
+                const obsLinhas = linhas(obs || 'Sem observações adicionais.', 172, (obs ? 8.7 : 7.8)*fator);
+                const gpsAltura = pontos.length ? pontos.length * 8 + 3 : 0;
+                const altura = 13 + alturaResumo + alturaTarefas + obsLinhas.length * 4 + gpsAltura + 13;
+                garantir(Math.min(altura, 235));
+                const topo = y;
+                doc.setFillColor(255); doc.setDrawColor(190,210,200); doc.roundedRect(margem, topo, largura, Math.min(altura, limiteY-topo), 2, 2, 'S');
+                doc.setFillColor(8,103,73); doc.roundedRect(margem, topo, largura, 11, 2, 2, 'F');
+                doc.setTextColor(255); doc.setFont('helvetica','bold'); doc.setFontSize(10*fator); doc.text(`${String(indice+1).padStart(2,'0')}  TALHÃO ${av.talhao}`, 18, topo+7.2);
+                y = topo + 16;
+                doc.setTextColor(35); doc.setFont('helvetica','normal'); doc.setFontSize(7.7*fator);
+                const colunas = [[linhasResumo[0],linhasResumo[1]],[linhasResumo[2],linhasResumo[3]]];
+                [0,1].forEach(col => { let yy=y; colunas[col].forEach(ls => { doc.text(ls, 19+col*89, yy); yy += ls.length*3.6+1.2; }); });
+                y += alturaResumo;
+                doc.setDrawColor(220); doc.line(18,y,192,y); y+=5;
+                doc.setTextColor(8,79,55); doc.setFont('helvetica','bold'); doc.setFontSize(8.2*fator); doc.text('TAREFAS RECOMENDADAS',19,y); y+=5;
+                if (!tarefas.length) { doc.setTextColor(110); doc.setFont('helvetica','italic'); doc.text('Nenhuma tarefa indicada para este talhão.',19,y); y+=5; }
+                else {
+                    for (let ti=0; ti<tarefas.length;) {
+                        const primeira=tarefas[ti], segunda=tarefas[ti+1];
+                        const dupla=primeira.text.length<72 && segunda && segunda.text.length<72;
+                        const ls1=linhas(primeira.text, dupla?76:166,8.2*fator);
+                        const alturaNecessaria=Math.max(5,ls1.length*4+1);
+                        if(y+alturaNecessaria>limiteY-8){novaPagina();doc.setTextColor(8,79,55);doc.setFont('helvetica','bold');doc.setFontSize(9*fator);doc.text(`TALHÃO ${av.talhao} — TAREFAS (CONTINUAÇÃO)`,19,y);y+=7;}
+                        doc.setDrawColor(40); doc.rect(19,y-2.8,3.5,3.5); if(primeira.status==='concluida'){doc.setFontSize(8);doc.text('X',19.7,y);} doc.setTextColor(primeira.status==='nao_realizada'?150:30); doc.setFont('helvetica',primeira.status==='nao_realizada'?'italic':'normal'); doc.text(ls1,25,y);
+                        let alturaLinha=Math.max(5,ls1.length*4+1);
+                        if(dupla){const ls2=linhas(segunda.text,76,8.2*fator);doc.rect(108,y-2.8,3.5,3.5);if(segunda.status==='concluida'){doc.setFontSize(8);doc.text('X',108.7,y);}doc.setTextColor(segunda.status==='nao_realizada'?150:30);doc.setFont('helvetica',segunda.status==='nao_realizada'?'italic':'normal');doc.text(ls2,114,y);alturaLinha=Math.max(alturaLinha,ls2.length*4+1);ti+=2}else ti+=1;
+                        y+=alturaLinha;
+                    }
+                }
+                if(y+obsLinhas.length*4+gpsAltura+14>limiteY){novaPagina();doc.setTextColor(8,79,55);doc.setFont('helvetica','bold');doc.setFontSize(9*fator);doc.text(`TALHÃO ${av.talhao} — CONTINUAÇÃO`,19,y);y+=8;}
+                y+=1; doc.setTextColor(8,79,55); doc.setFont('helvetica','bold'); doc.text('OBSERVAÇÃO DO TALHÃO',19,y); y+=5;
+                doc.setTextColor(obs?35:120); doc.setFont('helvetica',obs?'normal':'italic'); doc.setFontSize((obs?8.7:7.8)*fator); doc.text(obsLinhas,19,y); y += obsLinhas.length*4+2;
+                pontos.forEach((p,pi) => {
+                    const rotulo = `Localização ${pi+1}${p.descricao ? ' — '+p.descricao : ''}: abrir no mapa`;
+                    const url = urlMapaGps(p); doc.setTextColor(25,100,180); doc.setFont('helvetica','bold'); doc.setFontSize(7.7*fator); doc.textWithLink(rotulo,19,y,{url});
+                    doc.setTextColor(100); doc.setFont('helvetica','normal'); doc.text(`${Number(p.latitude).toFixed(6)}, ${Number(p.longitude).toFixed(6)}`,19,y+3.5); y+=8;
+                });
+                y += 8;
+            });
+
+            if (observacoesGerais) {
+                const ls = linhas(observacoesGerais, 170, 10*fator);
+                garantir(16 + ls.length*5);
+                doc.setFillColor(245,250,247); doc.setDrawColor(170,210,190); doc.roundedRect(margem,y,largura,12+ls.length*5,2,2,'FD');
+                doc.setTextColor(8,79,55); doc.setFont('helvetica','bold'); doc.setFontSize(10*fator); doc.text('OBSERVAÇÕES GERAIS DA PROPRIEDADE',19,y+7);
+                doc.setTextColor(30); doc.setFont('helvetica','normal'); doc.text(ls,19,y+13); y += 18+ls.length*5;
+            }
+            garantir(38);
+            doc.setDrawColor(130); doc.setTextColor(35); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
+            if(nomesResponsaveis.length>1){
+                const centros=[43,105,167]; [[nomesResponsaveis[0],'Responsável técnico'],[nomesResponsaveis[1],'Responsável técnico'],[produtor,'Produtor / responsável']].forEach((item,i)=>{doc.line(17+i*62,y+13,69+i*62,y+13);doc.text(doc.splitTextToSize(item[0],50),centros[i],y+18,{align:'center'});doc.setFont('helvetica','normal');doc.setTextColor(100);doc.setFontSize(6.5);doc.text(item[1],centros[i],y+25,{align:'center'});doc.setFont('helvetica','bold');doc.setTextColor(35);doc.setFontSize(7.5);});
+            }else{
+                doc.line(22,y+13,92,y+13); doc.line(118,y+13,188,y+13); doc.text(responsavel,57,y+18,{align:'center'}); doc.text(produtor,153,y+18,{align:'center'}); doc.setFont('helvetica','normal'); doc.setTextColor(100); doc.setFontSize(7); doc.text('Responsável técnico',57,y+22,{align:'center'}); doc.text('Produtor / responsável pela propriedade',153,y+22,{align:'center'});
+            }
+
+            const paginas=doc.internal.getNumberOfPages();
+            for(let p=1;p<=paginas;p++) { doc.setPage(p); doc.setDrawColor(8,79,55); doc.line(14,285,196,285); doc.setFontSize(7); doc.setTextColor(90); doc.text(`Documento ${codigo} • Página ${p} de ${paginas}`,14,290); doc.text('Do Campo Agronegócios',196,290,{align:'right'}); }
+
+            if (somentePrevia) {
+                sincronizarSeletoresFonteChecklist();
+                try { await renderizarPaginasPreviaChecklist(doc.output('arraybuffer')); }
+                catch (erro) { console.error(erro); document.getElementById('checklistPdfPreviewModal')?.classList.remove('hidden'); document.getElementById('checklistPdfPreviewPages').innerHTML='<div class="p-8 text-center text-red-700 font-bold">Não foi possível montar a prévia. O PDF pode ser gerado normalmente.</div>'; }
+                return;
+            }
+            const nomeArquivo = DoCampoDocumentCode.arquivo(`Relatorio_Campo_Propriedade_${produtor}_${dataIso}_${codigo}`)+'.pdf';
+            await DoCampoPDF.salvarECompartilhar(doc.output('datauristring'), nomeArquivo, 'Checklist de Lavoura', {
+                typeLabel:'Checklist de Lavoura', producer:produtor, farm:fazenda, fields:listaAvaliacoes.map(av=>av.talhao), responsible:responsavel, documentCode:codigo, fontLevel:checklistPdfFontLevel
+            });
+            const idVisita=localStorage.getItem('docampo_current_visit_id');
+            if (idVisita && window.DoCampoDB) { const atual=DoCampoDB.get('visits',idVisita); if(atual) DoCampoDB.upsert('visits',{...atual,status:'concluida',documentCode:codigo,generalNotes:observacoesGerais}); localStorage.removeItem('docampo_current_visit_id'); }
+            fecharPreviaChecklist(); exibirToast('PDF gerado e registrado com o código '+codigo+'!', 'bg-green-700');
         }
 
         function exportarCSV() {

@@ -39,7 +39,8 @@
       producer: meta.producer || 'Produtor não informado',
       farm: meta.farm || '',
       fields: Array.isArray(meta.fields) ? meta.fields : (meta.field ? [meta.field] : []),
-      responsible: meta.responsible || user || 'Responsável não informado'
+      responsible: meta.responsible || user || 'Responsável não informado',
+      documentCode: meta.documentCode || ''
     };
   }
 
@@ -69,7 +70,20 @@
 
   async function uploadOne(doc) {
     if (!doc || doc.deletedAt || doc.remoteUploaded || !doc.localAvailable || !doc.localPath) return false;
-    const base64 = await readPersistentBase64(doc);
+    let base64;
+    try {
+      base64 = await readPersistentBase64(doc);
+    } catch (error) {
+      const patch = {
+        localAvailable: false,
+        localPath: '',
+        fileMissing: !doc.remoteUploaded,
+        fileMissingAt: new Date().toISOString()
+      };
+      if (window.DoCampoDB && DoCampoDB.patchDocumentLocal) DoCampoDB.patchDocumentLocal(doc.id, patch);
+      if (window.DoCampoDB && DoCampoDB.patchDocumentCloud) DoCampoDB.patchDocumentCloud(doc.id, { fileMissing: !doc.remoteUploaded, fileMissingAt: patch.fileMissingAt });
+      return false;
+    }
     const url = DoCampoCloudConfig.url + '/storage/v1/object/' + BUCKET + '/' + encodeURIComponent(doc.remotePath).replace(/%2F/g, '/');
     const response = await fetch(url, {
       method: 'POST',
@@ -80,7 +94,8 @@
       const body = await response.json().catch(() => ({}));
       throw new Error(body.message || body.error || ('Falha ao enviar PDF: ' + response.status));
     }
-    if (window.DoCampoDB && DoCampoDB.patchDocumentLocal) DoCampoDB.patchDocumentLocal(doc.id, { remoteUploaded: true });
+    if (window.DoCampoDB && DoCampoDB.patchDocumentLocal) DoCampoDB.patchDocumentLocal(doc.id, { remoteUploaded: true, fileMissing: false, fileMissingAt: '' });
+    if (window.DoCampoDB && DoCampoDB.patchDocumentCloud) DoCampoDB.patchDocumentCloud(doc.id, { remoteUploaded: true, fileMissing: false, fileMissingAt: '' });
     return true;
   }
 
@@ -106,13 +121,16 @@
     const base64 = btoa(binary);
     const localPath = 'documents/' + doc.id + '.pdf';
     await p.filesystem.writeFile({ path: localPath, data: base64, directory: 'DATA', recursive: true });
-    if (window.DoCampoDB && DoCampoDB.patchDocumentLocal) DoCampoDB.patchDocumentLocal(doc.id, { localAvailable: true, localPath: localPath, remoteUploaded: true });
+    if (window.DoCampoDB && DoCampoDB.patchDocumentLocal) DoCampoDB.patchDocumentLocal(doc.id, { localAvailable: true, localPath: localPath, remoteUploaded: true, fileMissing: false, fileMissingAt: '' });
     return DoCampoDB.get('documents', doc.id);
   }
 
   async function ensureLocal(doc) {
     if (doc.localAvailable && doc.localPath) {
-      try { await readPersistentBase64(doc); return doc; } catch (_) {}
+      try { await readPersistentBase64(doc); return doc; } catch (_) {
+        if (window.DoCampoDB && DoCampoDB.patchDocumentLocal) DoCampoDB.patchDocumentLocal(doc.id, { localAvailable: false, localPath: '' });
+        doc = DoCampoDB.get('documents', doc.id) || doc;
+      }
     }
     if (doc.name) {
       const p = plugins();
@@ -128,6 +146,7 @@
         } catch (_) {}
       }
     }
+    if (!doc.remoteUploaded) throw new Error('O arquivo deste PDF não foi encontrado. Gere o documento novamente ou exclua este registro do histórico.');
     if (!navigator.onLine) throw new Error('Este PDF ainda não foi baixado neste aparelho. Conecte à internet uma vez para baixá-lo.');
     return downloadOne(doc);
   }
@@ -213,7 +232,7 @@
         generatedBy: window.DoCampoDB ? DoCampoDB.user() : info.responsible,
         generatedAt: new Date().toISOString(),
         localAvailable, localPath: localAvailable ? localPath : '',
-        remotePath, remoteUploaded: false,
+        remotePath, remoteUploaded: false, fileMissing: false, fileMissingAt: '',
         snapshot: { displayName, name: nome, ...info }
       });
     }

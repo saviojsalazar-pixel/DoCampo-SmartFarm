@@ -18,6 +18,7 @@
     <script src="checklist-filter.js"></script>
     <script src="sync-engine.js"></script>
     <script src="native-pdf.js"></script>
+    <script src="document-code.js"></script>
     <script src="app-shell.js"></script>
 
     <script>
@@ -3348,8 +3349,12 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             cloneContainer.appendChild(clonedContent);
             document.body.appendChild(cloneContainer);
 
-            const farmCleanName = selectedFarm.replace(/[^a-zA-Z0-9]/g, '_');
-            const filename = 'Recomendacao_Pulverizacao_' + farmCleanName + '.pdf';
+            const docFarmForName = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+            const docProducerName = docFarmForName ? (docFarmForName.producer || docFarmForName.proprietor || '') : '';
+            const docResponsibleName = (document.getElementById('agronomist-name') || {}).value || (window.DoCampoDB ? DoCampoDB.user() : '');
+            const documentCode = window.DoCampoDocumentCode ? DoCampoDocumentCode.reservar('PUL', docResponsibleName) : ('PUL-' + Date.now());
+            const documentDate = new Date().toISOString().slice(0,10);
+            const filename = (window.DoCampoDocumentCode ? DoCampoDocumentCode.arquivo(`Receituario_Pulverizacao_${docProducerName || selectedFarm}_${documentDate}_${documentCode}`) : ('Recomendacao_Pulverizacao_' + selectedFarm.replace(/[^a-zA-Z0-9]/g, '_'))) + '.pdf';
 
             const opt = {
                 margin:       0,
@@ -3379,6 +3384,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                                 producer: docFarm ? (docFarm.producer || docFarm.proprietor || '') : '',
                                 farm: selectedFarm,
                                 fields: Array.from(selectedFields),
+                                documentCode: documentCode,
                                 fontLevel: pdfFontLevel,
                                 responsible: (document.getElementById('agronomist-name') || {}).value || (window.DoCampoDB ? DoCampoDB.user() : '')
                             });

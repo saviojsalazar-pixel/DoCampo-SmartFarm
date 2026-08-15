@@ -17,7 +17,7 @@
     function mergeFarm(farm) {
         if (!farm || !String(farm.farm || '').trim()) return read();
         const data = read(), name = String(farm.farm).trim();
-        const normalized = { farm: name, producer: String(farm.producer || farm.proprietor || '').trim(), cpf: String(farm.cpf || '').trim(), address: String(farm.address || '').trim(), fields: Array.isArray(farm.fields) ? farm.fields.map(field => ({ name: String(field.name || field.talhao || field).trim(), area: Number(field.area) || 0 })).filter(field => field.name).sort(fieldCompare) : [] };
+        const normalized = { farm: name, producer: String(farm.producer || farm.proprietor || '').trim(), cpf: String(farm.cpf || '').trim(), address: String(farm.address || '').trim(), notes: String(farm.notes || '').trim(), fields: Array.isArray(farm.fields) ? farm.fields.map(field => ({ ...field, name: String(field.name || field.talhao || field).trim(), area: Number(field.area) || 0, plants: Number(field.plants) || 0, rowSpacing: Number(field.rowSpacing) || 0, plantSpacing: Number(field.plantSpacing) || 0, culture: String(field.culture || '').trim(), notes: String(field.notes || '').trim() })).filter(field => field.name).sort(fieldCompare) : [] };
         const idx = data.farms.findIndex(item => String(item.farm).toLowerCase() === name.toLowerCase());
         if (idx >= 0) data.farms[idx] = Object.assign({}, data.farms[idx], normalized); else data.farms.unshift(normalized);
         try {
@@ -31,7 +31,11 @@
         const result = write(data);
         if (window.DoCampoDB) {
             const existing = window.DoCampoDB.list('farms').find(f => String(f.name).toLowerCase() === normalized.farm.toLowerCase());
-            window.DoCampoDB.upsert('farms', { id: existing && existing.id, name: normalized.farm, producerName: normalized.producer, cpf: normalized.cpf, address: normalized.address, fieldsSnapshot: normalized.fields, verified: true });
+            const farmRecord = window.DoCampoDB.upsert('farms', { id: existing && existing.id, name: normalized.farm, producerName: normalized.producer, cpf: normalized.cpf, address: normalized.address, notes: normalized.notes, fieldsSnapshot: normalized.fields, verified: true });
+            normalized.fields.forEach(field => {
+                const oldField = window.DoCampoDB.list('fields').find(item => item.farmId === farmRecord.id && String(item.name).toLowerCase() === String(field.name).toLowerCase());
+                window.DoCampoDB.upsert('fields', { ...field, id: oldField && oldField.id, farmId: farmRecord.id, verified: true });
+            });
         }
         return result;
     }
