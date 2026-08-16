@@ -66,9 +66,31 @@
 
   function rotulosPizza(doc,cx,cy,vals,labels,cores){
     const total=vals.reduce((a,b)=>a+b,0)||100,pontos=[];let inicio=-Math.PI/2;
-    vals.forEach((v,i)=>{const abertura=Math.max(v/total*Math.PI*2,.025),meio=inicio+abertura/2,cos=Math.cos(meio),sen=Math.sin(meio),side=cos>=0?'r':'l';pontos.push({i,x:cx+(side==='r'?38:-38),y:cy+35*sen,side});inicio+=v/total*Math.PI*2});
-    ['l','r'].forEach(side=>{let grupo=pontos.filter(p=>p.side===side).sort((a,b)=>a.y-b.y),ultimo=43;grupo.forEach(p=>{p.y=Math.max(p.y,ultimo+8);ultimo=p.y});if(grupo.length&&grupo[grupo.length-1].y>123){let ajuste=grupo[grupo.length-1].y-123;grupo.forEach(p=>p.y-=ajuste)}});
-    pontos.forEach(p=>{doc.setFont('helvetica','bold');doc.setFontSize(5.8);doc.setTextColor(...cores[p.i]);doc.text(`% ${labels[p.i]} ${Math.round(vals[p.i])}%`,p.x,p.y,{align:p.side==='r'?'left':'right'})});
+    const side=cx<105?'l':'r';vals.forEach((v,i)=>{const abertura=v/total*Math.PI*2,meio=inicio+abertura/2,sen=Math.sin(meio);pontos.push({i,meio,side,y:cy+31*sen});inicio+=abertura});
+    pontos.sort((a,b)=>a.y-b.y);let ultimo=43;pontos.forEach(p=>{p.y=Math.max(p.y,ultimo+7);ultimo=p.y});if(pontos.length&&pontos[pontos.length-1].y>116){let ajuste=pontos[pontos.length-1].y-116;pontos.forEach(p=>p.y-=ajuste)}
+    pontos.forEach(p=>{let sx=cx+29*Math.cos(p.meio),sy=cy+29*Math.sin(p.meio),ex=side==='r'?190:20,tx=side==='r'?194:16;doc.setDrawColor(...cores[p.i]);doc.setLineWidth(.35);doc.line(sx,sy,ex,p.y);doc.line(ex,p.y,tx+(side==='r'?-1:1),p.y);doc.setFont('helvetica','bold');doc.setFontSize(5.2);doc.setTextColor(...cores[p.i]);doc.text(`% ${labels[p.i]} ${Math.round(vals[p.i])}%`,tx,p.y+1.5,{align:side==='r'?'left':'right'})});
+  }
+
+  /* Rótulos coordenados dos dois gráficos: próximos aos setores, sem linhas
+     atravessando a página e com prevenção de colisões na coluna central. */
+  function rotulosCTCDuplo(doc,cy,series,labels,cores){
+    const centros=[57,153],grupos={externoEsq:[],centro:[],externoDir:[]};
+    series.forEach((vals,pie)=>{const total=vals.reduce((a,b)=>a+b,0)||100;let inicio=-Math.PI/2;
+      vals.forEach((v,i)=>{const abertura=v/total*Math.PI*2,meio=inicio+abertura/2,direita=Math.cos(meio)>=0;
+        const grupo=pie===0?(direita?'centro':'externoEsq'):(direita?'externoDir':'centro');
+        grupos[grupo].push({pie,i,meio,y:cy+39*Math.sin(meio),direita});inicio+=abertura;
+      });
+    });
+    function distribuir(lista,minY,maxY,espaco){lista.sort((a,b)=>a.y-b.y);let anterior=minY-espaco;
+      lista.forEach(p=>{p.y=Math.max(p.y,anterior+espaco);anterior=p.y});
+      if(lista.length&&lista.at(-1).y>maxY){const d=lista.at(-1).y-maxY;lista.forEach(p=>p.y-=d)}
+      if(lista.length&&lista[0].y<minY){const d=minY-lista[0].y;lista.forEach(p=>p.y+=d)}
+    }
+    distribuir(grupos.externoEsq,43,116,7);distribuir(grupos.centro,43,116,6.3);distribuir(grupos.externoDir,43,116,7);
+    Object.values(grupos).flat().forEach(p=>{const cx=centros[p.pie],vals=series[p.pie],sx=cx+30*Math.cos(p.meio),sy=cy+30*Math.sin(p.meio);
+      let ex,tx,align;if(p.pie===0&&p.direita){ex=91;tx=94;align='left'}else if(p.pie===0){ex=23;tx=20;align='right'}else if(!p.direita){ex=119;tx=116;align='right'}else{ex=187;tx=190;align='left'}
+      doc.setDrawColor(...cores[p.i]);doc.setLineWidth(.32);doc.line(sx,sy,ex,p.y);doc.setFont('helvetica','bold');doc.setFontSize(5.3);doc.setTextColor(...cores[p.i]);doc.text(`% ${labels[p.i]} ${Math.round(vals[p.i])}%`,tx,p.y+1.5,{align});
+    });
   }
 
   paginaRadar = function(doc,r,id){
@@ -124,7 +146,7 @@
     grupos.forEach((g,i)=>{let xx=45+(i%3)*45,yy=177+Math.floor(i/3)*6;doc.setDrawColor(...g[2]);doc.setLineWidth(1);doc.line(xx,yy,xx+7,yy);doc.setFontSize(6);doc.setTextColor(55);doc.text(g[0],xx+9,yy+2)});
     doc.setFillColor(250);doc.setDrawColor(205);doc.roundedRect(10,198,190,34,2,2,'FD');textoQuebrado(doc,'O gráfico representa a influência do pH sobre a disponibilidade relativa dos nutrientes. Ele não indica deficiência ou excesso e deve ser observado juntamente com os resultados da análise.',13,206,184,8);rodape(doc,'Disponibilidade dos Nutrientes em Função do pH',id)
   };
-  /* Componentes consolidados do laudo validado - v1.9.27. */
+  /* Componentes consolidados do laudo validado - base v1.9.27. */
   function iconeCheck(doc,x,y,cor=[18,145,72]){doc.setDrawColor(...cor);doc.setLineWidth(1.1);doc.line(x-2,y,x-.5,y+2);doc.line(x-.5,y+2,x+3,y-2.5)}
   function iconeSeta(doc,x,y,dir,cor){doc.setDrawColor(...cor);doc.setLineWidth(1.2);doc.line(x,y-3,x,y+3);if(dir==='down'){doc.line(x,y+3,x-2,y+1);doc.line(x,y+3,x+2,y+1)}else{doc.line(x,y-3,x-2,y-1);doc.line(x,y-3,x+2,y-1)}}
   function iconeAlerta(doc,x,y,cor=[245,132,0]){doc.setDrawColor(...cor);doc.setLineWidth(.8);doc.triangle(x,y-4,x-4,y+3,x+4,y+3,'S');doc.line(x,y-1.8,x,y+1);doc.circle(x,y+2,0.35,'F')}
@@ -178,6 +200,65 @@
     let top=ns.slice(0,3),mid=ns.slice(3,8),bot=ns.slice(8);ns.forEach((o,i)=>{let cor=i<3?[15,120,50]:i<8?[220,135,0]:[195,0,0];doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(...cor);doc.text(o.n,151,71+i*6.2)});doc.setLineWidth(2);doc.setDrawColor(15,120,50);doc.line(163,68,163,86);doc.setDrawColor(220,135,0);doc.line(163,86,163,117);doc.setDrawColor(195,0,0);doc.line(163,117,163,136);
     doc.setFont('helvetica','bold');doc.setFontSize(5.8);doc.setTextColor(15,105,45);doc.text('MAIOR FAVORECIMENTO',167,71);doc.setTextColor(60);doc.text('INTERPRETAÇÃO',167,96);doc.setFont('helvetica','normal');doc.setFontSize(5.2);doc.text(doc.splitTextToSize('A posição representa apenas o efeito do pH sobre a disponibilidade química relativa. Não indica deficiência nem excesso nutricional.',28),167,103);doc.setFont('helvetica','bold');doc.setTextColor(185,0,0);doc.text('MENOR FAVORECIMENTO',167,133);
     grupos.forEach((g,i)=>{let xx=37+(i%3)*48,yy=178+Math.floor(i/3)*7;doc.setDrawColor(...g[2]);doc.setLineWidth(1.2);doc.line(xx,yy,xx+7,yy);doc.setFontSize(6);doc.setTextColor(55);doc.text(g[0],xx+9,yy+2)});doc.setFillColor(250);doc.setDrawColor(210);doc.roundedRect(16,195,178,39,2,2,'FD');textoQuebrado(doc,'O gráfico mostra como o pH influencia a disponibilidade relativa dos nutrientes. A linha preta marca o pH da amostra e a faixa verde destaca o intervalo favorável ao cafeeiro. A leitura deve ser feita junto com os teores da análise.',21,204,168,8);rodape(doc,'Disponibilidade dos Nutrientes em Função do pH',id)
+  };
+
+  /* Refinamento gráfico validado - v1.9.28. O motor de classificação permanece inalterado. */
+  function normalizarClasse(c){return String(c||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()}
+  function modeloVisualBarra(item,c){
+    if(item.relacao||item.k==='pH')return{tipo:'simetrico',cores:[[214,55,48],[239,142,28],[244,194,58],[40,166,88],[244,194,58],[214,55,48]]};
+    if(['Al','HAl','m'].includes(item.k))return{tipo:'inverso',cores:[[23,147,80],[91,180,92],[244,194,58],[239,142,28],[214,55,48]]};
+    if(item.k==='P')return{tipo:'fosforo',cores:[[214,55,48],[239,142,28],[244,194,58],[91,180,92],[23,147,80],[23,147,80]]};
+    if(['K','Ca','Mg','S','B','Cu','Fe','Mn','Zn'].includes(item.k))return{tipo:'nutriente',cores:[[214,55,48],[239,142,28],[244,194,58],[40,166,88],[244,194,58],[239,142,28],[214,55,48]]};
+    return{tipo:'crescente',cores:[[214,55,48],[239,142,28],[244,194,58],[91,180,92],[23,147,80]]};
+  }
+  function posicaoClasse(c,tipo){
+    const n=normalizarClasse(c),mapas={
+      crescente:{'muito baixo':.10,'baixo':.30,'medio':.50,'bom':.70,'muito bom':.90,'alto':.86,'muito alto':.94},
+      inverso:{'muito bom':.10,'bom':.30,'medio':.50,'alto':.70,'muito alto':.90,'baixo':.75,'muito baixo':.92},
+      simetrico:{'muito baixo':.08,'baixo':.25,'medio':.42,'bom':.56,'muito bom':.58,'alto':.75,'muito alto':.92},
+      fosforo:{'muito baixo':.07,'baixo':.24,'medio':.45,'bom':.67,'muito bom':.88,'alto':.91,'muito alto':.96},
+      nutriente:{'muito baixo':.07,'baixo':.22,'medio':.36,'bom':.50,'muito bom':.79,'alto':.79,'muito alto':.93}
+    };return mapas[tipo][n]??.5;
+  }
+  function rotuloRelacao(c){let n=normalizarClasse(c),m={'muito baixo':'muito baixa','baixo':'baixa','medio':'média','bom':'equilibrada','alto':'alta','muito alto':'muito alta'};return `Relação ${m[n]||String(c).toLowerCase()}`}
+  function rotuloNutriente(item,c){if(!['P','K','Ca','Mg','S','B','Cu','Fe','Mn','Zn'].includes(item.k))return c;if(item.k==='P')return c;return c==='Muito bom'?'Alto':c}
+  function interpolarCor(a,b,t){return a.map((v,i)=>Math.round(v+(b[i]-v)*t))}
+  function corEscala(cores,t){let z=clamp(t,0,1)*(cores.length-1),i=Math.min(cores.length-2,Math.floor(z));return interpolarCor(cores[i],cores[i+1],z-i)}
+  barra = function(doc,item,y,r){
+    let v=item.v,c=item.c?item.c(v):DoCampoSoloRules.classificar(item.k,v,r),rgb=corClasse(c),modelo=modeloVisualBarra(item,c),p=posicaoClasse(c,modelo.tipo),x=55,w=93,h=5;
+    doc.setFillColor(248,250,249);doc.roundedRect(15,y,180,23,3,3,'F');doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(35);doc.text(item.n,21,y+9);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...cinza);doc.text(item.u||'',21,y+15);
+    for(let i=0;i<70;i++){let cor=corEscala(modelo.cores,i/69);doc.setFillColor(...cor);doc.rect(x+i*w/70,y+9,w/70+.08,h,'F')}doc.setDrawColor(190);doc.rect(x,y+9,w,h,'S');
+    if(modelo.tipo==='nutriente'||modelo.tipo==='fosforo'){doc.setFont('helvetica','normal');doc.setFontSize(4.6);doc.setTextColor(105);doc.text('Baixo',x,y+17);doc.text(modelo.tipo==='fosforo'?'Médio':'Faixa adequada',x+w/2,y+17,{align:'center'});doc.text(modelo.tipo==='fosforo'?'Faixa favorável':'Elevado',x+w,y+17,{align:'right'})}
+    let rot=item.relacao?rotuloRelacao(c):rotuloNutriente(item,c),corRot=item.k==='P'&&/bom|alto/i.test(normalizarClasse(rot))?[23,147,80]:(rot==='Alto'||rot==='Muito alto'?[214,67,54]:rgb);doc.setFillColor(255);doc.setDrawColor(30);doc.setLineWidth(.7);doc.circle(x+w*p,y+11.5,2.3,'FD');doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(...corRot);doc.text(fmt(v),156,y+10,{align:'center'});doc.setFontSize(8);doc.text(rot,156,y+17,{align:'center'})
+  };
+
+  scoreEquilibrio = function(c){return {'Muito baixo':2,'Baixo':4,'Médio':7.2,'Bom':10,'Muito bom':6.2,'Alto':6.2,'Muito alto':3}[c]||0};
+  estadoEquilibrio = function(c){return /Muito baixo|Baixo/.test(c)?'deficiência':/Muito bom|Alto|Muito alto/.test(c)?'excesso':'equilíbrio'};
+  paginaRadar = function(doc,r,id){
+    doc.addPage();titulo(doc,'Perfil Integrado do Equilíbrio Nutricional do Solo',id);const keys=Object.keys(referencias),cx=105,cy=83,R=49;
+    doc.setFillColor(220,244,226);doc.circle(cx,cy,R,'F');doc.setFillColor(255,241,178);doc.circle(cx,cy,R*.70,'F');doc.setFillColor(255,218,214);doc.circle(cx,cy,R*.38,'F');doc.setDrawColor(180);
+    keys.forEach((k,j)=>{let a=-Math.PI/2+j*2*Math.PI/keys.length;doc.line(cx,cy,cx+R*Math.cos(a),cy+R*Math.sin(a));doc.setFontSize(7.5);doc.setTextColor(50);doc.text(k,cx+(R+7)*Math.cos(a),cy+(R+7)*Math.sin(a),{align:'center'})});
+    const vals=keys.map(k=>{let classe=DoCampoSoloRules.classificar(k,r[k],r);return{k,classe,v:scoreEquilibrio(classe),estado:estadoEquilibrio(classe)}}),pts=vals.map((o,j)=>{let rr=R*o.v/10,a=-Math.PI/2+j*2*Math.PI/keys.length;return[cx+rr*Math.cos(a),cy+rr*Math.sin(a)]});
+    doc.setDrawColor(25,92,185);doc.setLineWidth(1);pts.forEach((p,j)=>doc.line(...p,...pts[(j+1)%pts.length]));pts.forEach(p=>{doc.setFillColor(25,92,185);doc.circle(p[0],p[1],1.45,'F')});
+    let orden=vals.slice().sort((a,b)=>a.v-b.v),media=vals.reduce((s,o)=>s+o.v,0)/vals.length,perfil=media>=8.2?'HARMÔNICO':media>=6.2?'MODERADAMENTE EQUILIBRADO':'DESUNIFORME',dist=orden.slice(0,3),prox=orden.slice(-3).reverse(),cards=[{x:12,cor:[220,35,35],titulo:'PERFIL NUTRICIONAL'},{x:76,cor:[235,127,0],titulo:'MAIS DISTANTES DO EQUILÍBRIO'},{x:140,cor:[15,105,49],titulo:'MAIS PRÓXIMOS DO EQUILÍBRIO'}];
+    cards.forEach(c=>{doc.setFillColor(249,251,250);doc.setDrawColor(...c.cor);doc.rect(c.x,142,58,43,'FD');doc.setFont('helvetica','bold');doc.setFontSize(6.7);doc.setTextColor(30);doc.text(doc.splitTextToSize(c.titulo,50),c.x+29,151,{align:'center'})});
+    doc.setTextColor(210,25,25);doc.setFontSize(9);doc.text(perfil,41,166,{align:'center',maxWidth:50});doc.setFont('helvetica','normal');doc.setFontSize(5.8);doc.setTextColor(55);doc.text('Formato geral do equilíbrio.',41,179,{align:'center'});
+    doc.setFont('helvetica','bold');doc.setFontSize(6.8);doc.setTextColor(220,95,0);dist.forEach((o,i)=>doc.text(`${i+1}º ${o.k} - ${o.estado}`,81,162+i*6));doc.setFont('helvetica','normal');doc.setFontSize(5.7);doc.setTextColor(55);doc.text('Maior desvio observado.',105,179,{align:'center'});
+    doc.setFont('helvetica','bold');doc.setFontSize(7.4);doc.setTextColor(20,95,45);prox.forEach((o,i)=>{iconeCheck(doc,150,160+i*6,[30,110,60]);doc.text(o.k,155,162+i*6)});doc.setFont('helvetica','normal');doc.setFontSize(5.7);doc.setTextColor(55);doc.text('Menor desvio observado.',169,179,{align:'center'});
+    doc.setFillColor(247,249,248);doc.setDrawColor(205);doc.roundedRect(16,195,178,34,3,3,'FD');let leg=[[[220,35,35],'Distante do equilíbrio'],[[235,150,0],'Faixa intermediária'],[[20,120,55],'Próximo ao equilíbrio']];leg.forEach((l,i)=>{let xx=27+i*59;doc.setFillColor(...l[0]);doc.rect(xx,202,3,3,'F');doc.setFontSize(6.5);doc.setTextColor(...l[0]);doc.text(l[1],xx+5,205)});textoQuebrado(doc,'O formato do radar mostra a uniformidade do conjunto. Os cartões destacam os nutrientes mais distantes e mais próximos das faixas de referência.',24,216,162,7.5);rodape(doc,'Perfil Integrado do Equilíbrio Nutricional do Solo',id)
+  };
+
+  paginaCTC = function(doc,r,id){
+    doc.addPage();titulo(doc,'Arquitetura Química da Capacidade de Troca Catiônica',id);let T=r.T||1,vals={Ca:r.Ca/T*100,Mg:r.Mg/T*100,K:r.K_cmolc/T*100,Al:r.Al/T*100,H:Math.max(0,r.HAl-r.Al)/T*100},atual=[vals.K,vals.Ca,vals.Mg,vals.Al,vals.H],ideal=[3,60,10,0,27],cores=[[92,199,125],[10,92,42],[48,143,68],[229,49,49],[255,188,0]],labs=['K C.T.C','Ca C.T.C','Mg C.T.C','Al C.T.C','H C.T.C'];
+    doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(65);doc.text('Ocupação Atual da CTC',57,38,{align:'center'});doc.text('Referência Técnica Ideal',153,38,{align:'center'});desenharPizza(doc,57,80,atual,cores);desenharPizza(doc,153,80,ideal,cores);rotulosCTCDuplo(doc,80,[atual,ideal],labs,cores);
+    doc.setFontSize(10);doc.setTextColor(45);doc.text('DIAGNÓSTICO RESUMIDO DA OCUPAÇÃO DA CTC',105,128,{align:'center'});let dados=[['CÁLCIO (Ca)','Ca'],['MAGNÉSIO (Mg)','Mg'],['POTÁSSIO (K)','K'],['ALUMÍNIO (Al)','Al'],['HIDROGÊNIO (H)','H']],xs=[10,49,88,127,166];
+    dados.forEach((d,i)=>{let v=vals[d[1]],st=leituraCTC(d[1],v),cx=xs[i]+17;doc.setFillColor(250);doc.setDrawColor(205);doc.rect(xs[i],136,34,45,'FD');doc.setFontSize(6.4);doc.setTextColor(...st[2]);doc.text(d[0],cx,146,{align:'center',maxWidth:30});if(st[1]==='check')iconeCheck(doc,cx,156,st[2]);else if(st[1]==='alert')iconeAlerta(doc,cx,156,st[2]);else iconeSeta(doc,cx,156,st[1],st[2]);doc.setFontSize(14);doc.setTextColor(35);doc.text(`${Math.round(v)}%`,cx,168,{align:'center'});doc.setFontSize(6);doc.setTextColor(...st[2]);doc.text(st[0],cx,177,{align:'center',maxWidth:31})});
+    doc.setFillColor(247,249,248);doc.setDrawColor(205);doc.roundedRect(20,195,170,35,3,3,'FD');textoQuebrado(doc,'Os gráficos mostram como as bases e os componentes da acidez ocupam a CTC. A comparação com a referência facilita a visualização do equilíbrio químico da amostra.',25,205,160,8);rodape(doc,'Arquitetura Química da Capacidade de Troca Catiônica',id)
+  };
+
+  const paginaTrianguloBase=paginaTriangulo;
+  paginaTriangulo = function(doc,r,id){
+    paginaTrianguloBase(doc,r,id);let pg=doc.getNumberOfPages();doc.setPage(pg);doc.setFillColor(247,249,248);doc.setDrawColor(205);doc.roundedRect(18,226,174,31,3,3,'FD');textoQuebrado(doc,'O triângulo apresenta a participação relativa de cálcio, magnésio e potássio. Os cartões resumem as relações entre essas bases e ajudam a visualizar o equilíbrio do conjunto.',23,235,164,8)
   };
 
   function adicionarPaginas(doc,r){let id=r.amostra||'Amostra',cCaK=v=>relClasse(v,[2.25,4.5,9,13.5,15.75]),cRel=v=>relClasse(v,[.75,1.5,3,4.5,5.25]);paginaPainel(doc,r,[{k:'pH',n:'pH',u:'H2O',v:r.pH},{k:'MO',n:'MO',u:'dag/kg',v:r.MO},{k:'Al',n:'Al',u:'cmolc/dm3',v:r.Al},{k:'HAl',n:'H+Al',u:'cmolc/dm3',v:r.HAl},{k:'SB',n:'SB',u:'cmolc/dm3',v:r.SB},{k:'t',n:'t',u:'cmolc/dm3',v:r.t},{k:'T',n:'T',u:'cmolc/dm3',v:r.T},{k:'V',n:'V',u:'%',v:r.V},{k:'m',n:'m',u:'%',v:r.m}],id+' - Atributos Químicos');paginaPainel(doc,r,[{k:'P',n:'P',u:'mg/dm3',v:r.P},{k:'K',n:'K',u:'mg/dm3',v:r.K},{k:'Ca',n:'Ca',u:'cmolc/dm3',v:r.Ca},{k:'Mg',n:'Mg',u:'cmolc/dm3',v:r.Mg},{k:'S',n:'S',u:'mg/dm3',v:r.S},{k:'Ca',n:'Ca/K',u:'',v:r.CaK,min:2.25,max:15.75,c:cCaK,relacao:true},{k:'Mg',n:'Mg/K',u:'',v:r.MgK,min:.75,max:5.25,c:cRel,relacao:true},{k:'Ca',n:'Ca/Mg',u:'',v:r.CaMg,min:.75,max:5.25,c:cRel,relacao:true}],id+' - Macronutrientes e Relações');paginaPainel(doc,r,[{k:'B',n:'B',u:'mg/dm3',v:r.B},{k:'Cu',n:'Cu',u:'mg/dm3',v:r.Cu},{k:'Fe',n:'Fe',u:'mg/dm3',v:r.Fe},{k:'Mn',n:'Mn',u:'mg/dm3',v:r.Mn},{k:'Zn',n:'Zn',u:'mg/dm3',v:r.Zn}],id+' - Micronutrientes');paginaRadar(doc,r,id);paginaCTC(doc,r,id);paginaTriangulo(doc,r,id);paginaPH(doc,r,id)}
