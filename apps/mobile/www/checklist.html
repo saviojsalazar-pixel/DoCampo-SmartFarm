@@ -53,14 +53,16 @@
             background-color: #f3f4f6; 
             border-color: #9ca3af;
         }
-        input[type="checkbox"]:checked + .checkbox-label { 
+        input[type="checkbox"]:checked + .checkbox-label,
+        input[type="radio"]:checked + .checkbox-label { 
             background-color: #e8f5e9; 
             border-color: #4caf50; 
             color: #2e7d32; 
             font-weight: 600; 
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
-        input[type="checkbox"] { 
+        input[type="checkbox"],
+        input[type="radio"] { 
             display: none; 
         }
         
@@ -471,14 +473,16 @@
                 </div>
 
                 <div>
-                    <label for="situacaoColheita" class="block text-sm font-semibold text-gray-700 mb-1">Situação da colheita (opcional):</label>
-                    <select id="situacaoColheita" class="w-full p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-agro transition shadow-sm bg-white">
-                        <option value="">Deixar em branco</option>
-                        <option value="Colhendo">Colhendo</option>
-                        <option value="Parcialmente colhido">Parcialmente colhido</option>
-                        <option value="Colhido">Colhido</option>
-                    </select>
-                    <p class="text-xs text-gray-500 mt-1">Se ficar em branco, esta informação não aparecerá no relatório.</p>
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <label class="block text-sm font-semibold text-gray-700">Situação da colheita <span class="font-normal text-gray-500">(opcional)</span></label>
+                        <button type="button" onclick="limparSituacaoColheita()" class="text-xs font-bold text-gray-500 hover:text-emerald-700"><i class="fas fa-eraser mr-1"></i>Deixar em branco</button>
+                    </div>
+                    <div id="gridSituacaoColheita" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <label><input type="radio" name="situacaoColheita" value="Colhendo"><span class="checkbox-label"><i class="fas fa-mug-hot text-amber-600 mr-2"></i>Colhendo</span></label>
+                        <label><input type="radio" name="situacaoColheita" value="Parcialmente colhido"><span class="checkbox-label"><i class="fas fa-circle-half-stroke text-amber-700 mr-2"></i>Parcialmente colhido</span></label>
+                        <label><input type="radio" name="situacaoColheita" value="Colhido"><span class="checkbox-label"><i class="fas fa-circle-check text-emerald-700 mr-2"></i>Colhido</span></label>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">Se nenhuma opção for marcada, a situação da colheita não aparecerá no relatório.</p>
                 </div>
 
                 <div class="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 space-y-4">
@@ -1684,14 +1688,17 @@
             exibirToast("Ação personalizada removida.", "bg-gray-700");
         }
 
+        function limparSituacaoColheita() {
+            document.querySelectorAll('input[name="situacaoColheita"]').forEach(opcao => { opcao.checked = false; });
+        }
+
         function limparCamposFormulario() {
             document.querySelectorAll('input[name="pragas"], input[name="doencas"], input[name="mato"], input[name="indicacoes"]').forEach(cb => {
                 cb.checked = false;
             });
             const obs = document.getElementById('observacoes');
             if (obs) obs.value = '';
-            const colheita = document.getElementById('situacaoColheita');
-            if (colheita) colheita.value = '';
+            limparSituacaoColheita();
             pontosGpsEmEdicao = [];
             renderizarPontosGps();
             tarefasManuaisEmEdicao = [];
@@ -1990,7 +1997,7 @@
                 doencas: Array.from(document.querySelectorAll('input[name="doencas"]:checked')).map(cb => cb.value).join(', ') || 'Livre',
                 mato: Array.from(document.querySelectorAll('input[name="mato"]:checked')).map(cb => cb.value).join(', ') || 'Sem registro',
                 indicacoes: Array.from(document.querySelectorAll('input[name="indicacoes"]:checked')).map(cb => cb.value).join(', ') || 'Talhão sem ações',
-                situacaoColheita: document.getElementById('situacaoColheita').value || '',
+                situacaoColheita: document.querySelector('input[name="situacaoColheita"]:checked')?.value || '',
                 obs: document.getElementById('observacoes').value.trim() || '-',
                 pontosGps: JSON.parse(JSON.stringify(pontosGpsEmEdicao)),
                 manualTasks: tarefasManuaisEmEdicao.map(tarefaManualNormalizada),
@@ -2068,7 +2075,7 @@
             marcarGrupoAvaliacao('doencas', doencas);
             marcarGrupoAvaliacao('mato', mato);
             marcarGrupoAvaliacao('indicacoes', indicacoes);
-            document.getElementById('situacaoColheita').value = item.situacaoColheita || '';
+            document.querySelectorAll('input[name="situacaoColheita"]').forEach(opcao => { opcao.checked = opcao.value === (item.situacaoColheita || ''); });
             document.getElementById('observacoes').value = item.obs === '-' ? '' : (item.obs || '');
             pontosGpsEmEdicao = Array.isArray(item.pontosGps) ? JSON.parse(JSON.stringify(item.pontosGps)) : [];
             renderizarPontosGps();
@@ -2667,39 +2674,55 @@
             const avaliacoes = [...listaAvaliacoes];
             if (document.getElementById('incluirNaoAvaliados').checked) {
                 (talhoesPorFazenda[fazenda] || []).forEach(nome => {
-                    if (!avaliacoes.some(av => av.talhao === nome)) avaliacoes.push({ talhao:nome, pragas:'-', doencas:'-', mato:'-', indicacoes:'Sem Ações / Não Avaliado', obs:'', pontosGps:[] });
+                    if (!avaliacoes.some(av => av.talhao === nome)) avaliacoes.push({ talhao:nome, pragas:'', doencas:'', mato:'', indicacoes:'', obs:'', pontosGps:[], naoAvaliado:true });
                 });
             }
 
             avaliacoes.forEach((av, indice) => {
+                if (av.naoAvaliado) {
+                    garantir(13);
+                    doc.setFillColor(248,250,248); doc.setDrawColor(210,220,214); doc.roundedRect(margem,y,largura,10,2,2,'FD');
+                    doc.setTextColor(80); doc.setFont('helvetica','normal'); doc.setFontSize(8.2*fator);
+                    doc.text(`☐  TALHÃO ${av.talhao} — não avaliado`,19,y+6.5);
+                    y += 13;
+                    return;
+                }
                 const tarefas = tarefasChecklist(av);
                 const obs = av.obs && av.obs !== '-' ? av.obs : '';
                 const pontos = Array.isArray(av.pontosGps) ? av.pontosGps : [];
-                const resumo = [
-                    ['Pragas', av.pragas || '-'], ['Doenças', av.doencas || '-'],
-                    ['Mato', av.mato || '-'], ['Colheita', av.situacaoColheita || 'Não informada']
-                ];
+                const resumo = [];
+                if (av.pragas && !['Livre','-'].includes(av.pragas)) resumo.push(['Pragas', av.pragas]);
+                if (av.doencas && !['Livre','-'].includes(av.doencas)) resumo.push(['Doenças', av.doencas]);
+                if (av.mato && !['Sem registro','-'].includes(av.mato)) resumo.push(['Plantas daninhas', av.mato]);
+                if (av.situacaoColheita) resumo.push(['Colheita', av.situacaoColheita]);
                 const linhasResumo = resumo.map(item => linhas(`${item[0]}: ${item[1]}`, 82, 7.7*fator));
-                let alturaResumo = Math.max(12, Math.max(linhasResumo[0].length, linhasResumo[1].length) * 3.6 + Math.max(linhasResumo[2].length, linhasResumo[3].length) * 3.6 + 3);
-                let alturaTarefas = 10;
-                tarefas.forEach(t => { alturaTarefas += linhas('☐  ' + t.text, tarefas.length > 1 && t.text.length < 72 ? 82 : 172, 8.2*fator).length * 4 + 2; });
-                const obsLinhas = linhas(obs || 'Sem observações adicionais.', 172, (obs ? 8.7 : 7.8)*fator);
+                let alturaResumo = 0;
+                for (let ri=0; ri<linhasResumo.length; ri+=2) alturaResumo += Math.max(linhasResumo[ri]?.length||0, linhasResumo[ri+1]?.length||0) * 3.6 + 1.2;
+                if (linhasResumo.length) alturaResumo += 2;
+                let alturaTarefas = tarefas.length ? 10 : 0;
+                tarefas.forEach(t => { alturaTarefas += linhas(t.text, tarefas.length > 1 && t.text.length < 72 ? 76 : 166, 8.2*fator).length * 4 + 2; });
+                const obsLinhas = obs ? linhas(obs, 172, 8.7*fator) : [];
                 const gpsAltura = pontos.length ? pontos.length * 8 + 3 : 0;
-                const altura = 13 + alturaResumo + alturaTarefas + obsLinhas.length * 4 + gpsAltura + 13;
+                const alturaObs = obsLinhas.length ? 8 + obsLinhas.length * 4 : 0;
+                const altura = Math.max(16, 13 + alturaResumo + alturaTarefas + alturaObs + gpsAltura + 7);
                 garantir(Math.min(altura, 235));
                 const topo = y;
                 doc.setFillColor(255); doc.setDrawColor(190,210,200); doc.roundedRect(margem, topo, largura, Math.min(altura, limiteY-topo), 2, 2, 'S');
                 doc.setFillColor(8,103,73); doc.roundedRect(margem, topo, largura, 11, 2, 2, 'F');
                 doc.setTextColor(255); doc.setFont('helvetica','bold'); doc.setFontSize(10*fator); doc.text(`${String(indice+1).padStart(2,'0')}  TALHÃO ${av.talhao}`, 18, topo+7.2);
                 y = topo + 16;
-                doc.setTextColor(35); doc.setFont('helvetica','normal'); doc.setFontSize(7.7*fator);
-                const colunas = [[linhasResumo[0],linhasResumo[1]],[linhasResumo[2],linhasResumo[3]]];
-                [0,1].forEach(col => { let yy=y; colunas[col].forEach(ls => { doc.text(ls, 19+col*89, yy); yy += ls.length*3.6+1.2; }); });
-                y += alturaResumo;
-                doc.setDrawColor(220); doc.line(18,y,192,y); y+=5;
-                doc.setTextColor(8,79,55); doc.setFont('helvetica','bold'); doc.setFontSize(8.2*fator); doc.text('TAREFAS RECOMENDADAS',19,y); y+=5;
-                if (!tarefas.length) { doc.setTextColor(110); doc.setFont('helvetica','italic'); doc.text('Nenhuma tarefa indicada para este talhão.',19,y); y+=5; }
-                else {
+                if (linhasResumo.length) {
+                    doc.setTextColor(35); doc.setFont('helvetica','normal'); doc.setFontSize(7.7*fator);
+                    for (let ri=0; ri<linhasResumo.length; ri+=2) {
+                        const esquerda=linhasResumo[ri], direita=linhasResumo[ri+1];
+                        doc.text(esquerda,19,y); if(direita) doc.text(direita,108,y);
+                        y += Math.max(esquerda.length,direita?.length||0)*3.6+1.2;
+                    }
+                    y += 1;
+                }
+                if (tarefas.length) {
+                    doc.setDrawColor(220); doc.line(18,y,192,y); y+=5;
+                    doc.setTextColor(8,79,55); doc.setFont('helvetica','bold'); doc.setFontSize(8.2*fator); doc.text('TAREFAS RECOMENDADAS',19,y); y+=5;
                     for (let ti=0; ti<tarefas.length;) {
                         const primeira=tarefas[ti], segunda=tarefas[ti+1];
                         const dupla=primeira.text.length<72 && segunda && segunda.text.length<72;
@@ -2712,9 +2735,11 @@
                         y+=alturaLinha;
                     }
                 }
-                if(y+obsLinhas.length*4+gpsAltura+14>limiteY){novaPagina();doc.setTextColor(8,79,55);doc.setFont('helvetica','bold');doc.setFontSize(9*fator);doc.text(`TALHÃO ${av.talhao} — CONTINUAÇÃO`,19,y);y+=8;}
-                y+=1; doc.setTextColor(8,79,55); doc.setFont('helvetica','bold'); doc.text('OBSERVAÇÃO DO TALHÃO',19,y); y+=5;
-                doc.setTextColor(obs?35:120); doc.setFont('helvetica',obs?'normal':'italic'); doc.setFontSize((obs?8.7:7.8)*fator); doc.text(obsLinhas,19,y); y += obsLinhas.length*4+2;
+                if(y+alturaObs+gpsAltura+8>limiteY){novaPagina();doc.setTextColor(8,79,55);doc.setFont('helvetica','bold');doc.setFontSize(9*fator);doc.text(`TALHÃO ${av.talhao} — CONTINUAÇÃO`,19,y);y+=8;}
+                if (obsLinhas.length) {
+                    y+=1; doc.setTextColor(8,79,55); doc.setFont('helvetica','bold'); doc.text('OBSERVAÇÃO DO TALHÃO',19,y); y+=5;
+                    doc.setTextColor(35); doc.setFont('helvetica','normal'); doc.setFontSize(8.7*fator); doc.text(obsLinhas,19,y); y += obsLinhas.length*4+2;
+                }
                 pontos.forEach((p,pi) => {
                     const rotulo = `Localização ${pi+1}${p.descricao ? ' — '+p.descricao : ''}: abrir no mapa`;
                     const url = urlMapaGps(p); doc.setTextColor(25,100,180); doc.setFont('helvetica','bold'); doc.setFontSize(7.7*fator); doc.textWithLink(rotulo,19,y,{url});
@@ -2819,6 +2844,7 @@
         window.limparOutros = limparOutros;
         window.adicionarNovaAcaoManejo = adicionarNovaAcaoManejo;
         window.removerAcaoCustom = removerAcaoCustom;
+        window.limparSituacaoColheita = limparSituacaoColheita;
         window.adicionarNovaPraga = adicionarNovaPraga;
         window.removerPragaCustom = removerPragaCustom;
         window.adicionarNovaDoenca = adicionarNovaDoenca;

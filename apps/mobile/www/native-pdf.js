@@ -159,7 +159,8 @@
       baixarNoNavegador('data:application/pdf;base64,' + base64, doc.name);
       return;
     }
-    const temp = await p.filesystem.writeFile({ path: 'share-' + doc.id + '.pdf', data: base64, directory: 'CACHE', recursive: true });
+    const nomeCompartilhamento = limparNome(doc.name || ((doc.displayName || doc.id) + '.pdf'));
+    const temp = await p.filesystem.writeFile({ path: nomeCompartilhamento, data: base64, directory: 'CACHE', recursive: true });
     await p.share.share({
       title: doc.displayName || doc.typeLabel || 'Documento Do Campo',
       text: doc.displayName || 'Documento gerado pelo Do Campo SmartFarm',
@@ -242,7 +243,7 @@
       return { navegador: true, document: record };
     }
 
-    const temp = await p.filesystem.writeFile({ path: 'share-' + id + '.pdf', data: base64, directory: 'CACHE', recursive: true });
+    const temp = await p.filesystem.writeFile({ path: nome, data: base64, directory: 'CACHE', recursive: true });
     await p.share.share({ title: titulo || 'Relatório Do Campo', text: displayName, url: temp.uri, dialogTitle: 'Salvar ou compartilhar PDF' });
     return { uri: temp.uri, document: record };
   }
