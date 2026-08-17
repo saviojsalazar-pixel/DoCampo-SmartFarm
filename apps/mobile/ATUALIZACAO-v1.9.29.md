@@ -1,13 +1,20 @@
-# Do Campo SmartFarm v1.9.29
+# Do Campo SmartFarm 1.9.29
 
 ## Interpretação de solo
 
-- Os rótulos dos gráficos da CTC agora partem do centro angular de cada setor e usam linhas-guia, reduzindo sobreposições e deixando clara a correspondência entre texto e cor.
-- As barras de P, K, Ca, Mg, S, B, Cu, Fe, Mn e Zn passam a representar deficiência, faixa adequada e teor elevado, sem sugerir que valores continuamente maiores sejam melhores.
-- A classe superior desses nutrientes é apresentada graficamente como “Alto”, mantendo os valores e as referências técnicas originais.
-- O radar volta a considerar resultados acima da faixa como desvio por excesso, mantendo coerência com as barras.
+- Regras de classificação consolidadas a partir da aba oficial `Página2 corrigida`.
+- Fósforo classificado prioritariamente por P-rem, depois argila e, na ausência dos dois, pela faixa geral validada.
+- Enxofre condicionado ao P-rem quando disponível.
+- Cálcio, magnésio e potássio exibem o valor do laboratório, mas a classe e a posição gráfica são calculadas pela participação na CTC.
+- Acidez (`Al`, `H+Al` e `m%`) usa escala inversa; valores baixos aparecem como condição favorável.
+- Relações Ca/K, Mg/K e Ca/Mg usam as faixas oficiais de equilíbrio.
+- Barras com valor único acima do marcador e classificação em preto.
+- Gráficos de CTC em quadros separados, rótulos próximos aos respectivos setores e sem linhas-guia.
+- Mantidas as legendas explicativas já validadas para o cliente.
+- Removidos do PDF os avisos internos sobre regra de fósforo, método e simulação.
 
-## Compatibilidade
+## Versão Android
 
-- Dados locais, documentos e sincronização permanecem preservados.
-- Funcionamento offline mantido.
+- `versionCode`: 210
+- `versionName`: 1.9.29
+
