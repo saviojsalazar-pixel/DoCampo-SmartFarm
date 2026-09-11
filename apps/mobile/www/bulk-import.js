@@ -54,6 +54,69 @@
     return { file };
   }
 
+  async function zipEntries(buffer) {
+    const bytes = new Uint8Array(buffer), view = new DataView(buffer);
+    let eocd = -1;
+    for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65557); i--) if (u32(view, i) === 0x06054b50) { eocd = i; break; }
+    if (eocd < 0) throw new Error('O modelo XLSX está inválido.');
+    const count = u16(view, eocd + 10), centralOffset = u32(view, eocd + 16), result = new Map(); let cursor = centralOffset;
+    for (let i = 0; i < count; i++) {
+      const method = u16(view, cursor + 10), compressedSize = u32(view, cursor + 20), nameLength = u16(view, cursor + 28), extraLength = u16(view, cursor + 30), commentLength = u16(view, cursor + 32), localOffset = u32(view, cursor + 42);
+      const name = textDecoder.decode(bytes.slice(cursor + 46, cursor + 46 + nameLength)), localNameLength = u16(view, localOffset + 26), localExtraLength = u16(view, localOffset + 28), start = localOffset + 30 + localNameLength + localExtraLength, compressed = bytes.slice(start, start + compressedSize);
+      let data;
+      if (method === 0) data = compressed;
+      else if (method === 8 && typeof DecompressionStream !== 'undefined') data = new Uint8Array(await new Response(new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+      else throw new Error('Este aparelho não conseguiu preparar a planilha preenchida.');
+      result.set(name, data); cursor += 46 + nameLength + extraLength + commentLength;
+    }
+    return result;
+  }
+
+  let crcTable;
+  function crc32(bytes) {
+    if (!crcTable) crcTable = Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+    let crc = 0xffffffff; bytes.forEach(byte => { crc = crcTable[(crc ^ byte) & 255] ^ (crc >>> 8); }); return (crc ^ 0xffffffff) >>> 0;
+  }
+  function joinBytes(parts) { const out = new Uint8Array(parts.reduce((total, part) => total + part.length, 0)); let offset = 0; parts.forEach(part => { out.set(part, offset); offset += part.length; }); return out; }
+  function makeZip(entries) {
+    const encoder = new TextEncoder(), local = [], central = []; let offset = 0;
+    const put16 = (view, at, value) => view.setUint16(at, value, true), put32 = (view, at, value) => view.setUint32(at, value >>> 0, true);
+    entries.forEach((data, name) => {
+      const nameBytes = encoder.encode(name), crc = crc32(data), header = new Uint8Array(30), hv = new DataView(header.buffer);
+      put32(hv, 0, 0x04034b50); put16(hv, 4, 20); put16(hv, 6, 0x0800); put32(hv, 14, crc); put32(hv, 18, data.length); put32(hv, 22, data.length); put16(hv, 26, nameBytes.length);
+      local.push(header, nameBytes, data);
+      const ch = new Uint8Array(46), cv = new DataView(ch.buffer);
+      put32(cv, 0, 0x02014b50); put16(cv, 4, 20); put16(cv, 6, 20); put16(cv, 8, 0x0800); put32(cv, 16, crc); put32(cv, 20, data.length); put32(cv, 24, data.length); put16(cv, 28, nameBytes.length); put32(cv, 42, offset);
+      central.push(ch, nameBytes); offset += header.length + nameBytes.length + data.length;
+    });
+    const centralBytes = joinBytes(central), end = new Uint8Array(22), ev = new DataView(end.buffer);
+    put32(ev, 0, 0x06054b50); put16(ev, 8, entries.size); put16(ev, 10, entries.size); put32(ev, 12, centralBytes.length); put32(ev, 16, offset);
+    return new Blob([...local, centralBytes, end], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  }
+
+  const xmlEsc = value => String(value ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  function populatedRow(rowNumber, values, styles) {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', cells = values.map((value, index) => { const ref = letters[index] + rowNumber, style = styles[index] || styles[0] || 31; return typeof value === 'number' && Number.isFinite(value) ? `<x:c r="${ref}" s="${style}" t="n"><x:v>${value}</x:v></x:c>` : `<x:c r="${ref}" s="${style}" t="inlineStr"><x:is><x:t>${xmlEsc(value)}</x:t></x:is></x:c>`; }).join('');
+    return `<x:row r="${rowNumber}" ht="22" customHeight="1">${cells}</x:row>`;
+  }
+  function fillRows(source, rows, styles, maximum) {
+    if (rows.length > maximum) throw new Error(`A planilha comporta até ${maximum} registros nesta aba.`);
+    const fixed = [...source.matchAll(/<x:row\b[\s\S]*?<\/x:row>/g)].filter(match => Number(match[0].match(/\br="(\d+)"/)?.[1]) <= 4).map(match => match[0]).join('');
+    const safeRows = rows.length ? rows : [Array(styles.length).fill('')], count = safeRows.length;
+    const dataRows = safeRows.map((row, index) => populatedRow(index + 5, row, styles)).join(''), blankRows = Array.from({ length: Math.max(0, maximum - count) }, (_, index) => populatedRow(index + 5 + count, Array(styles.length).fill(''), styles)).join('');
+    return source.replace(/<x:sheetData>[\s\S]*?<\/x:sheetData>/, `<x:sheetData>${fixed}${dataRows}${blankRows}</x:sheetData>`);
+  }
+  async function populatedModel(templateBuffer, farms) {
+    const entries = await zipEntries(templateBuffer), encoder = new TextEncoder();
+    const ordered = (farms || []).slice().sort((a, b) => `${a.producer || a.proprietor || ''}\u0000${a.farm || ''}`.localeCompare(`${b.producer || b.proprietor || ''}\u0000${b.farm || ''}`, 'pt-BR', { numeric: true, sensitivity: 'base' }));
+    const properties = ordered.map(farm => [farm.producer || farm.proprietor || '', farm.cpf || '', farm.farm || '', '', farm.address || '', farm.notes || '']);
+    const fields = ordered.flatMap(farm => (farm.fields || []).slice().sort(fieldCompare).map(field => [farm.producer || farm.proprietor || '', farm.farm || '', field.name || '', Number(field.area) || 0, Number(field.plants) || 0, Number(field.rowSpacing) || 0, Number(field.plantSpacing) || 0, field.culture || 'Café', field.notes || '']));
+    const propertyPath = 'xl/worksheets/sheet2.xml', fieldPath = 'xl/worksheets/sheet3.xml';
+    entries.set(propertyPath, encoder.encode(fillRows(textDecoder.decode(entries.get(propertyPath)), properties, [31, 34, 31, 31, 31, 31], 200)));
+    entries.set(fieldPath, encoder.encode(fillRows(textDecoder.decode(entries.get(fieldPath)), fields, [30, 30, 30, 37, 40, 37, 37, 30, 30], 400)));
+    return makeZip(entries);
+  }
+
   function xml(source) {
     const doc = new DOMParser().parseFromString(source, 'application/xml');
     if (doc.querySelector('parsererror')) throw new Error('A planilha contém XML inválido.');
@@ -287,14 +350,16 @@
     try {
       const response = await fetch(MODEL, { cache: 'no-store' });
       if (!response.ok) throw new Error(`arquivo indisponível (${response.status})`);
-      const blob = await response.blob(), filename = 'Modelo_Importacao_SmartFarm.xlsx';
+      const registry = await DoCampoRegistry.all();
+      const blob = await populatedModel(await response.arrayBuffer(), registry.farms || []);
+      const filename = `Cadastros_DoCampo_SmartFarm_${new Date().toISOString().slice(0, 10)}.xlsx`;
       const plugins = window.Capacitor?.Plugins;
       if (plugins?.Filesystem && plugins?.Share) {
         const bytes = new Uint8Array(await blob.arrayBuffer());
         let binary = '';
         for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
         const saved = await plugins.Filesystem.writeFile({ path: filename, data: btoa(binary), directory: 'CACHE', recursive: true });
-        await plugins.Share.share({ title: 'Planilha modelo Do Campo SmartFarm', text: 'Modelo para importar clientes, propriedades e talhões.', url: saved.uri, dialogTitle: 'Salvar ou enviar planilha modelo' });
+        await plugins.Share.share({ title: 'Cadastros Do Campo SmartFarm', text: 'Planilha preenchida para atualizar produtores, propriedades e talhões.', url: saved.uri, dialogTitle: 'Salvar ou enviar planilha de atualização' });
       } else {
         const url = URL.createObjectURL(blob), link = document.createElement('a');
         link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove();
@@ -303,14 +368,14 @@
     } catch (error) {
       console.error(error); alert(`Não foi possível baixar a planilha modelo: ${error.message}`);
     } finally {
-      if (button) { button.disabled = false; button.textContent = '↓ Baixar modelo XLSX'; }
+      if (button) { button.disabled = false; button.textContent = '↓ Baixar cadastros XLSX'; }
     }
   }
 
-  window.DoCampoBulkImport = { init, modelUrl: MODEL, readWorkbook };
+  window.DoCampoBulkImport = { init, modelUrl: MODEL, readWorkbook, populatedModel };
   window.addEventListener('DOMContentLoaded', () => {
     const downloadButton = document.getElementById('downloadModel');
-    if (downloadButton) downloadButton.onclick = downloadModel;
+    if (downloadButton) { downloadButton.textContent = '↓ Baixar cadastros XLSX'; downloadButton.onclick = downloadModel; }
     const importBar = document.querySelector('.importbar'), toolbar = document.querySelector('.toolbar');
     if (importBar && toolbar) toolbar.insertAdjacentElement('afterend', importBar);
     const page = location.pathname.split('/').pop();
