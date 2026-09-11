@@ -1,0 +1,2166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Do Campo Agronegócios - Acompanhamento da Produção</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="vendor/tailwind/tailwindcss.js"></script>
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+
+    <!-- Google Fonts: Inter & Outfit -->
+
+    <!-- Chart.js for Interactive Charts -->
+    <script src="simple-charts.js"></script>
+
+    <!-- html2pdf.js for Client-side PDF Generation -->
+    <script src="vendor/pdf/html2pdf.bundle.min.js"></script>
+    <script src="unified-db.js"></script>
+    <script src="shared-data.js"></script>
+    <script src="registry-loader.js"></script>
+    <script src="document-code.js"></script>
+    <script src="native-pdf.js"></script>
+    <script src="app-shell.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        agri: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        },
+                        prod: {
+                            50: '#fefce8',
+                            100: '#fef9c3',
+                            500: '#eab308',
+                            600: '#ca8a04',
+                            700: '#a16207',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+
+        #pdf-content {
+            width: 794px !important;
+            min-width: 794px !important;
+            max-width: 794px !important;
+            box-sizing: border-box !important;
+            background-color: #ffffff;
+            color: #0f172a;
+            font-family: 'Inter', sans-serif;
+            margin: 0 auto;
+        }
+
+        .pdf-page {
+            width: 794px !important;
+            box-sizing: border-box !important;
+            padding: 24px 28px !important;
+            background-color: #ffffff;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .pdf-page-1 {
+            min-height: 1115px !important;
+        }
+
+        .pdf-page-2 {
+            min-height: 1115px !important;
+            page-break-before: always !important;
+            break-before: page !important;
+        }
+
+        .pdf-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 9px;
+            table-layout: fixed;
+        }
+
+        .pdf-table th {
+            background-color: #15803d;
+            color: #ffffff;
+            padding: 5px 6px;
+            text-align: left;
+            font-size: 8.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .pdf-table td {
+            padding: 5px 6px;
+            border-bottom: 1px solid #e2e8f0;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .pdf-box {
+            border: 1px solid #cbd5e1;
+            border-radius: 5px;
+            padding: 5px 7px;
+            background-color: #f8fafc;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #pdf-content-wrapper, #pdf-content-wrapper * {
+                visibility: visible;
+            }
+            #pdf-content-wrapper {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            #pdf-content {
+                width: 100% !important;
+                padding: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased bg-slate-50">
+
+    <header class="bg-emerald-700 text-white sticky top-0 z-40 shadow-md no-print border-b border-emerald-600">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="index.html" data-docampo-back aria-label="Voltar ao menu" class="text-white text-3xl font-bold px-1 no-underline">‹</a>
+                <img src="assets/logo.png" alt="Logo Do Campo Agronegócios" class="w-12 h-12 bg-white rounded-xl object-contain p-1 shadow-inner border border-emerald-400">
+                <div>
+                    <h1 class="text-xl font-bold font-heading tracking-wide text-white leading-tight">DO CAMPO</h1>
+                    <p class="text-xs font-semibold text-emerald-100 tracking-wider uppercase">AGRONEGÓCIOS • Acompanhamento da Produção</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <button onclick="location.href='documentos.html'" class="flex items-center gap-2 bg-emerald-800 hover:bg-emerald-900 text-emerald-100 px-3.5 py-2 rounded-lg text-sm font-medium transition border border-emerald-600 shadow-sm cursor-pointer">
+                    <i class="fa-solid fa-clock-rotate-left text-emerald-300"></i>
+                    <span class="hidden sm:inline">Histórico</span>
+                </button>
+                <button onclick="resetForm()" class="flex items-center gap-2 bg-emerald-800 hover:bg-emerald-900 text-emerald-100 px-3.5 py-2 rounded-lg text-sm font-medium transition border border-emerald-600 shadow-sm cursor-pointer">
+                    <i class="fa-solid fa-rotate text-emerald-300"></i>
+                    <span class="hidden sm:inline">Novo Registro</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 no-print">
+
+        <!-- Banner Principal -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="space-y-1">
+                <div class="inline-flex items-center gap-2 px-3 py-1 bg-amber-50 border border-amber-200 rounded-full text-amber-800 text-xs font-bold uppercase tracking-wider">
+                    <i class="fa-solid fa-chart-line text-amber-600"></i> Módulo de Acompanhamento de Colheita e Produtividade
+                </div>
+                <h2 class="text-2xl font-black font-heading text-slate-900">Registro de Produção por Talhão</h2>
+                <p class="text-slate-500 text-sm">Selecione a propriedade, registre o volume colhido por talhão e analise a produtividade e quebras de safra.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="bg-slate-100 p-3 rounded-xl border border-slate-200 text-right min-w-[170px]">
+                    <label for="safra-select" class="block text-xs font-semibold text-slate-500 uppercase">Safra / Ano</label>
+                    <select id="safra-select" onchange="onSafraChange()" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-sm font-bold font-mono text-slate-800 text-right focus:ring-2 focus:ring-emerald-600 focus:outline-none mt-0.5 cursor-pointer">
+                        <!-- Preenchido via JavaScript de 2020 a 2040 -->
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- CADASTRAR NOVA PROPRIEDADE E TALHÕES -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-800 px-6 py-3.5 border-b border-slate-700 flex items-center justify-between cursor-pointer select-none hover:bg-slate-900 transition" onclick="toggleNewFarmPanel()">
+                <h3 class="text-sm font-bold text-white font-heading flex items-center gap-2.5">
+                    <i class="fa-solid fa-plus-circle text-emerald-400 text-base"></i>
+                    Cadastrar Nova Propriedade e Talhões (Opcional)
+                </h3>
+                <span id="toggle-new-farm-icon" class="text-emerald-300 text-xs font-bold flex items-center gap-1.5 bg-slate-700/80 px-3 py-1 rounded-lg border border-slate-600">
+                    <span id="toggle-new-farm-text">Expandir Formulário</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </span>
+            </div>
+
+            <div id="new-farm-panel" class="p-6 space-y-4 hidden bg-slate-50/70 border-t border-slate-200">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">Nome da Nova Fazenda / Propriedade <span class="text-red-500">*</span></label>
+                        <input type="text" id="new-farm-name" placeholder="Ex: Fazenda Bela Vista" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">Produtor Rural Responsável <span class="text-red-500">*</span></label>
+                        <input type="text" id="new-producer-name" placeholder="Ex: João da Silva" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">CPF do Produtor</label>
+                        <input type="text" id="new-producer-cpf" placeholder="Ex: 000.000.000-00" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">Endereço / Localização</label>
+                        <input type="text" id="new-producer-address" placeholder="Ex: Córrego dos Vieiras, Zona Rural, Manhuaçu - MG" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="space-y-3 pt-3 border-t border-slate-200">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-map-location-dot text-emerald-600"></i>
+                            Talhões da Propriedade
+                        </label>
+                        <button type="button" onclick="addNewFarmFieldRow()" class="text-xs font-bold bg-emerald-100 hover:bg-emerald-200 text-emerald-800 px-3 py-1.5 rounded-lg border border-emerald-300 transition flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-plus"></i> Adicionar Talhão
+                        </button>
+                    </div>
+
+                    <div id="new-farm-fields-container" class="space-y-2"></div>
+                </div>
+
+                <div class="flex justify-end pt-3 border-t border-slate-200">
+                    <button type="button" onclick="saveAndSelectNewFarm()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow transition flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-circle-check"></i>
+                        Salvar e Selecionar Propriedade
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PASSO 1: PROPRIEDADE -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-emerald-800 px-6 py-4 border-b border-emerald-700 flex items-center justify-between">
+                <h3 class="text-base font-bold text-white font-heading flex items-center gap-2.5">
+                    <span class="w-7 h-7 bg-emerald-600 rounded-lg flex items-center justify-center text-xs text-white font-black">1</span>
+                    Seleção da Propriedade e Dados do Produtor
+                </h3>
+                <span class="text-xs text-emerald-200 font-medium">Passo 1 de 3</span>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">Fazenda / Propriedade <span class="text-red-500">*</span></label>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select id="farm-select" onchange="onFarmChange()" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none cursor-pointer">
+                        </select>
+                        <button type="button" id="btn-delete-farm" onclick="confirmDeleteFarm()" class="hidden shrink-0 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3.5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm" title="Excluir esta propriedade por completo">
+                            <i class="fa-solid fa-trash-can text-rose-600"></i>
+                            <span class="hidden sm:inline">Excluir Propriedade</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-200">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-user text-emerald-600"></i>
+                            Nome do Produtor
+                        </label>
+                        <input type="text" id="producer-display" readonly placeholder="Selecione a fazenda..." class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 cursor-not-allowed">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-id-card text-emerald-600"></i>
+                            CPF do Produtor
+                        </label>
+                        <input type="text" id="producer-cpf-display" readonly placeholder="Selecione a fazenda..." class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold font-mono text-slate-800 cursor-not-allowed">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-location-dot text-emerald-600"></i>
+                            Endereço / Localização
+                        </label>
+                        <input type="text" id="producer-address-display" readonly placeholder="Selecione a fazenda..." class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 cursor-not-allowed">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PASSO 2: CULTURA E TALHÕES -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-emerald-800 px-6 py-4 border-b border-emerald-700 flex items-center justify-between">
+                <h3 class="text-base font-bold text-white font-heading flex items-center gap-2.5">
+                    <span class="w-7 h-7 bg-emerald-600 rounded-lg flex items-center justify-center text-xs text-white font-black">2</span>
+                    Cultura Principal e Lançamento de Produção por Talhão
+                </h3>
+                <span class="text-xs text-emerald-200 font-medium">Passo 2 de 3</span>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <!-- Informações da Cultura -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pb-6 border-b border-slate-200">
+                    <div class="space-y-1.5 md:col-span-3">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-leaf text-emerald-600"></i>
+                            Cultura Principal <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="crop-name" value="Café" placeholder="Ex: Café, Milho, Soja, Citrus..." class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Painel de Mesclagem de Talhões -->
+                <div class="bg-emerald-50/80 p-4 rounded-xl border border-emerald-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                    <div class="space-y-0.5">
+                        <h4 class="font-bold text-xs text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-object-ungroup text-emerald-600"></i> Mesclar Talhões (Agrupamento)
+                        </h4>
+                        <p class="text-[11px] text-slate-600">Selecione talhões abaixo usando as caixas de seleção e clique em mesclar caso tenha dados consolidados conjuntos.</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button type="button" onclick="openMergeModal()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-sm transition flex items-center gap-2 cursor-pointer">
+                            <i class="fa-solid fa-code-merge"></i> Mesclar Talhões Selecionados
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Configuração do Fator de Conversão de Balaios para Sacas -->
+                <div class="bg-amber-50/80 p-4 rounded-xl border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div class="space-y-0.5">
+                        <h4 class="font-bold text-xs text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-basket-shopping text-amber-600"></i> Conversão de Balaios para Sacas (60 kg)
+                        </h4>
+                        <p class="text-[11px] text-slate-600">Informe o fator padrão ou personalize diretamente na linha de cada talhão abaixo.</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <label class="text-xs font-bold text-slate-700 uppercase">Fator Padrão:</label>
+                        <input type="number" step="0.1" min="0.1" id="global-conversion-factor" value="8" oninput="onGlobalConversionFactorChange()" class="w-20 bg-white border border-amber-300 rounded-lg px-2.5 py-1.5 text-xs font-bold font-mono text-slate-800 text-center focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Lista Completa de Talhões da Fazenda Selecionada -->
+                <div class="space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <h4 class="font-bold text-sm text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-map-location-dot text-emerald-600"></i>
+                            Lista de Talhões da Propriedade e Lançamento de Produção
+                        </h4>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="clearAllFieldsEntries()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-300 transition font-semibold cursor-pointer">Limpar Todos Lançamentos</button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                        <table class="w-full text-left text-sm text-slate-700">
+                            <thead class="bg-slate-100 text-xs font-bold text-slate-600 uppercase">
+                                <tr>
+                                    <th class="p-3 w-10 text-center">
+                                        <input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAllFields(this)" class="rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer">
+                                    </th>
+                                    <th class="p-3">Talhão / Área (ha)</th>
+                                    <th class="p-3 w-28">Sacas (sc)</th>
+                                    <th class="p-3 w-28">Balaios (bl)</th>
+                                    <th class="p-3 w-24 text-amber-900 font-bold">Fator (bl/sc)</th>
+                                    <th class="p-3 w-32 text-emerald-800 font-extrabold">Total em Sacas</th>
+                                    <th class="p-3 w-36 text-amber-800 font-extrabold">Produtividade / ha</th>
+                                    <th class="p-3 w-36">Observações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fields-list-tbody" class="divide-y divide-slate-200">
+                                <tr>
+                                    <td colspan="8" class="p-6 text-center text-slate-400 italic">Selecione uma fazenda no Passo 1 acima para carregar a lista de talhões.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- PASSO 3: RESUMO DA PRODUÇÃO -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-emerald-800 px-6 py-4 border-b border-emerald-700 flex items-center justify-between">
+                <h3 class="text-base font-bold text-white font-heading flex items-center gap-2.5">
+                    <span class="w-7 h-7 bg-emerald-600 rounded-lg flex items-center justify-center text-xs text-white font-black">3</span>
+                    Resumo Geral da Produção da Propriedade e Gráficos Analíticos
+                </h3>
+                <span class="text-xs text-emerald-200 font-medium">Passo 3 de 3</span>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <!-- Summary Box for Total Production -->
+                <div class="bg-emerald-50 text-slate-800 rounded-xl p-5 shadow-sm space-y-3 border border-emerald-200">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-emerald-200 pb-3">
+                        <h4 class="font-bold text-base flex items-center gap-2 text-emerald-900">
+                            <i class="fa-solid fa-chart-pie text-emerald-600"></i>
+                            Resumo Geral da Produção
+                        </h4>
+                        <span class="text-xs font-semibold bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full border border-emerald-300">
+                            Safra <span id="summary-safra-tag">2026</span>
+                        </span>
+                    </div>
+                    <div id="total-production-summary-cards" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-white p-4 rounded-xl border border-emerald-200 text-center">
+                            <span class="text-xs font-semibold text-slate-500 uppercase block">Área Total Colhida</span>
+                            <span id="summary-total-area" class="text-xl font-black text-slate-900 font-mono">0,00 ha</span>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-emerald-200 text-center">
+                            <span class="text-xs font-semibold text-slate-500 uppercase block">Volume Total Produzido</span>
+                            <span id="summary-total-volume" class="text-xl font-black text-emerald-700 font-mono">0,00 sc</span>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-emerald-200 text-center">
+                            <span class="text-xs font-semibold text-slate-500 uppercase block">Produtividade Média Geral</span>
+                            <span id="summary-avg-prod" class="text-xl font-black text-amber-700 font-mono">0,00 sc/ha</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráficos Analíticos na Tela -->
+                <div class="space-y-6 pt-2">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                        <h5 class="text-xs font-bold uppercase text-slate-700 tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-chart-column text-emerald-600"></i> Gráfico de Produção por Talhão (Sacas)
+                        </h5>
+                        <div class="relative h-64 w-full bg-white p-2 rounded-lg border border-slate-200">
+                            <canvas id="productionChart"></canvas>
+                        </div>
+                        <div id="productionChartLegend" class="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[10px] text-slate-600"></div>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                        <h5 class="text-xs font-bold uppercase text-slate-700 tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-amber-600"></i> Gráfico de Produtividade por Talhão (sc/ha)
+                        </h5>
+                        <div class="relative h-64 w-full bg-white p-2 rounded-lg border border-slate-200">
+                            <canvas id="productivityChart"></canvas>
+                        </div>
+                        <div id="productivityChartLegend" class="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[10px] text-slate-600"></div>
+                    </div>
+                </div>
+
+                <!-- Responsável Técnico -->
+                <div class="space-y-3 pt-4 border-t border-slate-200">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-doctor text-emerald-600"></i>
+                            Engenheiros Agrônomos / Responsáveis Técnicos <span class="text-red-500">*</span> (Selecione um ou ambos)
+                        </label>
+                        <button type="button" onclick="toggleSelectAllAgronomists()" class="text-xs font-bold bg-emerald-100 hover:bg-emerald-200 text-emerald-800 px-3 py-1 rounded-lg border border-emerald-300 transition cursor-pointer">
+                            Selecionar Ambos
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button type="button" id="agro-btn-0" onclick="toggleAgronomist(0)" class="text-left p-4 rounded-xl border-2 transition flex items-start justify-between bg-white border-slate-200 hover:border-emerald-400 cursor-pointer shadow-sm">
+                            <div class="space-y-1">
+                                <span class="inline-block text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">01</span>
+                                <p class="text-xs font-bold text-slate-900 font-heading">Dr. Glaucio Luciano Araujo</p>
+                                <div class="text-[11px] text-slate-600 font-mono space-y-0.5">
+                                    <p>CREA: MG0000254008D</p>
+                                    <p>CFTA: 7926903620</p>
+                                </div>
+                            </div>
+                            <i id="agro-check-0" class="fa-solid fa-circle-check text-emerald-600 text-xl opacity-0 transition"></i>
+                        </button>
+
+                        <button type="button" id="agro-btn-1" onclick="toggleAgronomist(1)" class="text-left p-4 rounded-xl border-2 transition flex items-start justify-between bg-white border-slate-200 hover:border-emerald-400 cursor-pointer shadow-sm">
+                            <div class="space-y-1">
+                                <span class="inline-block text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">02</span>
+                                <p class="text-xs font-bold text-slate-900 font-heading">M.Sc. Sávio José Souza Salazar</p>
+                                <div class="text-[11px] text-slate-600 font-mono space-y-0.5">
+                                    <p>CREA: MG142362346-0</p>
+                                </div>
+                            </div>
+                            <i id="agro-check-1" class="fa-solid fa-circle-check text-emerald-600 text-xl opacity-0 transition"></i>
+                        </button>
+                    </div>
+
+                    <div class="space-y-1 pt-1">
+                        <label class="block text-[11px] font-bold text-slate-500 uppercase">Responsáveis Técnicos Selecionados</label>
+                        <input type="text" id="agronomist-summary-display" readonly placeholder="Nenhum selecionado..." class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 cursor-not-allowed">
+                    </div>
+                </div>
+
+                <div class="pt-6 border-t border-slate-200 flex justify-end">
+                    <button id="btn-pdf-generate" onclick="downloadPDF()" class="w-full sm:w-auto flex items-center justify-center gap-3 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold px-8 py-3.5 rounded-xl shadow-md transition border border-amber-400 text-base cursor-pointer">
+                        <i class="fa-solid fa-file-pdf text-xl"></i>
+                        <span id="btn-pdf-text">Visualizar relatório</span>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="bg-slate-800 text-slate-300 py-6 border-t border-slate-700 text-xs no-print mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-1.5">
+            <p class="font-bold text-emerald-400 font-heading text-sm">DO CAMPO AGRONEGÓCIOS</p>
+            <p class="text-slate-400 flex flex-wrap justify-center items-center gap-x-4 gap-y-1">
+                <span><i class="fa-solid fa-location-dot text-emerald-500 mr-1"></i> Rua Do Campo, SN, Reduto - MG</span>
+                <span><i class="fa-solid fa-id-card text-emerald-500 mr-1"></i> CNPJ: 52.124.298/0001-45</span>
+                <span><i class="fa-solid fa-phone text-emerald-500 mr-1"></i> (33) 98468-9806</span>
+            </p>
+        </div>
+    </footer>
+
+    <!-- MODAL DE VISUALIZAÇÃO DO PDF -->
+    <div id="pdf-content-wrapper" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto hidden no-print">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full p-4 space-y-3 max-h-[95vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2 no-print">
+                <span class="font-bold text-slate-700 text-xs flex items-center gap-2">
+                    <i class="fa-solid fa-file-pdf text-amber-500 text-base"></i>
+                    Visualização do Relatório de Acompanhamento da Produção
+                </span>
+                <div class="flex gap-2"><button onclick="confirmSavePDF()" class="bg-emerald-700 text-white text-sm font-bold px-3 py-2 rounded-lg cursor-pointer"><i class="fa-solid fa-floppy-disk"></i> Salvar PDF</button><button onclick="closePDFModal()" class="text-slate-500 bg-slate-100 text-sm font-bold px-3 py-2 rounded-lg cursor-pointer"><i class="fa-solid fa-arrow-left"></i> Voltar e corrigir</button></div>
+            </div>
+
+            <div class="overflow-x-auto w-full flex justify-center bg-slate-100/60 p-3 rounded-xl border border-slate-200">
+                <div id="pdf-content">
+                    
+                    <!-- PÁGINA 1 DO RELATÓRIO PDF -->
+                    <div class="pdf-page pdf-page-1">
+                        <div class="space-y-2.5">
+                            
+                            <div class="flex justify-between items-center border-b-2 border-emerald-700 pb-1.5">
+                                <div class="flex items-center gap-3">
+                                    <img src="assets/logo.png" alt="Logo Do Campo" style="background:white;width:36px;height:36px;border-radius:6px;object-fit:contain;padding:2px;">
+                                    <div>
+                                        <h1 style="font-size: 16px; font-weight: 800; color: #15803d; margin: 0; line-height: 1.1;">DO CAMPO AGRONEGÓCIOS</h1>
+                                        <p style="font-size: 9px; font-weight: 700; color: #475569; margin: 0; text-transform: uppercase;">Relatório de Acompanhamento da Produção</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <span id="pdf-date" style="font-size: 9.5px; color: #64748b;">--/--/----</span>
+                                </div>
+                            </div>
+
+                            <div class="pdf-box">
+                                <div class="grid grid-cols-2 gap-2" style="font-size: 10.5px;">
+                                    <div>
+                                        <strong style="color: #475569; font-size: 8.5px; text-transform: uppercase; display: block;">Propriedade / Fazenda:</strong>
+                                        <span id="pdf-farm" style="font-weight: 700; color: #0f172a;">--</span>
+                                    </div>
+                                    <div>
+                                        <strong style="color: #475569; font-size: 8.5px; text-transform: uppercase; display: block;">Produtor Rural:</strong>
+                                        <div class="flex items-center flex-wrap gap-1">
+                                            <span id="pdf-producer" style="font-weight: 700; color: #0f172a;">--</span>
+                                            <span id="pdf-cpf" style="font-size: 8.5px; color: #475569; font-family: monospace; font-weight: 600;">• CPF: --</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="border-t border-slate-200 mt-0.5 pt-0.5" style="font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    <strong style="color: #475569; font-size: 8.5px; text-transform: uppercase;">Endereço / Localização: </strong>
+                                    <span id="pdf-address" style="font-weight: 600; color: #334155; display: inline;">--</span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 border-t border-slate-200 mt-0.5 pt-0.5" style="font-size: 9.5px;">
+                                    <div>
+                                        <strong style="color: #475569; font-size: 8.5px; text-transform: uppercase;">Cultura Principal:</strong>
+                                        <span id="pdf-crop" style="font-weight: 700; color: #15803d;">Café</span>
+                                    </div>
+                                    <div>
+                                        <strong style="color: #475569; font-size: 8.5px; text-transform: uppercase;">Safra / Ano:</strong>
+                                        <span id="pdf-safra" style="font-weight: 600; color: #334155;">2026</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pdf-box bg-emerald-50/60 border-emerald-200" style="padding: 6px 8px;">
+                                <div class="grid grid-cols-3 gap-2 text-center" style="font-size: 9.5px;">
+                                    <div>
+                                        <span style="color: #475569; font-size: 8px; text-transform: uppercase; display: block;">Área Total Colhida</span>
+                                        <strong id="pdf-summary-area" style="color: #0f172a; font-family: monospace; font-size: 11px;">0,00 ha</strong>
+                                    </div>
+                                    <div>
+                                        <span style="color: #475569; font-size: 8px; text-transform: uppercase; display: block;">Volume Total Produzido</span>
+                                        <strong id="pdf-summary-volume" style="color: #15803d; font-family: monospace; font-size: 11px;">0,00 sc</strong>
+                                    </div>
+                                    <div>
+                                        <span style="color: #475569; font-size: 8px; text-transform: uppercase; display: block;">Produtividade Média Geral</span>
+                                        <strong id="pdf-summary-avg" style="color: #b45309; font-family: monospace; font-size: 11px;">0,00 sc/ha</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 style="font-weight: 700; color: #0f172a; margin: 4px 0 3px 0; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px; font-size: 10px; text-transform: uppercase;">Detalhamento da Produção por Talhão</h4>
+                                <table class="pdf-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 32%;">Talhão</th>
+                                            <th style="width: 16%;">Área (ha)</th>
+                                            <th style="width: 24%;">Produção</th>
+                                            <th style="width: 28%;">Produtividade / ha</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pdf-production-tbody"></tbody>
+                                </table>
+                            </div>
+
+                            <div id="pdf-signatures-container" style="margin-top: 10px; padding-top: 6px; border-top: 1px solid #cbd5e1;" class="grid grid-cols-2 gap-6 text-center pdf-box font-sans">
+                                <!-- Dinamicamente preenchido -->
+                            </div>
+
+                        </div>
+
+                        <div style="margin-top: auto; padding-top: 6px; border-top: 1px solid #cbd5e1; text-align: center;" class="pdf-box">
+                            <p style="font-weight: 800; color: #15803d; font-size: 8.5px; margin: 0; text-transform: uppercase;">DO CAMPO AGRONEGÓCIOS</p>
+                            <p style="color: #475569; font-size: 8px; margin: 1px 0 0 0;">
+                                Rua Do Campo, SN, Reduto - Minas Gerais | CNPJ: 52.124.298/0001-45 | Telefone: (33) 98468-9806
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- PÁGINA 2 DO RELATÓRIO PDF (GRÁFICOS) -->
+                    <div class="pdf-page pdf-page-2">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center border-b-2 border-emerald-700 pb-1.5">
+                                <div class="flex items-center gap-3">
+                                    <img src="assets/logo.png" alt="Logo Do Campo" style="background:white;width:36px;height:36px;border-radius:6px;object-fit:contain;padding:2px;">
+                                    <div>
+                                        <h1 style="font-size: 16px; font-weight: 800; color: #15803d; margin: 0; line-height: 1.1;">DO CAMPO AGRONEGÓCIOS</h1>
+                                        <p style="font-size: 9px; font-weight: 700; color: #475569; margin: 0; text-transform: uppercase;">Gráficos Analíticos da Safra (Página 2)</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <span style="font-size: 9.5px; color: #64748b;">Página 2 de 2</span>
+                                </div>
+                            </div>
+
+                            <div class="pdf-box">
+                                <div class="grid grid-cols-2 gap-2" style="font-size: 10.5px;">
+                                    <div>
+                                        <strong style="color: #475569; font-size: 8.5px; text-transform: uppercase; display: block;">Propriedade / Fazenda:</strong>
+                                        <span id="pdf-farm-p2" style="font-weight: 700; color: #0f172a;">--</span>
+                                    </div>
+                                    <div>
+                                        <strong style="color: #475569; font-size: 8.5px; text-transform: uppercase; display: block;">Produtor Rural:</strong>
+                                        <div class="flex items-center flex-wrap gap-1">
+                                            <span id="pdf-producer-p2" style="font-weight: 700; color: #0f172a;">--</span>
+                                            <span id="pdf-cpf-p2" style="font-size: 8.5px; color: #475569; font-family: monospace; font-weight: 600;">• CPF: --</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="border-t border-slate-200 mt-0.5 pt-0.5" style="font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    <strong style="color: #475569; font-size: 8.5px; text-transform: uppercase;">Endereço / Localização: </strong>
+                                    <span id="pdf-address-p2" style="font-weight: 600; color: #334155; display: inline;">--</span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 border-t border-slate-200 mt-0.5 pt-0.5" style="font-size: 9.5px;">
+                                    <div>
+                                        <strong style="color: #475569; font-size: 8.5px; text-transform: uppercase;">Cultura Principal:</strong>
+                                        <span id="pdf-crop-p2" style="font-weight: 700; color: #15803d;">Café</span>
+                                    </div>
+                                    <div>
+                                        <strong style="color: #475569; font-size: 8.5px; text-transform: uppercase;">Safra / Ano:</strong>
+                                        <span id="pdf-safra-p2" style="font-weight: 600; color: #334155;">2026</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pdf-box bg-emerald-50/60 border-emerald-200" style="padding: 6px 8px;">
+                                <div class="grid grid-cols-3 gap-2 text-center" style="font-size: 9.5px;">
+                                    <div>
+                                        <span style="color: #475569; font-size: 8px; text-transform: uppercase; display: block;">Área Total Colhida</span>
+                                        <strong id="pdf-summary-area-p2" style="color: #0f172a; font-family: monospace; font-size: 11px;">0,00 ha</strong>
+                                    </div>
+                                    <div>
+                                        <span style="color: #475569; font-size: 8px; text-transform: uppercase; display: block;">Volume Total Produzido</span>
+                                        <strong id="pdf-summary-volume-p2" style="color: #15803d; font-family: monospace; font-size: 11px;">0,00 sc</strong>
+                                    </div>
+                                    <div>
+                                        <span style="color: #475569; font-size: 8px; text-transform: uppercase; display: block;">Produtividade Média Geral</span>
+                                        <strong id="pdf-summary-avg-p2" style="color: #b45309; font-family: monospace; font-size: 11px;">0,00 sc/ha</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4 pt-1">
+                                <div class="pdf-box text-center" style="background-color: #ffffff; padding: 6px;">
+                                    <span style="font-size: 9.5px; color: #15803d; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 3px;">Gráfico de Produção por Talhão (Sacas)</span>
+                                    <img id="pdf-chart-prod-img" style="max-height: 290px; width: 100%; object-fit: contain; display: block; margin: 0 auto;" alt="Gráfico Produção">
+                                    <div id="pdf-chart-prod-legend" style="display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;text-align:left;font-size:7.5px;color:#475569;margin-top:3px;"></div>
+                                </div>
+                                <div class="pdf-box text-center" style="background-color: #ffffff; padding: 6px;">
+                                    <span style="font-size: 9.5px; color: #b45309; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 3px;">Gráfico de Produtividade por Talhão (sc/ha)</span>
+                                    <img id="pdf-chart-prodty-img" style="max-height: 290px; width: 100%; object-fit: contain; display: block; margin: 0 auto;" alt="Gráfico Produtividade">
+                                    <div id="pdf-chart-prodty-legend" style="display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;text-align:left;font-size:7.5px;color:#475569;margin-top:3px;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: auto; padding-top: 6px; border-top: 1px solid #cbd5e1; text-align: center;" class="pdf-box">
+                            <p style="font-weight: 800; color: #15803d; font-size: 8.5px; margin: 0; text-transform: uppercase;">DO CAMPO AGRONEGÓCIOS</p>
+                            <p style="color: #475569; font-size: 8px; margin: 1px 0 0 0;">
+                                Rua Do Campo, SN, Reduto - Minas Gerais | CNPJ: 52.124.298/0001-45 | Telefone: (33) 98468-9806
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE HISTÓRICO -->
+    <div id="history-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-xl border border-slate-200">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2 font-heading">
+                    <i class="fa-solid fa-clock-rotate-left text-emerald-600"></i>
+                    Histórico de Registros de Produção
+                </h3>
+                <button onclick="closeHistoryModal()" class="text-slate-400 hover:text-slate-600 text-lg p-1 cursor-pointer">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div id="history-list" class="max-h-80 overflow-y-auto space-y-2 text-sm"></div>
+
+            <div class="flex justify-end pt-2">
+                <button onclick="closeHistoryModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE MESCLAGEM DE TALHÕES -->
+    <div id="merge-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                    <i class="fa-solid fa-code-merge text-emerald-600"></i> Mesclar Talhões Selecionados
+                </h3>
+                <button onclick="closeMergeModal()" class="text-slate-400 hover:text-slate-600 text-lg p-1 cursor-pointer">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="space-y-3 text-xs text-slate-600">
+                <p>Os talhões selecionados serão unificados em um único talhão consolidado para esta sessão, somando suas áreas automaticamente.</p>
+                <div class="space-y-1">
+                    <label class="block font-bold text-slate-700 uppercase">Nome do Novo Talhão Unificado:</label>
+                    <input type="text" id="merge-new-name" placeholder="Ex: Talhões 1.1 + 1.2 Unificados" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeMergeModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer">Cancelar</button>
+                <button onclick="confirmMergeFields()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer shadow-sm">Confirmar Mesclagem</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAIS DE ALERTA E CONFIRMAÇÃO CUSTOMIZADOS -->
+    <div id="custom-alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200">
+            <div class="flex items-center gap-3">
+                <div id="alert-modal-icon" class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-lg font-bold shrink-0">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h3 id="alert-modal-title" class="font-bold text-slate-900 text-base">Atenção</h3>
+                    <p id="alert-modal-msg" class="text-xs text-slate-600 mt-0.5">Mensagem...</p>
+                </div>
+            </div>
+            <div class="flex justify-end pt-2">
+                <button onclick="closeCustomAlert()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-5 py-2 rounded-xl text-xs transition cursor-pointer shadow-sm">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-lg font-bold shrink-0">
+                    <i class="fa-solid fa-trash-can"></i>
+                </div>
+                <div>
+                    <h3 id="confirm-modal-title" class="font-bold text-slate-900 text-base">Confirmar Exclusão</h3>
+                    <p id="confirm-modal-msg" class="text-xs text-slate-600 mt-0.5">Tem certeza que deseja excluir?</p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeCustomConfirm(false)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer">
+                    Cancelar
+                </button>
+                <button id="confirm-modal-btn" onclick="closeCustomConfirm(true)" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer shadow-sm">
+                    Excluir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const EMBEDDED_DATABASE = [
+            {
+                farm: "Fazenda Alcantilado-São Francisco",
+                producer: "Francisco Lacerda de Aguiar Neto",
+                cpf: "813.253.397-68",
+                address: "Avenida Governador Francisco, Bairro São Tiago, Guaçuí, Espírito Santo",
+                fields: [
+                    { name: "1.1 Fazenda", area: 3.7 },
+                    { name: "2.1 Joselito Piloto", area: 0.9 },
+                    { name: "3.1 Regiane Tavares", area: 1.6 },
+                    { name: "3.2 Luciana Lopes", area: 0.6 },
+                    { name: "3.3 Fazenda", area: 0.6 },
+                    { name: "3.4 João Martins", area: 0.7 },
+                    { name: "4.1 Jorge Gumeiro", area: 1.4 },
+                    { name: "4.2 Jorge Gumeiro", area: 0.4 },
+                    { name: "5.1 Jerusa Tavares", area: 0.4 },
+                    { name: "6.1 Angelica Flores", area: 0.2 },
+                    { name: "6.2 Fazenda", area: 1.3 },
+                    { name: "6.3 Jerusa Tavares", area: 1.1 },
+                    { name: "6.4 Viviane Flores", area: 0.8 },
+                    { name: "6.5 Sonia Tavares", area: 0.8 },
+                    { name: "6.6 Afonso Tavares", area: 1.7 },
+                    { name: "6.7 Joselito Piloto", area: 1.7 },
+                    { name: "7.1 José Flores", area: 0.8 },
+                    { name: "7.2 Fazenda", area: 1.1 },
+                    { name: "7.3 Fazenda", area: 1.6 },
+                    { name: "7.4 Maria Januária", area: 1.1 },
+                    { name: "7.5 Janaina Lourenço", area: 0.6 },
+                    { name: "7.6 Celi Raimundo", area: 2.3 },
+                    { name: "7.7 Izael da Silva", area: 0.6 },
+                    { name: "8.1 Fazenda", area: 0.5 },
+                    { name: "8.2 Alcemar Venancio", area: 0.8 },
+                    { name: "8.3 Fazenda", area: 0.8 },
+                    { name: "8.4 Fazenda", area: 0.6 },
+                    { name: "8.5 Angelica Flores", area: 0.6 },
+                    { name: "9.1 Edmilson Teixeira", area: 2.5 },
+                    { name: "9.2 Fazenda", area: 0.7 },
+                    { name: "10.1 Felipe Sabino", area: 0.9 },
+                    { name: "10.2 Fazenda", area: 1.3 },
+                    { name: "10.3 Fazenda", area: 0.5 },
+                    { name: "10.4 Fazenda", area: 0.7 },
+                    { name: "10.5 Fazenda", area: 1.2 },
+                    { name: "10.6 Fazenda", area: 0.6 },
+                    { name: "10.7 Fazenda", area: 1.2 },
+                    { name: "10.8 Fazenda", area: 1.1 },
+                    { name: "10.9 Fazenda", area: 0.4 },
+                    { name: "11.1 Moises Lourenço", area: 0.7 },
+                    { name: "11.2 Fazenda", area: 1.7 },
+                    { name: "11.3 Fazenda", area: 0.7 },
+                    { name: "11.4 Natalino Lourenço", area: 0.8 },
+                    { name: "11.5 João Lourenço", area: 0.6 },
+                    { name: "11.6 Fazenda", area: 2.3 },
+                    { name: "12.1 Moises Lourenço", area: 1.3 },
+                    { name: "12.2 Fazenda", area: 5.3 },
+                    { name: "14.1 Fazenda", area: 2.2 },
+                    { name: "14.2 Fazenda", area: 1.4 },
+                    { name: "15.1 Fazenda", area: 9.7 },
+                    { name: "15.2 Fazenda", area: 1.3 },
+                    { name: "15.3 Fazenda", area: 3.5 },
+                    { name: "16.1 Fazenda", area: 9.3 }
+                ]
+            },
+            {
+                farm: "Fazenda Cafarnaum",
+                producer: "Olavo de Sousa Costa",
+                cpf: "031.209.246-60",
+                address: "Praça Coronel Maximiano, 41, ap. 901, Centro, Carangola, Minas Gerais",
+                fields: [
+                    { name: "1. Boboleta", area: 1.7 },
+                    { name: "2. 2016", area: 10.0 },
+                    { name: "3. 2017", area: 10.0 },
+                    { name: "4. 2018", area: 12.6 },
+                    { name: "5. Recepa 2024", area: 10.7 }
+                ]
+            },
+            {
+                farm: "Fazenda Flávia Adriana Elvira",
+                producer: "Elvira Maria de Oliveira e Sousa",
+                cpf: "811.507.766-68",
+                address: "Córrego dos Vieiras, Dom Corrêa, Manhuaçu, Minas Gerais",
+                fields: [
+                    { name: "1.1 Realeza (esquerda)", area: 7.0 },
+                    { name: "1.2 Realeza (direita)", area: 5.0 },
+                    { name: "2.1 BR (direita)", area: 2.3 },
+                    { name: "2.2 BR (esquerda)", area: 1.6 },
+                    { name: "3.1 Recanto Recepa do Alto", area: 1.4 },
+                    { name: "3.2 Recanto Zé Carlos Velha", area: 2.8 },
+                    { name: "3.3 Recanto Recepa de Baixo", area: 1.1 },
+                    { name: "3.4 Recanto Zé Carlos Nova", area: 3.7 },
+                    { name: "3.5 Recanto Fiete", area: 1.9 },
+                    { name: "3.6 Recanto Leo Fortão", area: 1.8 },
+                    { name: "4.1 Alto Peão", area: 10.0 },
+                    { name: "5.1 Gameleira Velha", area: 0.9 },
+                    { name: "5.2 Gameleira Nova", area: 1.8 },
+                    { name: "5.3 Gameleira Plantio", area: 0.5 },
+                    { name: "6.1 Viturino Nascentes", area: 1.0 },
+                    { name: "6.2 Viturino Lav. das Pedras", area: 0.3 },
+                    { name: "6.3 Viturino Lav. Velha", area: 0.2 }
+                ]
+            },
+            {
+                farm: "Fazenda Hott",
+                producer: "Ronaldo Luiz Hott",
+                cpf: "570.632.906-06",
+                address: "Rua Ulisses Calheiros Araújo, 139, Bairro Bom Pastor, Manhuaçu, Minas Gerais",
+                fields: [
+                    { name: "1.1 Extrema", area: 1.7 },
+                    { name: "2.1 Diamante Broto", area: 0.6 },
+                    { name: "2.2 Diamante Recepa 25", area: 2.5 },
+                    { name: "2.3 Diamante Julio", area: 2.1 },
+                    { name: "3.1 Luan e Gabriel", area: 1.3 },
+                    { name: "3.2 Lagoinha + Ararinha", area: 1.6 },
+                    { name: "3.3 Terreiro", area: 1.7 },
+                    { name: "3.4 Pasto plantio 25", area: 2.2 },
+                    { name: "4.1 Eucalipto Nova", area: 4.2 },
+                    { name: "4.2 Eucalipto Velha", area: 2.0 },
+                    { name: "5.1 Abaixo do Mato", area: 3.0 },
+                    { name: "6.1 Gameleira Plantio 25", area: 1.1 },
+                    { name: "6.2 Gameleira do Alto", area: 1.2 },
+                    { name: "6.3 Gameleira Recepa 23", area: 0.6 },
+                    { name: "6.4 Gameleira de Baixo", area: 1.3 }
+                ]
+            },
+            {
+                farm: "Fazenda Mafort",
+                producer: "Otaviano Mendes Mafort",
+                cpf: "012.845.486-51",
+                address: "Córrego dos Hott, Zona Rural, Manhuaçu, Minas Gerais",
+                fields: [
+                    { name: "1.1 Alto da Pedra", area: 5.0 },
+                    { name: "1.2 Baixada do Alto", area: 1.7 },
+                    { name: "1.3 Otaviano Cachoeira 23", area: 3.3 },
+                    { name: "1.4 Gustavo Cachoeira 23", area: 0.7 },
+                    { name: "1.5 Davi Cachoeira 23", area: 0.7 },
+                    { name: "1.6 Cachoeira Recepa 23", area: 4.3 },
+                    { name: "1.7 Pasto", area: 3.8 },
+                    { name: "1.8 Agulheiro", area: 1.1 },
+                    { name: "1.9 Grota Gustavo Esq. 24", area: 0.8 },
+                    { name: "1.10 Grota Gustavo", area: 1.8 },
+                    { name: "1.11 Grota do Davi", area: 1.9 },
+                    { name: "1.12 Despolpador", area: 0.4 },
+                    { name: "1.13 Despolpador Davi", area: 0.3 },
+                    { name: "1.14 Lav 17 mil", area: 6.0 },
+                    { name: "1.15 Pasto dos Cabritos", area: 1.0 },
+                    { name: "1.16 Lav. do Barraco", area: 3.7 },
+                    { name: "1.17 Lav. do Eucalipto", area: 1.0 },
+                    { name: "1.18 Morro Redondo Recepa 24", area: 0.8 },
+                    { name: "1.19 Morro Redondo", area: 0.5 },
+                    { name: "1.20 Quintal", area: 0.6 },
+                    { name: "1.21 Lav. 11 mil", area: 5.5 },
+                    { name: "1.22 Lav. 5 mil", area: 2.5 },
+                    { name: "2.1 Hot Casa", area: 0.3 },
+                    { name: "2.2 785 do Hott Nova", area: 2.5 },
+                    { name: "2.3 Zé Carlos Hott", area: 2.5 },
+                    { name: "2.4 Hott Divisa do Orlando", area: 0.3 },
+                    { name: "3.1 Jaca Otaviano", area: 4.7 },
+                    { name: "3.2 Jaca Gustavo", area: 2.7 },
+                    { name: "4.1 Gameleira", area: 5.6 },
+                    { name: "5.1 Vila Margem Rio", area: 2.7 },
+                    { name: "5.2 Vila Ronaldo", area: 1.5 },
+                    { name: "5.3 Vila Terreiro", area: 0.8 },
+                    { name: "5.4 Vila Bananeiras", area: 3.5 },
+                    { name: "5.5 Vila Pé de Limão", area: 1.5 },
+                    { name: "5.6 Vila Canto da Mata", area: 0.2 },
+                    { name: "5.7 Vila Vestido", area: 0.7 },
+                    { name: "5.8 Vila Barra do Mato", area: 0.8 },
+                    { name: "5.9 Vila Barra da Pedra", area: 0.8 },
+                    { name: "5.11 Vila 3 Coqueiros", area: 1.5 },
+                    { name: "5.12 Vila Acima da Mata", area: 0.5 }
+                ]
+            },
+            {
+                farm: "Fazenda Riacho Fundo",
+                producer: "Mariana Raissa Moreira Martins",
+                cpf: "089.339.946-96",
+                address: "Rua Onofre Martins Chaves, 307, ap. 301, Bairro Centro, Matipó, Minas Gerais",
+                fields: [
+                    { name: "1.", area: 0.5 }, { name: "2.", area: 1.1 }, { name: "3.", area: 0.3 },
+                    { name: "4.", area: 0.3 }, { name: "5.", area: 0.9 }, { name: "6.", area: 2.7 },
+                    { name: "7.", area: 0.3 }, { name: "8.", area: 0.5 }, { name: "9.", area: 0.3 },
+                    { name: "10.", area: 0.6 }, { name: "11.", area: 0.6 }, { name: "12.", area: 0.3 },
+                    { name: "13.", area: 1.3 }, { name: "14.", area: 1.3 }, { name: "15.", area: 1.6 },
+                    { name: "16.", area: 0.9 }, { name: "17.", area: 1.1 }, { name: "18.", area: 1.6 },
+                    { name: "19.", area: 0.9 }, { name: "20.", area: 0.6 }, { name: "21.", area: 1.1 },
+                    { name: "22.", area: 0.9 }
+                ]
+            },
+            {
+                farm: "Fazenda Santa Apolinária",
+                producer: "Edna Huebra Alves",
+                cpf: "063.341.206-62",
+                address: "Fazenda Santa Apolinária, zona rural, Córrego Jequitibá, Reduto, Minas Gerais",
+                fields: [
+                    { name: "1. Brotos", area: 0.7 },
+                    { name: "2. Acima do Secador", area: 1.9 },
+                    { name: "3. Abaixo do Secador", area: 0.7 },
+                    { name: "4. Canto da Mata", area: 1.0 }
+                ]
+            },
+            {
+                farm: "Fazendas Café Realeza",
+                producer: "Luiz Eduardo Santos de Sousa",
+                cpf: "148.005.796-78",
+                address: "Córrego dos Dutra, São Pedro do Avaí, Manhuaçu, Minas Gerais",
+                fields: [
+                    { name: "1.1 São Pedro", area: 4.3 }, { name: "1.2 São Pedro", area: 2.0 },
+                    { name: "2.1 Vila Cruzeiro", area: 3.4 }, { name: "2.2 Vila Natal", area: 2.0 },
+                    { name: "2.3 Vila", area: 14.0 }, { name: "2.4 Vila Pomar", area: 0.8 },
+                    { name: "2.5 Vila Galpão", area: 1.5 }, { name: "2.6 Vila Eucalipto", area: 1.5 },
+                    { name: "2.7 Vila Curral", area: 1.5 }, { name: "2.8 Vila Arara", area: 1.7 },
+                    { name: "3.1 Realeza 785", area: 0.8 }, { name: "3.2 Realeza Lav. da Pedra", area: 0.7 },
+                    { name: "3.3 Realeza Arara", area: 1.0 }, { name: "3.4 Realeza Velha 10", area: 10.0 },
+                    { name: "3.5 Realeza Nova", area: 28.0 }, { name: "4.1 Taquara Velha", area: 13.5 },
+                    { name: "4.2 Taquara Esqueletada", area: 2.5 }
+                ]
+            },
+            {
+                farm: "Propriedade Cristina Sousa",
+                producer: "Maria Cristina de Sousa Amâncio",
+                cpf: "536.173.556-68",
+                address: "Rua Andresa Filgueiras Batista, 48, ap. 101, Bairro Pinheiro, Manhuaçu, Minas Gerais",
+                fields: [
+                    { name: "1.1 Serra (produção)", area: 7.0 },
+                    { name: "1.1 Serra (brotos)", area: 2.0 },
+                    { name: "2.1 Curral", area: 3.5 }
+                ]
+            },
+            {
+                farm: "Sítio Boa Vista",
+                producer: "José Roberto de Sousa",
+                cpf: "347.845.786-68",
+                address: "Sítio Boa Vista, Dom Corrêa, Manhuaçu, Minas Gerais",
+                fields: [
+                    { name: "1. Porteira", area: 1.0 },
+                    { name: "2. Antena", area: 0.5 },
+                    { name: "3. Central", area: 1.0 },
+                    { name: "4. Encosta da Mata", area: 1.5 }
+                ]
+            },
+            {
+                farm: "Sítio Santa Catarina",
+                producer: "Célio da Silva Araujo",
+                cpf: "592.455.816-91",
+                address: "Córrego João Bento, Dom Corrêa, Manhuaçu, Minas Gerais",
+                fields: [
+                    { name: "1. Célio", area: 1.1 }, { name: "2. Célio", area: 0.6 },
+                    { name: "3. Tirré", area: 0.3 }, { name: "4. Glaucio", area: 0.7 },
+                    { name: "5. Célio", area: 0.8 }, { name: "6. Glaucio", area: 0.5 },
+                    { name: "7. Célio", area: 0.7 }, { name: "8. Mirella", area: 1.5 },
+                    { name: "9. Tirré", area: 0.5 }, { name: "10. Célio", area: 0.1 },
+                    { name: "11. Glaucio", area: 0.1 }
+                ]
+            }
+        ];
+
+        let selectedFarm = "";
+        let fieldEntriesMap = new Map(); // fieldName -> { sacks, baskets, factor, obs }
+        let currentFarmFieldsList = [];
+        let selectedAgronomists = [0]; // Array de índices selecionados (0 e/ou 1)
+        let pendingConfirmCallback = null;
+        let newFarmFieldCounter = 0;
+        let productionChartInstance = null;
+        let productivityChartInstance = null;
+
+        const AGRONOMISTS_LIST = [
+            {
+                name: "Dr. Glaucio Luciano Araujo",
+                crea: "CREA: MG0000254008D | CFTA: 7926903620"
+            },
+            {
+                name: "M.Sc. Sávio José Souza Salazar",
+                crea: "CREA: MG142362346-0"
+            }
+        ];
+
+        function showAlert(message, title = "Atenção", isSuccess = false) {
+            const modal = document.getElementById('custom-alert-modal');
+            const titleEl = document.getElementById('alert-modal-title');
+            const msgEl = document.getElementById('alert-modal-msg');
+            const iconEl = document.getElementById('alert-modal-icon');
+
+            if (titleEl) titleEl.innerText = title;
+            if (msgEl) msgEl.innerText = message;
+            if (iconEl) {
+                if (isSuccess) {
+                    iconEl.className = "w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg font-bold shrink-0";
+                    iconEl.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+                } else {
+                    iconEl.className = "w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-lg font-bold shrink-0";
+                    iconEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+                }
+            }
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeCustomAlert() {
+            const modal = document.getElementById('custom-alert-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function showConfirm(message, callback, title = "Confirmar Exclusão") {
+            pendingConfirmCallback = callback;
+            const modal = document.getElementById('custom-confirm-modal');
+            const titleEl = document.getElementById('confirm-modal-title');
+            const msgEl = document.getElementById('confirm-modal-msg');
+
+            if (titleEl) titleEl.innerText = title;
+            if (msgEl) msgEl.innerText = message;
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeCustomConfirm(confirmed) {
+            const modal = document.getElementById('custom-confirm-modal');
+            if (modal) modal.classList.add('hidden');
+            if (confirmed && typeof pendingConfirmCallback === 'function') {
+                pendingConfirmCallback();
+            }
+            pendingConfirmCallback = null;
+        }
+
+        function populateSafraDropdown() {
+            const select = document.getElementById('safra-select');
+            if (!select) return;
+            select.innerHTML = '';
+
+            for (let year = 2020; year <= 2040; year++) {
+                const yearStr = year.toString();
+                const opt = document.createElement('option');
+                opt.value = yearStr;
+                opt.textContent = yearStr;
+                if (yearStr === String(new Date().getFullYear())) {
+                    opt.selected = true;
+                }
+                select.appendChild(opt);
+            }
+        }
+
+        function onSafraChange() {
+            calculateProductionTotals();
+        }
+
+        async function loadStoredData() {
+            try {
+                const central = await window.DoCampoRegistry.all();
+                EMBEDDED_DATABASE.splice(0, EMBEDDED_DATABASE.length);
+                (central.farms || []).forEach(function(farm){EMBEDDED_DATABASE.push({farm:farm.farm,producer:farm.producer||farm.proprietor||'',proprietor:farm.producer||farm.proprietor||'',cpf:farm.cpf||'',address:farm.address||'',fields:(farm.fields||[]).map(field=>({name:field.name,area:Number(field.area)||0,plants:Number(field.plants)||0}))})});
+            } catch(e) { console.error("Erro ao carregar o cadastro central", e); }
+        }
+
+        function saveStoredFarm(farmObj) {
+            try {
+                let stored = JSON.parse(localStorage.getItem('agri_prod_custom_farms') || '[]');
+                const idx = stored.findIndex(function(f) { return f.farm.toLowerCase() === farmObj.farm.toLowerCase(); });
+                if (idx !== -1) {
+                    stored[idx] = farmObj;
+                } else {
+                    stored.unshift(farmObj);
+                }
+                localStorage.setItem('agri_prod_custom_farms', JSON.stringify(stored));
+                if(window.DoCampoData)window.DoCampoData.mergeFarm(farmObj);
+            } catch(e) {
+                console.error("Erro ao salvar propriedade", e);
+            }
+        }
+
+        function populateFarmDropdown() {
+            const select = document.getElementById('farm-select');
+            if (!select) return;
+            select.innerHTML = '<option value="">-- Selecione a Fazenda --</option>';
+            
+            const sortedFarms = [...EMBEDDED_DATABASE].sort(function(a, b) {
+                return a.farm.localeCompare(b.farm, 'pt-BR', { sensitivity: 'base' });
+            });
+
+            sortedFarms.forEach(function(item) {
+                const opt = document.createElement('option');
+                opt.value = item.farm;
+                opt.textContent = item.farm;
+                select.appendChild(opt);
+            });
+        }
+
+        window.onload = async function() {
+            await loadStoredData();
+            populateSafraDropdown();
+
+            const today = new Date();
+            const dateStr = today.toLocaleDateString('pt-BR');
+            const pdfDateEl = document.getElementById('pdf-date');
+            if (pdfDateEl) pdfDateEl.innerText = dateStr;
+
+            populateFarmDropdown();
+            updateAgronomistUI();
+            calculateProductionTotals();
+            initCharts();
+        };
+
+        function initCharts() {
+            const ctxProd = document.getElementById('productionChart');
+            const ctxProdty = document.getElementById('productivityChart');
+
+            if (ctxProd && !productionChartInstance) {
+                productionChartInstance = new Chart(ctxProd, {
+                    type: 'bar',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Produção (sc)',
+                            data: [],
+                            backgroundColor: '#22c55e',
+                            borderColor: '#15803d',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { font: { size: 10 } } },
+                            x: { ticks: { font: { size: 9 }, maxRotation: 45, minRotation: 0 } }
+                        }
+                    }
+                });
+            }
+
+            if (ctxProdty && !productivityChartInstance) {
+                productivityChartInstance = new Chart(ctxProdty, {
+                    type: 'bar',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Produtividade (sc/ha)',
+                            data: [],
+                            backgroundColor: '#eab308',
+                            borderColor: '#ca8a04',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { font: { size: 10 } } },
+                            x: { ticks: { font: { size: 9 }, maxRotation: 45, minRotation: 0 } }
+                        }
+                    },
+                    plugins: [{
+                        id: 'averageLine',
+                        afterDraw: function(chart) {
+                            if (chart.canvas.id !== 'productivityChart') return;
+                            const ctx = chart.ctx;
+                            const yAxis = chart.scales.y;
+                            const xAxis = chart.scales.x;
+                            
+                            const data = chart.data.datasets[0].data;
+                            if (!data || data.length === 0) return;
+                            const sum = data.reduce(function(a, b) { return a + b; }, 0);
+                            const avg = sum / data.length;
+
+                            const yPos = yAxis.getPixelForValue(avg);
+
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.moveTo(xAxis.left, yPos);
+                            ctx.lineTo(xAxis.right, yPos);
+                            ctx.lineWidth = 2;
+                            ctx.strokeStyle = '#0f172a';
+                            ctx.setLineDash([6, 6]);
+                            ctx.stroke();
+
+                            ctx.fillStyle = '#0f172a';
+                            ctx.font = 'bold 10px Inter, sans-serif';
+                            ctx.textAlign = 'right';
+                            ctx.fillText('Média: ' + avg.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' sc/ha', xAxis.right - 5, yPos - 5);
+                            ctx.restore();
+                        }
+                    }]
+                });
+            }
+        }
+
+        function updateChartsData() {
+            const labels = [];
+            const prodData = [];
+            const prodtyData = [];
+
+            currentFarmFieldsList.forEach(function(f) {
+                const entry = fieldEntriesMap.get(f.name);
+                if (entry && (entry.sacks > 0 || entry.baskets > 0)) {
+                    const effFactor = entry.factor > 0 ? entry.factor : 8;
+                    const sacks = entry.sacks + (entry.baskets / effFactor);
+                    const prodPerHa = f.area > 0 ? (sacks / f.area) : 0;
+
+                    labels.push(String(labels.length + 1));
+                    prodData.push(parseFloat(sacks.toFixed(2)));
+                    prodtyData.push(parseFloat(prodPerHa.toFixed(2)));
+                }
+            });
+
+            if (productionChartInstance) {
+                productionChartInstance.data.labels = labels;
+                productionChartInstance.data.datasets[0].data = prodData;
+                productionChartInstance.update();
+            }
+
+            if (productivityChartInstance) {
+                productivityChartInstance.data.labels = labels;
+                productivityChartInstance.data.datasets[0].data = prodtyData;
+                productivityChartInstance.update();
+            }
+            const names=currentFarmFieldsList.filter(function(f){const e=fieldEntriesMap.get(f.name);return e&&(e.sacks>0||e.baskets>0)}).map(f=>f.name);
+            const legend=names.map((name,index)=>'<div><strong>'+(index+1)+'</strong> — '+String(name).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))+'</div>').join('');
+            const prodLegend=document.getElementById('productionChartLegend'),prodtyLegend=document.getElementById('productivityChartLegend');
+            if(prodLegend)prodLegend.innerHTML=legend;if(prodtyLegend)prodtyLegend.innerHTML=legend;
+        }
+
+        function toggleAgronomist(index) {
+            const idx = selectedAgronomists.indexOf(index);
+            if (idx !== -1) {
+                if (selectedAgronomists.length > 1) {
+                    selectedAgronomists.splice(idx, 1);
+                } else {
+                    showAlert("É necessário manter pelo menos um Engenheiro Agrônomo selecionado.");
+                    return;
+                }
+            } else {
+                selectedAgronomists.push(index);
+                selectedAgronomists.sort();
+            }
+            updateAgronomistUI();
+        }
+
+        function toggleSelectAllAgronomists() {
+            if (selectedAgronomists.length === 2) {
+                selectedAgronomists = [0];
+            } else {
+                selectedAgronomists = [0, 1];
+            }
+            updateAgronomistUI();
+        }
+
+        function updateAgronomistUI() {
+            const names = [];
+            [0, 1].forEach(function(i) {
+                const btn = document.getElementById('agro-btn-' + i);
+                const check = document.getElementById('agro-check-' + i);
+                const isSelected = selectedAgronomists.includes(i);
+
+                if (isSelected) {
+                    names.push(AGRONOMISTS_LIST[i].name);
+                }
+
+                if (btn && check) {
+                    if (isSelected) {
+                        btn.classList.remove('bg-white', 'border-slate-200');
+                        btn.classList.add('bg-emerald-50/80', 'border-emerald-600', 'ring-2', 'ring-emerald-500/20');
+                        check.classList.remove('opacity-0');
+                        check.classList.add('opacity-100');
+                    } else {
+                        btn.classList.remove('bg-emerald-50/80', 'border-emerald-600', 'ring-2', 'ring-emerald-500/20');
+                        btn.classList.add('bg-white', 'border-slate-200');
+                        check.classList.remove('opacity-100');
+                        check.classList.add('opacity-0');
+                    }
+                }
+            });
+
+            const summaryDisplay = document.getElementById('agronomist-summary-display');
+            if (summaryDisplay) {
+                summaryDisplay.value = names.join(" e ");
+            }
+        }
+
+        function toggleNewFarmPanel() {
+            const panel = document.getElementById('new-farm-panel');
+            const iconText = document.getElementById('toggle-new-farm-text');
+            const icon = document.querySelector('#toggle-new-farm-icon i');
+
+            if (panel && panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                if (iconText) iconText.innerText = "Recolher Formulário";
+                if (icon) icon.className = "fa-solid fa-chevron-up";
+                
+                const container = document.getElementById('new-farm-fields-container');
+                if (container && container.children.length === 0) {
+                    addNewFarmFieldRow("1. Talhão Principal", "5.0");
+                    addNewFarmFieldRow("2. Talhão 02", "3.0");
+                }
+            } else if (panel) {
+                panel.classList.add('hidden');
+                if (iconText) iconText.innerText = "Expandir Formulário";
+                if (icon) icon.className = "fa-solid fa-chevron-down";
+            }
+        }
+
+        function addNewFarmFieldRow(defaultName, defaultArea) {
+            if (defaultName === undefined) defaultName = "";
+            if (defaultArea === undefined) defaultArea = "";
+            newFarmFieldCounter++;
+            const container = document.getElementById('new-farm-fields-container');
+            if (!container) return;
+
+            const rowId = 'new-field-row-' + newFarmFieldCounter;
+            const rowDiv = document.createElement('div');
+            rowDiv.id = rowId;
+            rowDiv.className = "flex items-center gap-2";
+
+            rowDiv.innerHTML = '<input type="text" placeholder="Nome do Talhão (ex: 1. Brotos)" value="' + defaultName + '" class="new-field-name flex-1 bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">' +
+                '<div class="relative w-36">' +
+                    '<input type="number" step="0.01" min="0.01" placeholder="Área (ha)" value="' + defaultArea + '" class="new-field-area w-full bg-white border border-slate-300 rounded-lg pl-3 pr-8 py-2 text-xs font-bold font-mono text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">' +
+                    '<span class="absolute right-2.5 top-2 text-[10px] font-bold text-slate-400">ha</span>' +
+                '</div>' +
+                '<button type="button" onclick="removeNewFarmFieldRow(\'' + rowId + '\')" class="text-slate-400 hover:text-red-500 p-2 transition cursor-pointer">' +
+                    '<i class="fa-solid fa-trash-can"></i>' +
+                '</button>';
+
+            container.appendChild(rowDiv);
+        }
+
+        function removeNewFarmFieldRow(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) row.remove();
+        }
+
+        function saveAndSelectNewFarm() {
+            const farmNameInput = document.getElementById('new-farm-name');
+            const producerNameInput = document.getElementById('new-producer-name');
+            const producerCpfInput = document.getElementById('new-producer-cpf');
+            const producerAddressInput = document.getElementById('new-producer-address');
+
+            const farmName = farmNameInput ? farmNameInput.value.trim() : '';
+            const producerName = producerNameInput ? producerNameInput.value.trim() : '';
+            const producerCpf = producerCpfInput ? producerCpfInput.value.trim() : '';
+            const producerAddress = producerAddressInput ? producerAddressInput.value.trim() : '';
+
+            if (!farmName) {
+                showAlert("Por favor, informe o nome da nova fazenda / propriedade.");
+                if (farmNameInput) farmNameInput.focus();
+                return;
+            }
+
+            if (!producerName) {
+                showAlert("Por favor, informe o nome do produtor rural responsável.");
+                if (producerNameInput) producerNameInput.focus();
+                return;
+            }
+
+            const fieldRows = document.querySelectorAll('#new-farm-fields-container > div');
+            const fields = [];
+
+            fieldRows.forEach(function(row) {
+                const nameInput = row.querySelector('.new-field-name');
+                const areaInput = row.querySelector('.new-field-area');
+
+                const fName = nameInput ? nameInput.value.trim() : '';
+                const fArea = parseFloat(areaInput ? areaInput.value : 0) || 0;
+
+                if (fName && fArea > 0) {
+                    fields.push({ name: fName, area: fArea });
+                }
+            });
+
+            if (fields.length === 0) {
+                showAlert("Por favor, insira ao menos um talhão com nome e área válidos (> 0 ha).");
+                return;
+            }
+
+            const farmObj = {
+                farm: farmName,
+                producer: producerName,
+                cpf: producerCpf,
+                address: producerAddress,
+                fields: fields
+            };
+
+            const existingIndex = EMBEDDED_DATABASE.findIndex(function(f) { return f.farm.toLowerCase() === farmName.toLowerCase(); });
+            if (existingIndex !== -1) {
+                EMBEDDED_DATABASE[existingIndex] = farmObj;
+            } else {
+                EMBEDDED_DATABASE.unshift(farmObj);
+            }
+
+            saveStoredFarm(farmObj);
+
+            try {
+                let deletedFarms = JSON.parse(localStorage.getItem('agri_prod_deleted_farms') || '[]');
+                deletedFarms = deletedFarms.filter(function(n) { return n.toLowerCase() !== farmName.toLowerCase(); });
+                localStorage.setItem('agri_prod_deleted_farms', JSON.stringify(deletedFarms));
+            } catch(e) {}
+
+            populateFarmDropdown();
+
+            const select = document.getElementById('farm-select');
+            if (select) {
+                select.value = farmName;
+                onFarmChange();
+            }
+
+            if (farmNameInput) farmNameInput.value = "";
+            if (producerNameInput) producerNameInput.value = "";
+            if (producerCpfInput) producerCpfInput.value = "";
+            if (producerAddressInput) producerAddressInput.value = "";
+
+            const container = document.getElementById('new-farm-fields-container');
+            if (container) container.innerHTML = "";
+            newFarmFieldCounter = 0;
+            toggleNewFarmPanel();
+
+            showAlert('Propriedade "' + farmName + '" cadastrada e selecionada com sucesso!', 'Sucesso', true);
+        }
+
+        function confirmDeleteFarm() {
+            if (!selectedFarm) {
+                showAlert("Selecione uma fazenda para excluir.");
+                return;
+            }
+
+            showConfirm('Mover a propriedade "' + selectedFarm + '" e todos os seus talhões para a lixeira? O cadastro poderá ser restaurado.', function() {
+                deleteCurrentFarm();
+            }, 'Excluir Propriedade Toda');
+        }
+
+        function deleteCurrentFarm() {
+            if (!selectedFarm) return;
+
+            const farmToDelete = selectedFarm;
+            const farmIdx = EMBEDDED_DATABASE.findIndex(function(f) { return f.farm === farmToDelete; });
+            if (farmIdx !== -1) {
+                EMBEDDED_DATABASE.splice(farmIdx, 1);
+            }
+
+            try {
+                let storedFarms = JSON.parse(localStorage.getItem('agri_prod_custom_farms') || '[]');
+                storedFarms = storedFarms.filter(function(f) { return f.farm.toLowerCase() !== farmToDelete.toLowerCase(); });
+                localStorage.setItem('agri_prod_custom_farms', JSON.stringify(storedFarms));
+
+                let deletedFarms = JSON.parse(localStorage.getItem('agri_prod_deleted_farms') || '[]');
+                if (!deletedFarms.includes(farmToDelete)) {
+                    deletedFarms.push(farmToDelete);
+                }
+                localStorage.setItem('agri_prod_deleted_farms', JSON.stringify(deletedFarms));
+            } catch(e) {
+                console.error("Erro ao salvar exclusão", e);
+            }
+            if(window.DoCampoData)window.DoCampoData.removeFarm(farmToDelete);
+
+            selectedFarm = "";
+            fieldEntriesMap.clear();
+            const select = document.getElementById('farm-select');
+            if (select) select.value = "";
+
+            populateFarmDropdown();
+            onFarmChange();
+
+            showAlert('Propriedade "' + farmToDelete + '" excluída com sucesso!', 'Propriedade Excluída', true);
+        }
+
+        function onFarmChange() {
+            const select = document.getElementById('farm-select');
+            const btnDeleteFarm = document.getElementById('btn-delete-farm');
+            if (!select) return;
+
+            selectedFarm = select.value;
+            fieldEntriesMap.clear();
+            currentFarmFieldsList = [];
+
+            if (btnDeleteFarm) {
+                if (selectedFarm) {
+                    btnDeleteFarm.classList.remove('hidden');
+                } else {
+                    btnDeleteFarm.classList.add('hidden');
+                }
+            }
+
+            const producerInput = document.getElementById('producer-display');
+            const producerCpfInput = document.getElementById('producer-cpf-display');
+            const producerAddressInput = document.getElementById('producer-address-display');
+            
+            if (!selectedFarm) {
+                if (producerInput) producerInput.value = "";
+                if (producerCpfInput) producerCpfInput.value = "";
+                if (producerAddressInput) producerAddressInput.value = "";
+                renderFieldsList([]);
+                calculateProductionTotals();
+                return;
+            }
+
+            const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+            const defaultGlobalFactor = parseFloat(document.getElementById('global-conversion-factor').value) || 8;
+
+            if (farmData) {
+                if (producerInput) producerInput.value = farmData.producer;
+                if (producerCpfInput) producerCpfInput.value = farmData.cpf || "--";
+                if (producerAddressInput) producerAddressInput.value = farmData.address || "--";
+                currentFarmFieldsList = farmData.fields || [];
+                
+                currentFarmFieldsList.forEach(function(f) {
+                    fieldEntriesMap.set(f.name, { sacks: 0, baskets: 0, factor: defaultGlobalFactor, obs: "" });
+                });
+
+                renderFieldsList(currentFarmFieldsList);
+            }
+
+            calculateProductionTotals();
+        }
+
+        function renderFieldsList(fields) {
+            const tbody = document.getElementById('fields-list-tbody');
+            if (!tbody) return;
+
+            if (!fields || fields.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-slate-400 italic">Nenhum talhão disponível para esta propriedade.</td></tr>';
+                return;
+            }
+
+            let html = '';
+            fields.forEach(function(f) {
+                const defaultGlobalFactor = parseFloat(document.getElementById('global-conversion-factor').value) || 8;
+                const entry = fieldEntriesMap.get(f.name) || { sacks: 0, baskets: 0, factor: defaultGlobalFactor, obs: "" };
+                const sacksVal = entry.sacks > 0 ? entry.sacks : '';
+                const basketsVal = entry.baskets > 0 ? entry.baskets : '';
+                const fieldFactor = entry.factor !== undefined && !isNaN(entry.factor) ? entry.factor : defaultGlobalFactor;
+                const totalSacks = entry.sacks + (entry.baskets / (fieldFactor > 0 ? fieldFactor : 8));
+                const prodPerHa = f.area > 0 ? (totalSacks / f.area) : 0;
+
+                html += '<tr class="hover:bg-slate-50 transition" id="field-row-' + CSS.escape(f.name) + '">' +
+                    '<td class="p-3 text-center">' +
+                        '<input type="checkbox" value="' + f.name.replace(/"/g, '&quot;') + '" class="field-select-checkbox rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer">' +
+                    '</td>' +
+                    '<td class="p-3">' +
+                        '<span class="font-bold text-xs text-slate-900 block">' + f.name + '</span>' +
+                        '<span class="text-[10px] text-slate-500 font-mono">Área: ' + f.area.toFixed(2).replace('.', ',') + ' ha</span>' +
+                    '</td>' +
+                    '<td class="p-2">' +
+                        '<input type="number" step="0.01" min="0" placeholder="0" value="' + sacksVal + '" oninput="onFieldInput(\'' + f.name.replace(/'/g, "\\'") + '\', \'sacks\', this.value)" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold font-mono text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">' +
+                    '</td>' +
+                    '<td class="p-2">' +
+                        '<input type="number" step="0.01" min="0" placeholder="0" value="' + basketsVal + '" oninput="onFieldInput(\'' + f.name.replace(/'/g, "\\'") + '\', \'baskets\', this.value)" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold font-mono text-amber-800 focus:ring-2 focus:ring-amber-500 focus:outline-none">' +
+                    '</td>' +
+                    '<td class="p-2">' +
+                        '<input type="number" step="0.1" min="0.1" value="' + fieldFactor + '" oninput="onFieldInput(\'' + f.name.replace(/'/g, "\\'") + '\', \'factor\', this.value)" class="w-full bg-white border border-amber-300 rounded-lg px-2.5 py-1.5 text-xs font-bold font-mono text-amber-900 text-center focus:ring-2 focus:ring-amber-500 focus:outline-none" title="Fator de balaios por saca para este talhão">' +
+                    '</td>' +
+                    '<td class="p-3 font-bold font-mono text-emerald-800 text-xs bg-emerald-50/50" id="total-sc-' + CSS.escape(f.name) + '">' +
+                        totalSacks.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' sc' +
+                    '</td>' +
+                    '<td class="p-3 font-bold font-mono text-amber-700 text-xs" id="prod-ha-' + CSS.escape(f.name) + '">' +
+                        prodPerHa.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' sc/ha' +
+                    '</td>' +
+                    '<td class="p-2">' +
+                        '<input type="text" placeholder="Obs..." value="' + (entry.obs || '') + '" oninput="onFieldInput(\'' + f.name.replace(/'/g, "\\'") + '\', \'obs\', this.value)" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:ring-2 focus:ring-emerald-600 focus:outline-none">' +
+                    '</td>' +
+                '</tr>';
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function toggleSelectAllFields(masterCheckbox) {
+            const checkboxes = document.querySelectorAll('.field-select-checkbox');
+            checkboxes.forEach(function(cb) {
+                cb.checked = masterCheckbox.checked;
+            });
+        }
+
+        function openMergeModal() {
+            const checkedBoxes = document.querySelectorAll('.field-select-checkbox:checked');
+            if (checkedBoxes.length < 2) {
+                showAlert("Selecione pelo menos 2 talhões na tabela para realizar a mesclagem.");
+                return;
+            }
+            const names = Array.from(checkedBoxes).map(function(cb) { return cb.value; });
+            const mergeNameInput = document.getElementById('merge-new-name');
+            if (mergeNameInput) {
+                mergeNameInput.value = names.join(" + ");
+            }
+            const modal = document.getElementById('merge-modal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeMergeModal() {
+            const modal = document.getElementById('merge-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function confirmMergeFields() {
+            const checkedBoxes = document.querySelectorAll('.field-select-checkbox:checked');
+            if (checkedBoxes.length < 2) return;
+
+            const mergeNameInput = document.getElementById('merge-new-name');
+            const newName = mergeNameInput ? mergeNameInput.value.trim() : '';
+
+            if (!newName) {
+                showAlert("Informe um nome para o talhão unificado.");
+                return;
+            }
+
+            if (currentFarmFieldsList.some(function(f) { return f.name.toLowerCase() === newName.toLowerCase(); })) {
+                showAlert("Já existe um talhão com esse nome. Escolha outro identificador.");
+                return;
+            }
+
+            let totalArea = 0;
+            let totalSacks = 0;
+            let totalBaskets = 0;
+            let factorsSum = 0;
+            let factorCount = 0;
+            const selectedNames = [];
+
+            checkedBoxes.forEach(function(cb) {
+                const fname = cb.value;
+                selectedNames.push(fname);
+                const fObj = currentFarmFieldsList.find(function(f) { return f.name === fname; });
+                if (fObj) totalArea += fObj.area;
+
+                const entry = fieldEntriesMap.get(fname);
+                if (entry) {
+                    totalSacks += entry.sacks;
+                    totalBaskets += entry.baskets;
+                    if (entry.factor) {
+                        factorsSum += entry.factor;
+                        factorCount++;
+                    }
+                }
+            });
+
+            const avgFactor = factorCount > 0 ? (factorsSum / factorCount) : (parseFloat(document.getElementById('global-conversion-factor').value) || 8);
+
+            // Remover antigos e adicionar novo
+            currentFarmFieldsList = currentFarmFieldsList.filter(function(f) { return !selectedNames.includes(f.name); });
+            selectedNames.forEach(function(fname) { fieldEntriesMap.delete(fname); });
+
+            currentFarmFieldsList.unshift({ name: newName, area: totalArea });
+            fieldEntriesMap.set(newName, { sacks: totalSacks, baskets: totalBaskets, factor: avgFactor, obs: "Mesclado de: " + selectedNames.join(", ") });
+
+            renderFieldsList(currentFarmFieldsList);
+            calculateProductionTotals();
+            closeMergeModal();
+
+            showAlert('Talhões mesclados com sucesso sob o nome "' + newName + '"!', 'Sucesso', true);
+        }
+
+        function onFieldInput(fieldName, type, val) {
+            let entry = fieldEntriesMap.get(fieldName) || { sacks: 0, baskets: 0, factor: 8, obs: "" };
+            if (type === 'sacks') {
+                entry.sacks = parseFloat(val) || 0;
+            } else if (type === 'baskets') {
+                entry.baskets = parseFloat(val) || 0;
+            } else if (type === 'factor') {
+                entry.factor = parseFloat(val) || 8;
+            } else if (type === 'obs') {
+                entry.obs = val;
+            }
+            fieldEntriesMap.set(fieldName, entry);
+
+            const fieldObj = currentFarmFieldsList.find(function(f) { return f.name === fieldName; });
+            const area = fieldObj ? fieldObj.area : 0;
+            const effectiveFactor = entry.factor > 0 ? entry.factor : 8;
+            const totalSacks = entry.sacks + (entry.baskets / effectiveFactor);
+            const prodPerHa = area > 0 ? (totalSacks / area) : 0;
+
+            const totalScEl = document.getElementById('total-sc-' + CSS.escape(fieldName));
+            const prodHaEl = document.getElementById('prod-ha-' + CSS.escape(fieldName));
+
+            if (totalScEl) totalScEl.innerText = totalSacks.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' sc';
+            if (prodHaEl) prodHaEl.innerText = prodPerHa.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' sc/ha';
+
+            calculateProductionTotals();
+        }
+
+        function onGlobalConversionFactorChange() {
+            const globalFactor = parseFloat(document.getElementById('global-conversion-factor').value) || 8;
+            fieldEntriesMap.forEach(function(entry) {
+                if (entry.factor === undefined || isNaN(entry.factor) || entry.factor === 8) {
+                    entry.factor = globalFactor;
+                }
+            });
+            if (currentFarmFieldsList.length > 0) {
+                renderFieldsList(currentFarmFieldsList);
+            }
+            calculateProductionTotals();
+        }
+
+        function clearAllFieldsEntries() {
+            fieldEntriesMap.clear();
+            const defaultGlobalFactor = parseFloat(document.getElementById('global-conversion-factor').value) || 8;
+            currentFarmFieldsList.forEach(function(f) {
+                fieldEntriesMap.set(f.name, { sacks: 0, baskets: 0, factor: defaultGlobalFactor, obs: "" });
+            });
+            renderFieldsList(currentFarmFieldsList);
+            calculateProductionTotals();
+        }
+
+        function calculateProductionTotals() {
+            let totalArea = 0;
+            let totalVolumeSacks = 0;
+
+            currentFarmFieldsList.forEach(function(f) {
+                const entry = fieldEntriesMap.get(f.name);
+                if (entry) {
+                    const effFactor = entry.factor > 0 ? entry.factor : 8;
+                    const sacks = entry.sacks + (entry.baskets / effFactor);
+                    if (sacks > 0 || f.area > 0) {
+                        totalArea += f.area;
+                        totalVolumeSacks += sacks;
+                    }
+                }
+            });
+
+            const avgProd = totalArea > 0 ? (totalVolumeSacks / totalArea) : 0;
+
+            const sumAreaEl = document.getElementById('summary-total-area');
+            const sumVolEl = document.getElementById('summary-total-volume');
+            const sumAvgEl = document.getElementById('summary-avg-prod');
+            const sumSafraTag = document.getElementById('summary-safra-tag');
+            const safraSelect = document.getElementById('safra-select');
+
+            const selectedSafraVal = safraSelect ? safraSelect.value : '2026';
+
+            if (sumAreaEl) sumAreaEl.innerText = totalArea.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ha';
+            if (sumVolEl) sumVolEl.innerText = totalVolumeSacks.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' sc';
+            if (sumAvgEl) sumAvgEl.innerText = avgProd.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' sc/ha';
+            if (sumSafraTag) sumSafraTag.innerText = selectedSafraVal;
+
+            updateChartsData();
+        }
+
+        function updatePDFPreview() {
+            const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+            const pdfProducerEl = document.getElementById('pdf-producer');
+            const pdfFarmEl = document.getElementById('pdf-farm');
+            const pdfCpfEl = document.getElementById('pdf-cpf');
+            const pdfAddressEl = document.getElementById('pdf-address');
+
+            const pdfProducerP2 = document.getElementById('pdf-producer-p2');
+            const pdfFarmP2 = document.getElementById('pdf-farm-p2');
+            const pdfCpfP2 = document.getElementById('pdf-cpf-p2');
+            const pdfAddressP2 = document.getElementById('pdf-address-p2');
+
+            const prodNameText = farmData ? farmData.producer : '--';
+            const farmNameText = farmData ? farmData.farm : '--';
+            const cpfText = farmData && farmData.cpf ? '• CPF: ' + farmData.cpf : '• CPF: --';
+            const addressText = farmData && farmData.address ? farmData.address : '--';
+
+            if (pdfProducerEl) pdfProducerEl.innerText = prodNameText;
+            if (pdfFarmEl) pdfFarmEl.innerText = farmNameText;
+            if (pdfCpfEl) pdfCpfEl.innerText = cpfText;
+            if (pdfAddressEl) pdfAddressEl.innerText = addressText;
+
+            if (pdfProducerP2) pdfProducerP2.innerText = prodNameText;
+            if (pdfFarmP2) pdfFarmP2.innerText = farmNameText;
+            if (pdfCpfP2) pdfCpfP2.innerText = cpfText;
+            if (pdfAddressP2) pdfAddressP2.innerText = addressText;
+
+            const cropInput = document.getElementById('crop-name');
+            const safraSelect = document.getElementById('safra-select');
+
+            const pdfCropEl = document.getElementById('pdf-crop');
+            const pdfSafraEl = document.getElementById('pdf-safra');
+            const pdfCropP2 = document.getElementById('pdf-crop-p2');
+            const pdfSafraP2 = document.getElementById('pdf-safra-p2');
+
+            const cropText = (cropInput ? cropInput.value.trim() : '') || 'Café';
+            const safraText = (safraSelect ? safraSelect.value : '') || '2026';
+
+            if (pdfCropEl) pdfCropEl.innerText = cropText;
+            if (pdfSafraEl) pdfSafraEl.innerText = safraText;
+            if (pdfCropP2) pdfCropP2.innerText = cropText;
+            if (pdfSafraP2) pdfSafraP2.innerText = safraText;
+
+            let totalArea = 0;
+            let totalVolumeSacks = 0;
+            const pdfTbody = document.getElementById('pdf-production-tbody');
+            if (pdfTbody) pdfTbody.innerHTML = '';
+
+            currentFarmFieldsList.forEach(function(f) {
+                const entry = fieldEntriesMap.get(f.name);
+                if (entry && (entry.sacks > 0 || entry.baskets > 0)) {
+                    const effFactor = entry.factor > 0 ? entry.factor : 8;
+                    const sacks = entry.sacks + (entry.baskets / effFactor);
+                    totalArea += f.area;
+                    totalVolumeSacks += sacks;
+
+                    const prodPerHa = f.area > 0 ? (sacks / f.area) : 0;
+                    const obsText = entry.obs ? '<br><span style="font-size: 8px; color: #64748b;">Obs: ' + entry.obs + '</span>' : '';
+
+                    if (pdfTbody) {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = '<td><strong>' + f.name + '</strong>' + obsText + '</td>' +
+                            '<td>' + f.area.toFixed(2).replace('.', ',') + ' ha</td>' +
+                            '<td><strong>' + sacks.toLocaleString('pt-BR', {minimumFractionDigits: 2}) + ' sc</strong></td>' +
+                            '<td>' + prodPerHa.toLocaleString('pt-BR', {minimumFractionDigits: 2}) + ' sc/ha</td>';
+                        pdfTbody.appendChild(tr);
+                    }
+                }
+            });
+
+            const avgProd = totalArea > 0 ? (totalVolumeSacks / totalArea) : 0;
+
+            const pdfSummaryArea = document.getElementById('pdf-summary-area');
+            const pdfSummaryVolume = document.getElementById('pdf-summary-volume');
+            const pdfSummaryAvg = document.getElementById('pdf-summary-avg');
+
+            const pdfSummaryAreaP2 = document.getElementById('pdf-summary-area-p2');
+            const pdfSummaryVolumeP2 = document.getElementById('pdf-summary-volume-p2');
+            const pdfSummaryAvgP2 = document.getElementById('pdf-summary-avg-p2');
+
+            const areaText = totalArea.toLocaleString('pt-BR', {minimumFractionDigits: 2}) + ' ha';
+            const volText = totalVolumeSacks.toLocaleString('pt-BR', {minimumFractionDigits: 2}) + ' sc';
+            const avgText = avgProd.toLocaleString('pt-BR', {minimumFractionDigits: 2}) + ' sc/ha';
+
+            if (pdfSummaryArea) pdfSummaryArea.innerText = areaText;
+            if (pdfSummaryVolume) pdfSummaryVolume.innerText = volText;
+            if (pdfSummaryAvg) pdfSummaryAvg.innerText = avgText;
+
+            if (pdfSummaryAreaP2) pdfSummaryAreaP2.innerText = areaText;
+            if (pdfSummaryVolumeP2) pdfSummaryVolumeP2.innerText = volText;
+            if (pdfSummaryAvgP2) pdfSummaryAvgP2.innerText = avgText;
+
+            const pdfChartProdImg = document.getElementById('pdf-chart-prod-img');
+            const pdfChartProdtyImg = document.getElementById('pdf-chart-prodty-img');
+
+            if (productionChartInstance && pdfChartProdImg) {
+                pdfChartProdImg.src = productionChartInstance.toBase64Image();
+            }
+            if (productivityChartInstance && pdfChartProdtyImg) {
+                pdfChartProdtyImg.src = productivityChartInstance.toBase64Image();
+            }
+            const screenLegend=document.getElementById('productionChartLegend')?.innerHTML||'';
+            const pdfLegend1=document.getElementById('pdf-chart-prod-legend'),pdfLegend2=document.getElementById('pdf-chart-prodty-legend');
+            if(pdfLegend1)pdfLegend1.innerHTML=screenLegend;if(pdfLegend2)pdfLegend2.innerHTML=screenLegend;
+
+            const signaturesContainer = document.getElementById('pdf-signatures-container');
+            if (signaturesContainer) {
+                let sigHtml = '';
+                selectedAgronomists.forEach(function(i) {
+                    const agro = AGRONOMISTS_LIST[i];
+                    sigHtml += '<div style="padding-top: 18px;">' +
+                        '<div style="border-bottom: 1px solid #0f172a; width: 85%; margin: 0 auto 3px auto;"></div>' +
+                        '<p style="font-size: 9px; font-weight: 700; margin: 0; color: #0f172a;">' + agro.name + '</p>' +
+                        '<p style="font-size: 7.5px; color: #64748b; margin: 0;">' + agro.crea + '</p>' +
+                    '</div>';
+                });
+
+                sigHtml += '<div style="padding-top: 18px;">' +
+                    '<div style="border-bottom: 1px solid #0f172a; width: 85%; margin: 0 auto 3px auto;"></div>' +
+                    '<p style="font-size: 9px; font-weight: 700; margin: 0; color: #0f172a;">Assinatura do Produtor / Responsável</p>' +
+                    '<p style="font-size: 7.5px; color: #64748b; margin: 0;">Ciente da Aferição</p>' +
+                '</div>';
+
+                if (selectedAgronomists.length === 2) {
+                    signaturesContainer.className = "grid grid-cols-3 gap-3 text-center pdf-box font-sans";
+                } else {
+                    signaturesContainer.className = "grid grid-cols-2 gap-6 text-center pdf-box font-sans";
+                }
+
+                signaturesContainer.innerHTML = sigHtml;
+            }
+        }
+
+        function downloadPDF() {
+            if (!selectedFarm) { showAlert("Por favor, selecione uma fazenda antes de visualizar o relatório."); return; }
+            let hasEntries=false;fieldEntriesMap.forEach(function(e){if(e.sacks>0||e.baskets>0)hasEntries=true});
+            if(!hasEntries){showAlert("Por favor, preencha o volume colhido de ao menos um talhão antes de visualizar o relatório.");return}
+            updatePDFPreview();
+            const wrapper=document.getElementById('pdf-content-wrapper');if(wrapper)wrapper.classList.remove('hidden');
+        }
+
+        function confirmSavePDF() {
+            if (!selectedFarm) {
+                showAlert("Por favor, selecione uma fazenda antes de gerar o relatório em PDF.");
+                return;
+            }
+
+            let hasEntries = false;
+            fieldEntriesMap.forEach(function(e) {
+                if (e.sacks > 0 || e.baskets > 0) hasEntries = true;
+            });
+
+            if (!hasEntries) {
+                showAlert("Por favor, preencha o volume colhido de ao menos um talhão antes de gerar o relatório.");
+                return;
+            }
+
+            updatePDFPreview();
+
+            const btnText = document.getElementById('btn-pdf-text');
+            if (btnText) btnText.innerText = "Gerando PDF...";
+
+            const wrapper = document.getElementById('pdf-content-wrapper');
+            const sourceElement = document.getElementById('pdf-content');
+
+            if (wrapper) wrapper.classList.remove('hidden');
+
+            const cloneContainer = document.createElement('div');
+            cloneContainer.style.position = 'absolute';
+            cloneContainer.style.left = '-9999px';
+            cloneContainer.style.top = '0px';
+            cloneContainer.style.width = '794px';
+            cloneContainer.style.backgroundColor = '#ffffff';
+
+            const clonedContent = sourceElement.cloneNode(true);
+            cloneContainer.appendChild(clonedContent);
+            document.body.appendChild(cloneContainer);
+
+            const farmCleanName = selectedFarm.replace(/[^a-zA-Z0-9]/g, '_');
+            const filename = 'Acompanhamento_Producao_' + farmCleanName + '.pdf';
+
+            const opt = {
+                margin:       0,
+                filename:     filename,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { 
+                    scale: 2, 
+                    useCORS: true, 
+                    scrollY: 0,
+                    scrollX: 0,
+                    x: 0,
+                    y: 0,
+                    width: 794,
+                    windowWidth: 794
+                },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak:    { mode: ['css', 'legacy'] }
+            };
+
+            setTimeout(function() {
+                if (typeof html2pdf !== 'undefined') {
+                    html2pdf().set(opt).from(clonedContent).outputPdf('datauristring').then(async function(dataUri) {
+                        const farmData=EMBEDDED_DATABASE.find(function(f){return f.farm===selectedFarm})||{};
+                        const responsible=selectedAgronomists.map(i=>AGRONOMISTS_LIST[i]?.name).filter(Boolean).join(' e ');
+                        const code=window.DoCampoDocumentCode?DoCampoDocumentCode.reservar('PROD',responsible):('PROD-'+Date.now());
+                        const productionEntries=currentFarmFieldsList.map(function(f){const e=fieldEntriesMap.get(f.name);if(!e||(!e.sacks&&!e.baskets))return null;const factor=e.factor>0?e.factor:8,total=e.sacks+(e.baskets/factor);return{field:f.name,area:f.area,plants:f.plants||0,sacks:e.sacks,baskets:e.baskets,factor,totalSacks:Number(total.toFixed(2)),productivity:Number((f.area>0?total/f.area:0).toFixed(2)),notes:e.notes||''}}).filter(Boolean);
+                        await window.DoCampoPDF.salvarECompartilhar(dataUri,filename,'Acompanhamento da Produção',{typeLabel:'Acompanhamento da Produção',producer:farmData.producer||farmData.proprietor||'',farm:selectedFarm,fields:productionEntries.map(x=>x.field),responsible,documentCode:code,snapshot:{safra:document.getElementById('safra-select')?.value||'',cultura:document.getElementById('crop-name')?.value||'Café',productionEntries}});
+                        if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
+                        if (wrapper) wrapper.classList.add('hidden');
+                        if (btnText) btnText.innerText = "Visualizar relatório";
+                    }).catch(function(err) {
+                        console.warn("html2pdf error, falling back to print", err);
+                        if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
+                        window.print();
+                        if (wrapper) wrapper.classList.add('hidden');
+                        if (btnText) btnText.innerText = "Visualizar relatório";
+                    });
+                } else {
+                    if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
+                    window.print();
+                    if (wrapper) wrapper.classList.add('hidden');
+                    if (btnText) btnText.innerText = "Visualizar relatório";
+                }
+            }, 300);
+        }
+
+        function closePDFModal() {
+            const wrapper = document.getElementById('pdf-content-wrapper');
+            if (wrapper) wrapper.classList.add('hidden');
+        }
+
+        function saveToHistory() {
+            const history = JSON.parse(localStorage.getItem('agri_prod_recommendations_history') || '[]');
+            const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+
+            let totalArea = 0;
+            let totalVol = 0;
+            let countFields = 0;
+
+            fieldEntriesMap.forEach(function(d) {
+                if (d.sacks > 0 || d.baskets > 0) {
+                    countFields++;
+                }
+            });
+
+            currentFarmFieldsList.forEach(function(f) {
+                const e = fieldEntriesMap.get(f.name);
+                if (e && (e.sacks > 0 || e.baskets > 0)) {
+                    totalArea += f.area;
+                    const effFactor = e.factor > 0 ? e.factor : 8;
+                    totalVol += (e.sacks + (e.baskets / effFactor));
+                }
+            });
+
+            const entry = {
+                id: '#AP-' + String(Math.floor(Math.random() * 9000) + 1000),
+                date: new Date().toLocaleString('pt-BR'),
+                farm: selectedFarm,
+                producer: farmData ? farmData.producer : '',
+                fieldsCount: countFields,
+                totalArea: totalArea.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ha',
+                totalVolume: totalVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' sc'
+            };
+
+            history.unshift(entry);
+            localStorage.setItem('agri_prod_recommendations_history', JSON.stringify(history.slice(0, 20)));
+        }
+
+        function openHistoryModal() {
+            const history = JSON.parse(localStorage.getItem('agri_prod_recommendations_history') || '[]');
+            const container = document.getElementById('history-list');
+
+            if (container) {
+                if (history.length === 0) {
+                    container.innerHTML = '<div class="p-4 text-center text-slate-400 italic">Nenhum registro de produção emitido anteriormente.</div>';
+                } else {
+                    let historyHtml = '';
+                    history.forEach(function(item) {
+                        historyHtml += '<div class="p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 flex justify-between items-center">' +
+                            '<div>' +
+                                '<span class="text-xs font-bold text-amber-700">' + item.id + '</span> • ' +
+                                '<span class="text-xs font-bold text-slate-800">' + item.farm + '</span>' +
+                                '<p class="text-[11px] text-slate-500">' + item.producer + ' • ' + item.fieldsCount + ' talhão(ões) (' + item.totalArea + ') • Vol: ' + item.totalVolume + '</p>' +
+                            '</div>' +
+                            '<span class="text-[10px] font-mono text-slate-400">' + item.date + '</span>' +
+                        '</div>';
+                    });
+                    container.innerHTML = historyHtml;
+                }
+            }
+
+            const modal = document.getElementById('history-modal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeHistoryModal() {
+            const modal = document.getElementById('history-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function resetForm() {
+            fieldEntriesMap.clear();
+            const farmSelect = document.getElementById('farm-select');
+            if (farmSelect) farmSelect.value = "";
+            onFarmChange();
+
+            const cropInput = document.getElementById('crop-name');
+            const safraSelect = document.getElementById('safra-select');
+            const conversionInput = document.getElementById('global-conversion-factor');
+
+            if (cropInput) cropInput.value = "Café";
+            if (safraSelect) safraSelect.value = String(new Date().getFullYear());
+            if (conversionInput) conversionInput.value = 8;
+
+            selectedAgronomists = [0];
+            updateAgronomistUI();
+            calculateProductionTotals();
+        }
+    </script>
+</body>
+</html>

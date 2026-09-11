@@ -37,13 +37,15 @@
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       const message = data.msg || data.message || data.error_description || data.error || 'Falha na autenticação.';
-      throw new Error(message === 'Invalid login credentials' ? 'E-mail ou senha incorretos.' : message);
+      const translated = message === 'Invalid login credentials' ? 'E-mail ou senha incorretos.' : /missing email or phone/i.test(message) ? 'Informe o e-mail e a senha para entrar.' : message;
+      throw new Error(translated);
     }
     return data;
   }
 
   async function signIn(email, password) {
     if (!navigator.onLine) throw new Error('O primeiro acesso precisa de internet. Depois o aplicativo continua funcionando offline.');
+    if (!String(email||'').trim() || !String(password||'')) throw new Error('Informe o e-mail e a senha para entrar.');
     const session = await request('/auth/v1/token?grant_type=password', {
       method: 'POST', body: JSON.stringify({ email: String(email || '').trim(), password: String(password || '') })
     });

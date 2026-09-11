@@ -227,7 +227,7 @@
         </div>
 
         <!-- CADASTRAR NOVA PROPRIEDADE E TALHÕES -->
-        <div class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="bg-slate-800 px-6 py-3.5 border-b border-slate-700 flex items-center justify-between cursor-pointer select-none hover:bg-slate-900 transition" onclick="toggleNewFarmPanel()">
                 <h3 class="text-sm font-bold text-white font-heading flex items-center gap-2.5">
                     <i class="fa-solid fa-plus-circle text-emerald-400 text-base"></i>
@@ -1482,6 +1482,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
         let checklistFilterEnabled = false;
         let checklistFilterKind = 'herbicida-pre';
         let productRowCounter = 0;
+        let pendingNewProductRowId = null;
         let selectedAgronomistIndex = 0;
         let productStockMap = {};
         let pendingConfirmCallback = null;
@@ -2087,6 +2088,21 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                 }
             });
 
+            if (pendingNewProductRowId) {
+                const pendingRow = pendingNewProductRowId;
+                const rowCat = document.getElementById(pendingRow + '-cat');
+                if (rowCat) {
+                    rowCat.value = cat;
+                    onCategoryChange(pendingRow);
+                    const rowProduct = document.getElementById(pendingRow + '-prod-select');
+                    if (rowProduct) {
+                        rowProduct.value = name;
+                        onProductSelect(pendingRow);
+                    }
+                }
+                pendingNewProductRowId = null;
+            }
+
             if (nameInput) nameInput.value = "";
             if (doseInput) doseInput.value = "";
             if (targetInput) targetInput.value = "";
@@ -2591,7 +2607,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                         '<option value="Pré-emergente - Não Seletivo" ' + (category === 'Pré-emergente - Não Seletivo' ? 'selected' : '') + '>Pré-emergente - Não Seletivo</option>' +
                         '<option value="Pré e Pós-Emergente - Não Seletivo" ' + (category === 'Pré e Pós-Emergente - Não Seletivo' ? 'selected' : '') + '>Pré e Pós-Emergente - Não Seletivo</option>' +
                         '<option value="Adjuvantes / Antideriva / Corretores" ' + (category === 'Adjuvantes / Antideriva / Corretores' ? 'selected' : '') + '>Adjuvantes / Antideriva / Corretores</option>' +
-                        '<option value="Outros">Outros / Personalizado</option>' +
+                        '<option value="__ADD_NEW_PRODUCT__">＋ Adicionar novo produto</option>' +
                     '</select>' +
                 '</td>' +
                 '<td class="p-2.5">' +
@@ -2664,8 +2680,19 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
             const container = document.getElementById(rowId + '-prod-container');
             if (!container) return;
 
-            if (category === "Outros") {
-                container.innerHTML = '<input type="text" id="' + rowId + '-prod-custom" placeholder="Nome do produto..." oninput="calculateTotals()" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">';
+            if (category === "__ADD_NEW_PRODUCT__") {
+                pendingNewProductRowId = rowId;
+                catSelect.value = "";
+                container.innerHTML = '<select id="' + rowId + '-prod-select" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs font-semibold text-slate-500"><option value="">Cadastre o produto no formulário aberto abaixo</option></select>';
+                const panel = document.getElementById('new-product-panel');
+                if (panel) panel.classList.remove('hidden');
+                const iconText = document.getElementById('toggle-new-product-text');
+                const icon = document.querySelector('#toggle-new-product-icon i');
+                if (iconText) iconText.innerText = "Recolher Formulário";
+                if (icon) icon.className = "fa-solid fa-chevron-up";
+                const nameInput = document.getElementById('new-prod-name');
+                if (panel && panel.scrollIntoView) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (nameInput) setTimeout(function(){ nameInput.focus(); }, 250);
             } else {
                 container.innerHTML = '<select id="' + rowId + '-prod-select" onchange="onProductSelect(\'' + rowId + '\')" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">' +
                     '<option value="">-- Selecione o Herbicida --</option>' +

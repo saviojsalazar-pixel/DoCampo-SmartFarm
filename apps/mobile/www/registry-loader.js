@@ -16,12 +16,18 @@
     const incomingFields = Array.isArray(farm.fields) ? farm.fields : null;
     let fields = previous.fields || [];
     if (incomingFields) {
-      fields = incomingFields.map(field => {
+      const mergedFields = (previous.fields || []).map(field => ({ ...field }));
+      incomingFields.forEach(field => {
         const oldField = (previous.fields || []).find(x => String(x.name || '').toLowerCase() === String(field.name || '').toLowerCase());
         const incomingArea = Number(field.area) || 0;
         const oldArea = Number(oldField?.area) || 0;
-        return { ...(oldField || {}), ...field, area: incomingArea > 0 ? incomingArea : oldArea };
+        const incomingPlants = Number(field.plants) || 0;
+        const oldPlants = Number(oldField?.plants) || 0;
+        const normalized = { ...(oldField || {}), ...field, area: incomingArea > 0 ? incomingArea : oldArea, plants: incomingPlants > 0 ? incomingPlants : oldPlants };
+        const index = mergedFields.findIndex(x => String(x.name || '').toLowerCase() === String(field.name || '').toLowerCase());
+        if (index >= 0) mergedFields[index] = normalized; else mergedFields.push(normalized);
       });
+      fields = mergedFields;
     }
     list[i] = {
       ...previous,

@@ -113,7 +113,7 @@
   const aliases = {
     producer: ['produtor', 'nome do produtor'], cpf: ['cpf cnpj', 'cpf', 'cnpj'], farm: ['propriedade', 'fazenda', 'fazenda propriedade'],
     city: ['municipio', 'cidade'], address: ['endereco localizacao', 'endereco', 'localizacao'], notes: ['observacoes', 'observacao'],
-    field: ['talhao', 'nome do talhao'], area: ['area ha', 'area'], plants: ['n de plantas', 'numero de plantas', 'plantas'],
+    field: ['talhao', 'nome do talhao'], area: ['area ha', 'area'], plants: ['quantidade de pes de cafe', 'pes de cafe', 'n de plantas', 'numero de plantas', 'plantas'],
     rowSpacing: ['espacamento entre linhas m', 'espacamento entre linhas'], plantSpacing: ['espacamento entre plantas m', 'espacamento entre plantas'], culture: ['cultura'],
     name: ['nome comercial', 'produto', 'nome do produto'], manufacturer: ['fabricante', 'empresa'], category: ['categoria'], formulation: ['formulacao'],
     active: ['ingrediente ativo garantia', 'ingrediente ativo', 'garantia'], dose: ['dose padrao', 'dose padrao ha', 'dose ha'], unit: ['unidade'], target: ['alvo'],
@@ -281,8 +281,36 @@
     };
   }
 
+  async function downloadModel() {
+    const button = document.getElementById('downloadModel');
+    if (button) { button.disabled = true; button.textContent = 'Preparando modelo...'; }
+    try {
+      const response = await fetch(MODEL, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`arquivo indisponível (${response.status})`);
+      const blob = await response.blob(), filename = 'Modelo_Importacao_SmartFarm.xlsx';
+      const plugins = window.Capacitor?.Plugins;
+      if (plugins?.Filesystem && plugins?.Share) {
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+        const saved = await plugins.Filesystem.writeFile({ path: filename, data: btoa(binary), directory: 'CACHE', recursive: true });
+        await plugins.Share.share({ title: 'Planilha modelo Do Campo SmartFarm', text: 'Modelo para importar clientes, propriedades e talhões.', url: saved.uri, dialogTitle: 'Salvar ou enviar planilha modelo' });
+      } else {
+        const url = URL.createObjectURL(blob), link = document.createElement('a');
+        link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 30000);
+      }
+    } catch (error) {
+      console.error(error); alert(`Não foi possível baixar a planilha modelo: ${error.message}`);
+    } finally {
+      if (button) { button.disabled = false; button.textContent = '↓ Baixar modelo XLSX'; }
+    }
+  }
+
   window.DoCampoBulkImport = { init, modelUrl: MODEL, readWorkbook };
   window.addEventListener('DOMContentLoaded', () => {
+    const downloadButton = document.getElementById('downloadModel');
+    if (downloadButton) downloadButton.onclick = downloadModel;
     const importBar = document.querySelector('.importbar'), toolbar = document.querySelector('.toolbar');
     if (importBar && toolbar) toolbar.insertAdjacentElement('afterend', importBar);
     const page = location.pathname.split('/').pop();

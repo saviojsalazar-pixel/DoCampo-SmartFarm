@@ -19,6 +19,12 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     setTimeout(sincronizarAoAbrir, 700);
+    setTimeout(async function(){
+      try {
+        if (window.DoCampoDB?.archiveOldDocuments) DoCampoDB.archiveOldDocuments(7);
+        if (window.DoCampoPDF?.purgeExpiredDocuments) await DoCampoPDF.purgeExpiredDocuments(30);
+      } catch (erro) { console.warn('Manutenção automática de documentos pendente:', erro.message || erro); }
+    }, 900);
   });
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') setTimeout(sincronizarAoAbrir, 500);
@@ -89,18 +95,57 @@
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   }
 
+  function mergeNamedList(current, incoming, keyName) {
+    const result = Array.isArray(current) ? current.map(x => ({...x})) : [];
+    (Array.isArray(incoming) ? incoming : []).forEach(item => {
+      const key = String(item?.[keyName] || '').trim().toLowerCase();
+      const index = result.findIndex(x => String(x?.[keyName] || '').trim().toLowerCase() === key);
+      if (index >= 0) result[index] = {...result[index],...item}; else result.push(item);
+    });
+    return result;
+  }
+
+  function mergeBackupData(incoming) {
+    const decoded=value=>{if(value&&typeof value==='object')return value;try{return JSON.parse(value||'null')}catch(_){return null}};
+    const merged = {...incoming};
+    const currentShared = readJson('docampo_shared_v1',{farms:[],products:{}});
+    const incomingShared=decoded(incoming.docampo_shared_v1)||{farms:[],products:{}};
+    const legacyFarms=decoded(incoming.agri_custom_farms)||[];
+    const incomingFarms=mergeNamedList(incomingShared.farms,legacyFarms,'farm');
+    const farms = mergeNamedList(currentShared.farms,incomingFarms,'farm').map(farm=>{
+      const old=(currentShared.farms||[]).find(x=>String(x.farm).toLowerCase()===String(farm.farm).toLowerCase())||{};
+      return {...old,...farm,fields:mergeNamedList(old.fields,farm.fields,'name')};
+    });
+    const products={...currentShared.products};
+    Object.entries(incomingShared.products||{}).forEach(([category,list])=>{products[category]=mergeNamedList(products[category],list,'name')});
+    merged.docampo_shared_v1=JSON.stringify({farms,products,updatedAt:new Date().toISOString()});
+
+    const currentFields=readJson('docampo_talhoesPorFazenda',{}),incomingFields=decoded(incoming.docampo_talhoesPorFazenda)||{};
+    Object.entries(incomingFields).forEach(([farm,fields])=>{currentFields[farm]=[...new Set([...(currentFields[farm]||[]),...(fields||[])])]});
+    const legacyProducers=decoded(incoming.docampo_produtoresPorFazenda)||{};
+    Object.entries(incomingFields).forEach(([farm,fields])=>{let item=farms.find(x=>String(x.farm).toLowerCase()===String(farm).toLowerCase());if(!item){item={farm,producer:legacyProducers[farm]||'',fields:[]};farms.push(item)}item.fields=mergeNamedList(item.fields,(fields||[]).map(name=>({name,area:0,plants:0})),'name')});
+    merged.docampo_shared_v1=JSON.stringify({farms,products,updatedAt:new Date().toISOString()});
+    merged.docampo_talhoesPorFazenda=JSON.stringify(currentFields);
+
+    let currentDb=readJson('docampo_unified_db_v1',null),incomingDb=decoded(incoming.docampo_unified_db_v1);
+    if(currentDb&&incomingDb){Object.entries(incomingDb.entities||{}).forEach(([type,items])=>{currentDb.entities[type]={...(currentDb.entities[type]||{}),...(items||{})}});currentDb.events=mergeNamedList(currentDb.events,incomingDb.events,'id');currentDb.queue=[...new Set([...(currentDb.queue||[]),...(incomingDb.queue||[])])];currentDb.trash=mergeNamedList(currentDb.trash,incomingDb.trash,'id');merged.docampo_unified_db_v1=JSON.stringify(currentDb)}
+    return merged;
+  }
+
   function importBackup(file) {
     const reader = new FileReader();
     reader.onload = function () {
       try {
         const backup = JSON.parse(reader.result);
         if (backup.format !== 'DoCampoSmartFarmBackup' || !backup.data) throw new Error('Formato inválido');
-        Object.entries(backup.data).forEach(([key, value]) => localStorage.setItem(key, String(value)));
-        alert('Backup importado. O aplicativo será atualizado agora.'); location.reload();
+        localStorage.setItem('docampo_pre_import_backup_v1',JSON.stringify(snapshot()));
+        const merged=mergeBackupData(backup.data);
+        Object.entries(merged).forEach(([key, value]) => localStorage.setItem(key, typeof value==='string'?value:JSON.stringify(value)));
+        alert('Backup importado e combinado com os dados deste aparelho. O aplicativo será atualizado agora.'); location.reload();
       } catch (_) { alert('Este arquivo não é um backup válido do Do Campo SmartFarm.'); }
     };
     reader.readAsText(file);
   }
 
-  window.DoCampoCentral = { summary, exportBackup, importBackup };
+  window.DoCampoCentral = { summary, exportBackup, importBackup, mergeBackupData };
 })();

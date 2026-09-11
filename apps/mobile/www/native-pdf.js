@@ -185,25 +185,18 @@
     return false;
   }
 
-  async function purgeExpiredDocuments(days) {
+  async function purgeExpiredDocuments(days, force) {
     if (!window.DoCampoDB) return 0;
-    const prazo = Math.max(1, Number(days) || 30) * 86400000;
+    const prazo = force ? 0 : Math.max(1, Number(days) || 30) * 86400000;
     const limite = Date.now() - prazo;
     const docs = DoCampoDB.list('documents', { deleted: true })
-      .filter(d => d.deletedAt && !d.purgedAt && new Date(d.deletedAt).getTime() <= limite);
+      .filter(d => d.deletedAt && !d.purgedAt && (force || new Date(d.deletedAt).getTime() <= limite));
     let total = 0;
     for (const doc of docs) {
       const remotoOk = await apagarArquivoRemoto(doc).catch(() => false);
       if (doc.remoteUploaded && doc.remotePath && !remotoOk) continue;
       await apagarArquivoLocal(doc);
-      if (DoCampoDB.patchDocumentLocal) {
-        DoCampoDB.patchDocumentLocal(doc.id, {
-          purgedAt: new Date().toISOString(),
-          localAvailable: false,
-          localPath: '',
-          remoteUploaded: false
-        });
-      }
+      if (DoCampoDB.hardDelete) DoCampoDB.hardDelete('documents', doc.id);
       total++;
     }
     return total;
@@ -234,7 +227,7 @@
         generatedAt: new Date().toISOString(),
         localAvailable, localPath: localAvailable ? localPath : '',
         remotePath, remoteUploaded: false, fileMissing: false, fileMissingAt: '',
-        snapshot: { displayName, name: nome, ...info }
+        snapshot: { displayName, name: nome, ...info, ...((meta && meta.snapshot && typeof meta.snapshot === 'object') ? meta.snapshot : {}) }
       });
     }
 
