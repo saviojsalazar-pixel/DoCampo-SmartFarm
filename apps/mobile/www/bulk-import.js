@@ -106,14 +106,16 @@
     const dataRows = safeRows.map((row, index) => populatedRow(index + 5, row, styles)).join(''), blankRows = Array.from({ length: Math.max(0, maximum - count) }, (_, index) => populatedRow(index + 5 + count, Array(styles.length).fill(''), styles)).join('');
     return source.replace(/<x:sheetData>[\s\S]*?<\/x:sheetData>/, `<x:sheetData>${fixed}${dataRows}${blankRows}</x:sheetData>`);
   }
-  async function populatedModel(templateBuffer, farms) {
+  async function populatedModel(templateBuffer, farms, products) {
     const entries = await zipEntries(templateBuffer), encoder = new TextEncoder();
     const ordered = (farms || []).slice().sort((a, b) => `${a.producer || a.proprietor || ''}\u0000${a.farm || ''}`.localeCompare(`${b.producer || b.proprietor || ''}\u0000${b.farm || ''}`, 'pt-BR', { numeric: true, sensitivity: 'base' }));
     const properties = ordered.map(farm => [farm.producer || farm.proprietor || '', farm.cpf || '', farm.farm || '', '', farm.address || '', farm.notes || '']);
     const fields = ordered.flatMap(farm => (farm.fields || []).slice().sort(fieldCompare).map(field => [farm.producer || farm.proprietor || '', farm.farm || '', field.name || '', Number(field.area) || 0, Number(field.plants) || 0, Number(field.rowSpacing) || 0, Number(field.plantSpacing) || 0, field.culture || 'Café', field.notes || '']));
-    const propertyPath = 'xl/worksheets/sheet2.xml', fieldPath = 'xl/worksheets/sheet3.xml';
+    const productRows = Object.entries(products || {}).flatMap(([category, list]) => (list || []).map(product => ({ ...product, category: product.category || category }))).sort((a, b) => `${a.category}\u0000${a.name || ''}`.localeCompare(`${b.category}\u0000${b.name || ''}`, 'pt-BR', { numeric: true, sensitivity: 'base' })).map(product => [product.name || '', product.manufacturer || '', product.category || '', product.formulation || '', product.active || '', Number(product.dose) || 0, product.unit || '', product.target || '', product.grace || '', product.toxicology || '', product.mixOrder || product.formulation || '', product.notes || '']);
+    const propertyPath = 'xl/worksheets/sheet2.xml', fieldPath = 'xl/worksheets/sheet3.xml', productPath = 'xl/worksheets/sheet4.xml';
     entries.set(propertyPath, encoder.encode(fillRows(textDecoder.decode(entries.get(propertyPath)), properties, [31, 34, 31, 31, 31, 31], 200)));
     entries.set(fieldPath, encoder.encode(fillRows(textDecoder.decode(entries.get(fieldPath)), fields, [30, 30, 30, 37, 40, 37, 37, 30, 30], 400)));
+    entries.set(productPath, encoder.encode(fillRows(textDecoder.decode(entries.get(productPath)), productRows, [30, 30, 30, 30, 30, 43, 30, 30, 30, 30, 30, 30], 500)));
     return makeZip(entries);
   }
 
@@ -351,7 +353,7 @@
       const response = await fetch(MODEL, { cache: 'no-store' });
       if (!response.ok) throw new Error(`arquivo indisponível (${response.status})`);
       const registry = await DoCampoRegistry.all();
-      const blob = await populatedModel(await response.arrayBuffer(), registry.farms || []);
+      const blob = await populatedModel(await response.arrayBuffer(), registry.farms || [], registry.products || {});
       const filename = `Cadastros_DoCampo_SmartFarm_${new Date().toISOString().slice(0, 10)}.xlsx`;
       const plugins = window.Capacitor?.Plugins;
       if (plugins?.Filesystem && plugins?.Share) {
@@ -376,6 +378,8 @@
   window.addEventListener('DOMContentLoaded', () => {
     const downloadButton = document.getElementById('downloadModel');
     if (downloadButton) { downloadButton.textContent = '↓ Baixar cadastros XLSX'; downloadButton.onclick = downloadModel; }
+    const importFile = document.getElementById('importFile');
+    if (importFile) importFile.setAttribute('accept', '*/*');
     const importBar = document.querySelector('.importbar'), toolbar = document.querySelector('.toolbar');
     if (importBar && toolbar) toolbar.insertAdjacentElement('afterend', importBar);
     const page = location.pathname.split('/').pop();
