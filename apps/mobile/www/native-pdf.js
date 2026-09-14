@@ -24,11 +24,22 @@
 
   function plugins() {
     const cap = window.Capacitor;
+    const registered = name => {
+      if (!cap) return null;
+      if (cap.Plugins && cap.Plugins[name]) return cap.Plugins[name];
+      try { return cap.registerPlugin ? cap.registerPlugin(name) : null; } catch (_) { return null; }
+    };
     return {
       native: !!(cap && cap.isNativePlatform && cap.isNativePlatform()),
-      filesystem: cap && cap.Plugins && cap.Plugins.Filesystem,
-      share: cap && cap.Plugins && cap.Plugins.Share
+      filesystem: registered('Filesystem'),
+      share: registered('Share')
     };
+  }
+
+  function validarPdf(base64) {
+    const value = String(base64 || '').replace(/\s/g, '');
+    if (value.length < 100 || !value.startsWith('JVBER')) throw new Error('O conteúdo gerado não é um PDF válido.');
+    return value;
   }
 
   function commonMeta(titulo, meta) {
@@ -204,7 +215,7 @@
 
   async function salvarECompartilhar(dataUri, nome, titulo, meta) {
     nome = limparNome(nome);
-    const base64 = String(dataUri).includes(',') ? String(dataUri).split(',')[1] : String(dataUri);
+    const base64 = validarPdf(String(dataUri).includes(',') ? String(dataUri).split(',')[1] : String(dataUri));
     const p = plugins();
     const id = idDocumento();
     const localPath = 'documents/' + id + '.pdf';
@@ -213,7 +224,14 @@
     let localAvailable = false;
 
     if (p.native && p.filesystem) {
-      await p.filesystem.writeFile({ path: localPath, data: base64, directory: 'DATA', recursive: true });
+      try {
+        await p.filesystem.writeFile({ path: localPath, data: base64, directory: 'DATA', recursive: true });
+        const check = await p.filesystem.readFile({ path: localPath, directory: 'DATA' });
+        if (!check || String(check.data || '').length < 100) throw new Error('Arquivo gravado sem conteúdo.');
+      } catch (error) {
+        const detail = new Error('O PDF foi criado, mas não pôde ser salvo no aparelho. Verifique o espaço disponível e tente novamente.');
+        detail.stage = 'storage'; detail.cause = error; throw detail;
+      }
       localAvailable = true;
     }
 
@@ -236,9 +254,17 @@
       return { navegador: true, document: record };
     }
 
-    const temp = await p.filesystem.writeFile({ path: nome, data: base64, directory: 'CACHE', recursive: true });
-    await p.share.share({ title: titulo || 'Relatório Do Campo', text: displayName, url: temp.uri, dialogTitle: 'Salvar ou compartilhar PDF' });
-    return { uri: temp.uri, document: record };
+    try {
+      const temp = await p.filesystem.writeFile({ path: nome, data: base64, directory: 'CACHE', recursive: true });
+      await p.share.share({ title: titulo || 'Relatório Do Campo', text: displayName, url: temp.uri, dialogTitle: 'Salvar ou compartilhar PDF' });
+      return { uri: temp.uri, document: record, saved: true, shared: true };
+    } catch (error) {
+      // O documento persistente e o registro do histórico já existem. Uma
+      // falha/cancelamento do compartilhamento não pode apagar nem mascarar isso.
+      console.error('Falha ao abrir compartilhamento do PDF:', error);
+      alert('O PDF foi salvo em Documentos, mas o compartilhamento não abriu. Você pode compartilhá-lo novamente pelo histórico de documentos.');
+      return { document: record, saved: true, shared: false, shareError: String(error?.message || error) };
+    }
   }
 
   window.DoCampoPDF = {

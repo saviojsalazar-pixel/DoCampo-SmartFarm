@@ -3422,15 +3422,15 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                         if (wrapper) wrapper.classList.add('hidden');
                         if (btnText) btnText.innerText = "Gerar Relatório PDF";
                     }).catch(function(err) {
-                        console.warn("html2pdf error, falling back to print", err);
+                        console.error("Falha ao gerar ou salvar PDF", err);
                         if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
-                        window.print();
+                        showAlert(err && err.message ? err.message : 'Não foi possível gerar e salvar o PDF. Tente novamente.');
                         if (wrapper) wrapper.classList.add('hidden');
                         if (btnText) btnText.innerText = "Gerar Relatório PDF";
                     });
                 } else {
                     if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
-                    window.print();
+                    showAlert('O gerador de PDF não foi carregado. Feche e abra o aplicativo e tente novamente.');
                     if (wrapper) wrapper.classList.add('hidden');
                     if (btnText) btnText.innerText = "Gerar Relatório PDF";
                 }

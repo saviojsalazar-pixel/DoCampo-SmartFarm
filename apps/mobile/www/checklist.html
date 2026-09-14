@@ -518,6 +518,7 @@
                         </button>
                     </div>
                     <div id="listaPontosGps" class="space-y-3"></div>
+                    <input id="fotoPontoInput" type="file" accept="image/*" class="hidden" onchange="processarFotoPonto(event)">
                     <p id="statusGps" class="hidden text-xs font-semibold text-emerald-800"></p>
                 </div>
 
@@ -786,6 +787,9 @@
         let confirmCallbackAction = null;
         let listaAvaliacoes = [];
         let pontosGpsEmEdicao = [];
+        let indiceFotoPonto = -1;
+        let temporizadorRascunho = null;
+        const CHAVE_RASCUNHO_FORMULARIO = 'docampo_checklist_form_draft_v2';
         let tarefasManuaisEmEdicao = [];
         let statusTarefasAutomaticasEmEdicao = {};
         let visitaCompartilhadaCandidata = null;
@@ -895,6 +899,12 @@
                     fazendaSelect.dispatchEvent(new Event('change'));
                 }
                 carregarVisitaNoFormulario(visitaAtual);
+            }
+            let rascunhoLocal=null;try{rascunhoLocal=JSON.parse(localStorage.getItem(CHAVE_RASCUNHO_FORMULARIO)||'null')}catch(_){}
+            const rascunhoBanco=visitaAtual&&visitaAtual.formDraft;
+            const rascunho=String(rascunhoBanco?.savedAt||'')>String(rascunhoLocal?.savedAt||'')?rascunhoBanco:rascunhoLocal;
+            if(rascunho&&(rascunho.talhao||rascunho.observacoes||(rascunho.pontosGps||[]).length||(rascunho.pragas||[]).length||(rascunho.indicacoes||[]).length)){
+                restaurarRascunhoFormulario(rascunho);exibirToast('Rascunho do checklist recuperado.','bg-blue-700');
             }
             document.getElementById('btnContinuarVisitaCompartilhada')?.addEventListener('click', () => carregarVisitaNoFormulario(visitaCompartilhadaCandidata));
             window.addEventListener('docampo:sync-complete', () => procurarVisitaCompartilhada(fazendaSelect.value));
@@ -1016,10 +1026,15 @@
                 localStorage.setItem('docampo_produtoresPorFazenda', JSON.stringify(produtoresPorFazenda)); 
             } catch (e) {}
             if (window.DoCampoData) {
+                const sharedAtual = window.DoCampoData.read();
                 Object.keys(talhoesPorFazenda).forEach(nome => window.DoCampoData.mergeFarm({
                     farm: nome,
                     producer: produtoresPorFazenda[nome] || '',
-                    fields: (talhoesPorFazenda[nome] || []).map(t => ({ name: t, area: 0 }))
+                    fields: (talhoesPorFazenda[nome] || []).map(t => {
+                        const fazendaExistente=(sharedAtual.farms||[]).find(f=>window.DoCampoData.key(f.farm)===window.DoCampoData.key(nome));
+                        const campoExistente=(fazendaExistente?.fields||[]).find(f=>window.DoCampoData.fieldKey(f.name)===window.DoCampoData.fieldKey(t));
+                        return {...(campoExistente||{}),name:t};
+                    })
                 }));
             }
             salvarPropriedadesFirestore();
@@ -1056,11 +1071,58 @@
                     farmName: document.getElementById('fazenda')?.value || '',
                     visitDate: document.getElementById('dataAvaliacao')?.value || '',
                     checklist: JSON.parse(JSON.stringify(listaAvaliacoes)),
-                    generalNotes: document.getElementById('observacoesGerais')?.value.trim() || ''
+                    generalNotes: document.getElementById('observacoesGerais')?.value.trim() || '',
+                    formDraft: capturarRascunhoFormulario()
                 });
                 localStorage.setItem('docampo_current_visit_id', visit.id);
             }
             salvarAvaliacoesFirestore();
+        }
+
+        function capturarRascunhoFormulario() {
+            return {
+                savedAt: new Date().toISOString(),
+                farmName: fazendaSelect?.value || '', talhao: talhaoSelect?.value || '',
+                visitDate: document.getElementById('dataAvaliacao')?.value || '',
+                producerName: document.getElementById('nomeProprietario')?.value || '',
+                pragas: Array.from(document.querySelectorAll('input[name="pragas"]:checked')).map(x=>x.value),
+                doencas: Array.from(document.querySelectorAll('input[name="doencas"]:checked')).map(x=>x.value),
+                mato: Array.from(document.querySelectorAll('input[name="mato"]:checked')).map(x=>x.value),
+                indicacoes: Array.from(document.querySelectorAll('input[name="indicacoes"]:checked')).map(x=>x.value),
+                situacaoColheita: document.querySelector('input[name="situacaoColheita"]:checked')?.value || '',
+                observacoes: document.getElementById('observacoes')?.value || '',
+                observacoesGerais: document.getElementById('observacoesGerais')?.value || '',
+                pontosGps: JSON.parse(JSON.stringify(pontosGpsEmEdicao)),
+                manualTasks: tarefasManuaisEmEdicao.map(tarefaManualNormalizada),
+                automaticTaskStatus: JSON.parse(JSON.stringify(statusTarefasAutomaticasEmEdicao)),
+                indiceEdicao
+            };
+        }
+        function salvarRascunhoFormulario() {
+            const draft=capturarRascunhoFormulario();
+            try { localStorage.setItem(CHAVE_RASCUNHO_FORMULARIO,JSON.stringify(draft)); }
+            catch(error){exibirToast('O aparelho está sem espaço para salvar o rascunho e as fotos.','bg-red-700');return;}
+            if(window.DoCampoDB&&(draft.farmName||listaAvaliacoes.length)){
+                const id=localStorage.getItem('docampo_current_visit_id');
+                const visit=DoCampoDB.upsert('visits',{id:id||undefined,status:'em_andamento',producerName:draft.producerName,farmName:draft.farmName,visitDate:draft.visitDate,checklist:JSON.parse(JSON.stringify(listaAvaliacoes)),generalNotes:draft.observacoesGerais.trim(),formDraft:draft});
+                localStorage.setItem('docampo_current_visit_id',visit.id);
+            }
+        }
+        function agendarSalvamentoRascunho(){clearTimeout(temporizadorRascunho);temporizadorRascunho=setTimeout(salvarRascunhoFormulario,650)}
+        function restaurarRascunhoFormulario(draft) {
+            if(!draft||typeof draft!=='object')return;
+            if(draft.farmName&&talhoesPorFazenda[draft.farmName]){fazendaSelect.value=draft.farmName;fazendaSelect.dispatchEvent(new Event('change'));}
+            if(draft.talhao){talhaoSelect.disabled=false;talhaoSelect.value=draft.talhao;}
+            if(draft.visitDate)document.getElementById('dataAvaliacao').value=draft.visitDate;
+            if(draft.producerName)document.getElementById('nomeProprietario').value=draft.producerName;
+            renderizarPragasCustomizadas(draft.pragas||[]);renderizarDoencasCustomizadas(draft.doencas||[]);renderizarMatoCustomizados(draft.mato||[]);renderizarAcoesCustomizadas(draft.indicacoes||[]);
+            marcarGrupoAvaliacao('pragas',draft.pragas||[]);marcarGrupoAvaliacao('doencas',draft.doencas||[]);marcarGrupoAvaliacao('mato',draft.mato||[]);marcarGrupoAvaliacao('indicacoes',draft.indicacoes||[]);
+            document.querySelectorAll('input[name="situacaoColheita"]').forEach(x=>x.checked=x.value===(draft.situacaoColheita||''));
+            document.getElementById('observacoes').value=draft.observacoes||'';document.getElementById('observacoesGerais').value=draft.observacoesGerais||'';
+            pontosGpsEmEdicao=Array.isArray(draft.pontosGps)?JSON.parse(JSON.stringify(draft.pontosGps)):[];renderizarPontosGps();
+            tarefasManuaisEmEdicao=Array.isArray(draft.manualTasks)?draft.manualTasks.map(tarefaManualNormalizada):[];renderizarTarefasManuais();
+            statusTarefasAutomaticasEmEdicao=draft.automaticTaskStatus&&typeof draft.automaticTaskStatus==='object'?JSON.parse(JSON.stringify(draft.automaticTaskStatus)):{};renderizarTarefasAutomaticas();
+            indiceEdicao=Number.isInteger(draft.indiceEdicao)?draft.indiceEdicao:-1;atualizarModoEdicao();
         }
 
         async function salvarPropriedadesFirestore() {
@@ -1751,7 +1813,7 @@
                 'Iniciar Nova Visita',
                 'Deseja apagar as informações da visita anterior e iniciar um novo relatório do zero? Esta ação irá limpar a lista de avaliações salvas.',
                 () => {
-                    try { localStorage.removeItem('docampo_current_visit_id'); } catch(e){}
+                    try { localStorage.removeItem('docampo_current_visit_id'); localStorage.removeItem(CHAVE_RASCUNHO_FORMULARIO); } catch(e){}
                     listaAvaliacoes = [];
                     localStorage.setItem('docampo_listaAvaliacoes', '[]');
                     renderizarTabela();
@@ -1924,18 +1986,35 @@
                     </div>
                     <input type="text" value="${escaparHtmlGps(ponto.descricao || '')}" oninput="atualizarDescricaoGps(${index}, this.value)" placeholder="Identificação do ponto (ex.: foco de ferrugem)" class="w-full p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500">
                     <div class="text-xs text-gray-600">${Number(ponto.latitude).toFixed(6)}, ${Number(ponto.longitude).toFixed(6)}${Number.isFinite(Number(ponto.precisao)) ? ` • precisão aproximada: ${Math.round(Number(ponto.precisao))} m` : ''}</div>
+                    ${ponto.foto ? `<div class="flex flex-wrap items-center gap-3"><img src="${ponto.foto}" alt="Foto do ponto ${index+1}" class="w-28 h-20 rounded-lg object-cover border border-emerald-200"><button type="button" onclick="selecionarFotoPonto(${index})" class="text-xs font-bold text-blue-700"><i class="fas fa-camera mr-1"></i>Trocar foto</button><button type="button" onclick="removerFotoPonto(${index})" class="text-xs font-bold text-red-600"><i class="fas fa-trash mr-1"></i>Remover foto</button></div>` : `<button type="button" onclick="selecionarFotoPonto(${index})" class="w-fit bg-white border border-emerald-300 text-emerald-800 font-bold px-3 py-2 rounded-lg text-xs"><i class="fas fa-camera mr-1"></i>Adicionar foto opcional</button>`}
                 </div>
             `).join('');
         }
 
         function atualizarDescricaoGps(index, valor) {
             if (pontosGpsEmEdicao[index]) pontosGpsEmEdicao[index].descricao = String(valor || '').trimStart();
+            agendarSalvamentoRascunho();
         }
+
+        function selecionarFotoPonto(index) {
+            indiceFotoPonto = index;
+            const input = document.getElementById('fotoPontoInput');
+            if (input) { input.value = ''; input.click(); }
+        }
+        function comprimirFotoChecklist(arquivo) {
+            return new Promise((resolve,reject)=>{const leitor=new FileReader();leitor.onerror=()=>reject(new Error('Não foi possível ler a foto.'));leitor.onload=()=>{const img=new Image();img.onerror=()=>reject(new Error('Formato de imagem não suportado.'));img.onload=()=>{const limite=1024,escala=Math.min(1,limite/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*escala));canvas.height=Math.max(1,Math.round(img.height*escala));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/jpeg',0.65))};img.src=leitor.result};leitor.readAsDataURL(arquivo)});
+        }
+        async function processarFotoPonto(event) {
+            const arquivo=event.target.files&&event.target.files[0],ponto=pontosGpsEmEdicao[indiceFotoPonto];if(!arquivo||!ponto)return;
+            try{ponto.foto=await comprimirFotoChecklist(arquivo);ponto.fotoRegistradaEm=new Date().toISOString();renderizarPontosGps();agendarSalvamentoRascunho();exibirToast('Foto salva neste ponto.','bg-emerald-700')}catch(error){exibirToast(error.message||'Não foi possível adicionar a foto.','bg-red-700')}
+        }
+        function removerFotoPonto(index){if(!pontosGpsEmEdicao[index])return;delete pontosGpsEmEdicao[index].foto;delete pontosGpsEmEdicao[index].fotoRegistradaEm;renderizarPontosGps();agendarSalvamentoRascunho();exibirToast('Foto removida do ponto.','bg-gray-700')}
 
         function removerPontoGps(index) {
             pontosGpsEmEdicao.splice(index, 1);
             renderizarPontosGps();
             exibirToast('Localização removida.', 'bg-gray-700');
+            agendarSalvamentoRascunho();
         }
 
         function obterPosicaoNavegador() {
@@ -1974,6 +2053,7 @@
                 renderizarPontosGps();
                 status.textContent = 'Localização registrada. Você pode identificar o problema ou adicionar outro ponto.';
                 exibirToast('Localização registrada com sucesso!');
+                agendarSalvamentoRascunho();
             } catch (erro) {
                 const negado = String(erro?.message || erro || '').toLowerCase().includes('denied');
                 status.textContent = negado
@@ -2027,6 +2107,8 @@
             talhaoSelect.value = '';
             talhaoSelect.disabled = false;
             atualizarModoEdicao();
+            try{localStorage.removeItem(CHAVE_RASCUNHO_FORMULARIO)}catch(_){}
+            salvarRascunhoFormulario();
         });
 
         function valoresAvaliacao(texto, vazios = []) {
@@ -2701,7 +2783,7 @@
                 let alturaTarefas = tarefas.length ? 10 : 0;
                 tarefas.forEach(t => { alturaTarefas += linhas(t.text, tarefas.length > 1 && t.text.length < 72 ? 76 : 166, 8.2*fator).length * 4 + 2; });
                 const obsLinhas = obs ? linhas(obs, 172, 8.7*fator) : [];
-                const gpsAltura = pontos.length ? pontos.length * 8 + 3 : 0;
+                const gpsAltura = pontos.length ? pontos.reduce((total,p)=>total+8+(p.foto?43:0),3) : 0;
                 const alturaObs = obsLinhas.length ? 8 + obsLinhas.length * 4 : 0;
                 const altura = Math.max(16, 13 + alturaResumo + alturaTarefas + alturaObs + gpsAltura + 7);
                 garantir(Math.min(altura, 235));
@@ -2740,9 +2822,11 @@
                     doc.setTextColor(35); doc.setFont('helvetica','normal'); doc.setFontSize(8.7*fator); doc.text(obsLinhas,19,y); y += obsLinhas.length*4+2;
                 }
                 pontos.forEach((p,pi) => {
+                    if(y+8+(p.foto?43:0)>limiteY){novaPagina();doc.setTextColor(8,79,55);doc.setFont('helvetica','bold');doc.setFontSize(9*fator);doc.text(`TALHÃO ${av.talhao} — LOCALIZAÇÃO (CONTINUAÇÃO)`,19,y);y+=8;}
                     const rotulo = `Localização ${pi+1}${p.descricao ? ' — '+p.descricao : ''}: abrir no mapa`;
                     const url = urlMapaGps(p); doc.setTextColor(25,100,180); doc.setFont('helvetica','bold'); doc.setFontSize(7.7*fator); doc.textWithLink(rotulo,19,y,{url});
                     doc.setTextColor(100); doc.setFont('helvetica','normal'); doc.text(`${Number(p.latitude).toFixed(6)}, ${Number(p.longitude).toFixed(6)}`,19,y+3.5); y+=8;
+                    if(p.foto){try{doc.addImage(p.foto,'JPEG',19,y,60,40,undefined,'FAST');doc.setTextColor(100);doc.setFontSize(7*fator);doc.text(`Foto do ponto ${pi+1}`,82,y+5);y+=43}catch(error){console.error('Não foi possível inserir foto no PDF',error)}}
                 });
                 y += 8;
             });
@@ -2863,12 +2947,19 @@
         window.definirFonteChecklist = definirFonteChecklist;
         window.enviarChecklistParaSincronizacao = enviarChecklistParaSincronizacao;
         window.capturarLocalizacaoGps = capturarLocalizacaoGps;
+        window.selecionarFotoPonto = selecionarFotoPonto;
+        window.processarFotoPonto = processarFotoPonto;
+        window.removerFotoPonto = removerFotoPonto;
         window.removerPontoGps = removerPontoGps;
         window.atualizarDescricaoGps = atualizarDescricaoGps;
         window.exportarCSV = exportarCSV;
 
         // Start initialization
         sincronizarSeletoresFonteChecklist();
+        document.getElementById('monitoramentoForm')?.addEventListener('input',agendarSalvamentoRascunho);
+        document.getElementById('monitoramentoForm')?.addEventListener('change',agendarSalvamentoRascunho);
+        document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')salvarRascunhoFormulario()});
+        window.addEventListener('pagehide',salvarRascunhoFormulario);
         initFirebase();
     </script>
 </body>

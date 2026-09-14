@@ -56,6 +56,7 @@
       'docampo_shared_v1','docampo_talhoesPorFazenda','docampo_produtoresPorFazenda',
       'docampo_pragasCustomizadas','docampo_doencasCustomizadas','docampo_matoCustomizados',
       'docampo_acoesCustomizadas','docampo_listaAvaliacoes','agri_custom_farms',
+      'docampo_checklist_form_draft_v2',
       'agri_custom_products','agri_deleted_farms','agri_deleted_products',
       'agri_recommendations_history','agri_rec_seq_counter','docampo_unified_db_v1','docampo_current_user'
     ];
@@ -82,11 +83,13 @@
     const content = JSON.stringify(snapshot(), null, 2);
     const filename = 'Backup_DoCampo_SmartFarm_' + new Date().toISOString().slice(0,10) + '.json';
     try {
-      const plugins = window.Capacitor && window.Capacitor.Plugins;
-      if (plugins && plugins.Filesystem && plugins.Share) {
+      const cap=window.Capacitor,plugins=cap&&cap.Plugins;
+      const filesystem=plugins?.Filesystem||(cap?.registerPlugin?cap.registerPlugin('Filesystem'):null);
+      const share=plugins?.Share||(cap?.registerPlugin?cap.registerPlugin('Share'):null);
+      if (filesystem && share) {
         const base64 = btoa(unescape(encodeURIComponent(content)));
-        const result = await plugins.Filesystem.writeFile({ path: filename, data: base64, directory: 'CACHE' });
-        await plugins.Share.share({ title: 'Backup Do Campo SmartFarm', text: 'Arquivo para transferir os dados entre os celulares.', url: result.uri, dialogTitle: 'Salvar ou enviar backup' });
+        const result = await filesystem.writeFile({ path: filename, data: base64, directory: 'CACHE' });
+        await share.share({ title: 'Backup Do Campo SmartFarm', text: 'Arquivo para transferir os dados entre os celulares.', url: result.uri, dialogTitle: 'Salvar ou enviar backup' });
         return;
       }
     } catch (error) { console.warn(error); }
@@ -107,6 +110,8 @@
 
   function mergeBackupData(incoming) {
     const decoded=value=>{if(value&&typeof value==='object')return value;try{return JSON.parse(value||'null')}catch(_){return null}};
+    const clean=value=>String(value||'').trim().replace(/\s+/g,' '),norm=value=>clean(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(),fieldKey=value=>norm(value).replace(/[.\-–—,:;]+\s*$/,'').trim();
+    const normalizeFields=list=>{const map=new Map();(Array.isArray(list)?list:[]).forEach(raw=>{const f=typeof raw==='object'&&raw?{...raw}:{name:raw},name=clean(f.name||f.talhao);if(!name)return;const k=fieldKey(name),old=map.get(k)||{};map.set(k,{...old,...f,name,area:Number(f.area)||Number(old.area)||0,plants:Number(f.plants)||Number(old.plants)||0})});return Array.from(map.values())};
     const merged = {...incoming};
     const currentShared = readJson('docampo_shared_v1',{farms:[],products:{}});
     const incomingShared=decoded(incoming.docampo_shared_v1)||{farms:[],products:{}};
@@ -114,16 +119,17 @@
     const incomingFarms=mergeNamedList(incomingShared.farms,legacyFarms,'farm');
     const farms = mergeNamedList(currentShared.farms,incomingFarms,'farm').map(farm=>{
       const old=(currentShared.farms||[]).find(x=>String(x.farm).toLowerCase()===String(farm.farm).toLowerCase())||{};
-      return {...old,...farm,fields:mergeNamedList(old.fields,farm.fields,'name')};
+      const imported=(incomingFarms||[]).find(x=>norm(x.farm)===norm(farm.farm));
+      return {...old,...farm,fields:normalizeFields([...(old.fields||[]),...((imported&&Array.isArray(imported.fields)?imported.fields:(farm.fields||[])))])};
     });
     const products={...currentShared.products};
     Object.entries(incomingShared.products||{}).forEach(([category,list])=>{products[category]=mergeNamedList(products[category],list,'name')});
     merged.docampo_shared_v1=JSON.stringify({farms,products,updatedAt:new Date().toISOString()});
 
     const currentFields=readJson('docampo_talhoesPorFazenda',{}),incomingFields=decoded(incoming.docampo_talhoesPorFazenda)||{};
-    Object.entries(incomingFields).forEach(([farm,fields])=>{currentFields[farm]=[...new Set([...(currentFields[farm]||[]),...(fields||[])])]});
+    Object.entries(incomingFields).forEach(([farm,fields])=>{currentFields[farm]=normalizeFields([...(currentFields[farm]||[]),...(fields||[])]).map(x=>x.name)});
     const legacyProducers=decoded(incoming.docampo_produtoresPorFazenda)||{};
-    Object.entries(incomingFields).forEach(([farm,fields])=>{let item=farms.find(x=>String(x.farm).toLowerCase()===String(farm).toLowerCase());if(!item){item={farm,producer:legacyProducers[farm]||'',fields:[]};farms.push(item)}item.fields=mergeNamedList(item.fields,(fields||[]).map(name=>({name,area:0,plants:0})),'name')});
+    Object.entries(incomingFields).forEach(([farm,fields])=>{let item=farms.find(x=>norm(x.farm)===norm(farm));if(!item){item={farm,producer:legacyProducers[farm]||'',fields:[]};farms.push(item)}item.fields=normalizeFields([...(item.fields||[]),...(fields||[]).map(name=>({name,area:0,plants:0}))])});
     merged.docampo_shared_v1=JSON.stringify({farms,products,updatedAt:new Date().toISOString()});
     merged.docampo_talhoesPorFazenda=JSON.stringify(currentFields);
 
