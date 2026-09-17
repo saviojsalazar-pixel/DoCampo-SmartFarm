@@ -37,7 +37,7 @@
     function mergeFarm(farm) {
         if (!farm || !String(farm.farm || '').trim()) return read();
         const data = read(), name = clean(farm.farm);
-        const normalized = { farm: name, producer: clean(farm.producer || farm.proprietor), cpf: clean(farm.cpf), address: clean(farm.address), notes: clean(farm.notes), fields: normalizeFields(farm.fields) };
+        const normalized = { farm: name, producer: clean(farm.producer || farm.proprietor), cpf: clean(farm.cpf), address: clean(farm.address), notes: clean(farm.notes), fields: normalizeFields(farm.fields), importBatchId: clean(farm.importBatchId), importSource: clean(farm.importSource) };
         const idx = data.farms.findIndex(item => key(item.farm) === key(name));
         if (idx >= 0) data.farms[idx] = Object.assign({}, data.farms[idx], normalized); else data.farms.unshift(normalized);
         try {
@@ -56,12 +56,12 @@
             // A edição/importação é uma substituição autoritativa: o que não
             // veio na lista nova deve permanecer excluído e não pode reaparecer.
             window.DoCampoDB.list('fields').filter(item => item.farmId === farmRecord.id).forEach(item => {
-                if (!incoming.has(fieldKey(item.name))) window.DoCampoDB.softDelete('fields', item.id);
+                if (!incoming.has(fieldKey(item.name))) window.DoCampoDB.softDelete('fields', item.id, { importBatchId: normalized.importBatchId, importSource: normalized.importSource });
             });
             normalized.fields.forEach(field => {
                 const matches = window.DoCampoDB.list('fields').filter(item => item.farmId === farmRecord.id && fieldKey(item.name) === fieldKey(field.name));
                 const oldField = matches[0];
-                window.DoCampoDB.upsert('fields', { ...field, id: oldField && oldField.id, farmId: farmRecord.id, verified: true });
+                window.DoCampoDB.upsert('fields', { ...field, id: oldField && oldField.id, farmId: farmRecord.id, verified: true, importBatchId: normalized.importBatchId, importSource: normalized.importSource });
                 matches.slice(1).forEach(item => window.DoCampoDB.softDelete('fields', item.id));
             });
         }

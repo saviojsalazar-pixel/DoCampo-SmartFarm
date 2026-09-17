@@ -208,61 +208,58 @@
     return /exemplo|linha de exemplo/i.test(`${item.producer || ''} ${item.farm || ''} ${item.name || ''} ${item.notes || ''}`);
   }
 
-  async function prepareClients(book) {
-    const registry = await DoCampoRegistry.all(), current = registry.farms || [], byFarm = new Map(current.map(f => [norm(f.farm), f]));
-    const propertySheet = Object.entries(book).find(([name]) => norm(name) === 'propriedades')?.[1] || [];
-    const fieldSheet = Object.entries(book).find(([name]) => norm(name) === 'talhoes')?.[1] || [];
-    const props = tableFromSheet(propertySheet, [['producer'], ['farm']]);
-    const fields = tableFromSheet(fieldSheet, [['producer'], ['farm'], ['field']]);
-    const errors = [], records = new Map(), details = [];
-    if (props.error) errors.push({ status: 'error', label: `Aba Propriedades: ${props.error}` });
-    if (fields.error) errors.push({ status: 'error', label: `Aba Talhoes: ${fields.error}` });
-
-    props.rows.filter(x => !isExample(x)).forEach(row => {
-      const producer = String(row.producer || '').trim(), farm = String(row.farm || '').trim();
-      if (!producer || !farm) { errors.push({ status: 'error', label: `Propriedades • linha ${row._line}: produtor e propriedade são obrigatórios.` }); return; }
-      const key = norm(farm), old = byFarm.get(key), previous = records.get(key)?.data || old || {};
-      if (old && old.producer && norm(old.producer) !== norm(producer)) { errors.push({ status: 'error', label: `${farm}: já existe para ${old.producer}; produtor informado na planilha: ${producer}.` }); return; }
-      const addressParts = [row.address, row.city].filter(filled).map(String);
-      const data = mergeNonBlank({ producer: old?.producer || '', farm, cpf: old?.cpf || '', address: old?.address || '', fields: (old?.fields || []).map(x => ({ ...x })) }, {
-        producer, farm, cpf: String(row.cpf || '').trim(), address: addressParts.join(' • '), notes: String(row.notes || '').trim(),
-      });
-      records.set(key, { data, old });
-    });
-
-    fields.rows.filter(x => !isExample(x)).forEach(row => {
-      const producer = String(row.producer || '').trim(), farm = String(row.farm || '').trim(), field = String(row.field || '').trim();
-      if (!producer || !farm || !field) { errors.push({ status: 'error', label: `Talhoes • linha ${row._line}: produtor, propriedade e talhão são obrigatórios.` }); return; }
-      const key = norm(farm), old = byFarm.get(key), holder = records.get(key);
-      if (!holder && !old) { errors.push({ status: 'error', label: `Talhoes • linha ${row._line}: propriedade “${farm}” não encontrada na aba Propriedades nem no aplicativo.` }); return; }
-      const record = holder || { old, data: { ...old, farm: old.farm, producer: old.producer || producer, fields: (old.fields || []).map(x => ({ ...x })) } };
-      if (record.data.producer && norm(record.data.producer) !== norm(producer)) { errors.push({ status: 'error', label: `Talhoes • linha ${row._line}: o produtor não corresponde à propriedade “${farm}”.` }); return; }
-      const fieldKey = norm(field), existingIndex = record.data.fields.findIndex(x => norm(x.name) === fieldKey), existing = existingIndex >= 0 ? record.data.fields[existingIndex] : {};
-      const area = number(row.area), plants = number(row.plants), rowSpacing = number(row.rowSpacing), plantSpacing = number(row.plantSpacing);
-      if (filled(row.area) && (!Number.isFinite(area) || area < 0)) { errors.push({ status: 'error', label: `Talhoes • linha ${row._line}: área inválida.` }); return; }
-      const fieldData = mergeNonBlank(existing, {
-        name: field,
-        area: Number.isFinite(area) ? area : '',
-        plants: Number.isFinite(plants) ? plants : '',
-        rowSpacing: Number.isFinite(rowSpacing) ? rowSpacing : '',
-        plantSpacing: Number.isFinite(plantSpacing) ? plantSpacing : '',
-        culture: String(row.culture || '').trim(), notes: String(row.notes || '').trim(),
-      });
-      if (existingIndex >= 0) record.data.fields[existingIndex] = fieldData; else record.data.fields.push(fieldData);
-      record.data.fields.sort(fieldCompare); records.set(key, record);
-      details.push({ status: existingIndex >= 0 ? (same(existing, fieldData) ? 'same' : 'update') : 'new', label: `${farm} • Talhão ${field}` });
-    });
-
-    const operations = [];
-    records.forEach(record => {
-      record.data.fields = (record.data.fields || []).sort(fieldCompare);
-      const before = record.old ? { producer: record.old.producer || record.old.proprietor || '', farm: record.old.farm, cpf: record.old.cpf || '', address: record.old.address || '', fields: (record.old.fields || []).sort(fieldCompare) } : null;
-      const after = { producer: record.data.producer || '', farm: record.data.farm, cpf: record.data.cpf || '', address: record.data.address || '', fields: record.data.fields || [] };
-      const status = !before ? 'new' : same(before, after) ? 'same' : 'update';
-      operations.push({ status, label: `${after.producer} • ${after.farm}`, data: after });
-    });
-    return { operations, items: [...operations.map(x => ({ status: x.status, label: `Propriedade • ${x.label}` })), ...details, ...errors], errors };
+  function bestFields(items) {
+    return (items || []).reduce((out, item) => {
+      const next = { ...out, ...item };
+      ['area','plants','rowSpacing','plantSpacing'].forEach(k => next[k] = Number(item?.[k]) > 0 ? Number(item[k]) : Number(out?.[k]) || 0);
+      next.name = String(item?.name || out?.name || '').trim(); return next;
+    }, {});
   }
+
+  async function prepareClients(book) {
+    const registry=await DoCampoRegistry.all(),current=registry.farms||[],byFarm=new Map(current.map(f=>[norm(f.farm),f]));
+    const props=tableFromSheet(Object.entries(book).find(([n])=>norm(n)==='propriedades')?.[1]||[],[['producer'],['farm']]);
+    const fields=tableFromSheet(Object.entries(book).find(([n])=>norm(n)==='talhoes')?.[1]||[],[['producer'],['farm'],['field']]);
+    const errors=[],records=new Map(),decisions=[],details=[];
+    if(props.error)errors.push({status:'error',label:`Aba Propriedades: ${props.error}`});
+    if(fields.error)errors.push({status:'error',label:`Aba Talhoes: ${fields.error}`});
+    props.rows.filter(x=>!isExample(x)).forEach(row=>{
+      const producer=String(row.producer||'').trim(),farm=String(row.farm||'').trim(),k=norm(farm),old=byFarm.get(k);
+      if(!producer||!farm){errors.push({status:'error',label:`Propriedades • linha ${row._line}: produtor e propriedade são obrigatórios.`});return}
+      if(old?.producer&&norm(old.producer)!==norm(producer)){errors.push({status:'error',label:`${farm}: produtor atual “${old.producer}” difere de “${producer}”.`});return}
+      records.set(k,{old,rows:[],data:mergeNonBlank({producer:old?.producer||'',farm,cpf:old?.cpf||'',address:old?.address||'',fields:[]},{producer,farm,cpf:String(row.cpf||'').trim(),address:[row.address,row.city].filter(filled).join(' • '),notes:String(row.notes||'').trim()})});
+    });
+    fields.rows.filter(x=>!isExample(x)).forEach(row=>{
+      const producer=String(row.producer||'').trim(),farm=String(row.farm||'').trim(),name=String(row.field||'').trim(),fk=norm(farm),record=records.get(fk);
+      if(!producer||!farm||!name){errors.push({status:'error',label:`Talhoes • linha ${row._line}: produtor, propriedade e talhão são obrigatórios.`});return}
+      if(!record){errors.push({status:'error',label:`Talhoes • linha ${row._line}: “${farm}” precisa constar na aba Propriedades.`});return}
+      if(norm(record.data.producer)!==norm(producer)){errors.push({status:'error',label:`Talhoes • linha ${row._line}: produtor não corresponde a “${farm}”.`});return}
+      const area=number(row.area);if(filled(row.area)&&(!Number.isFinite(area)||area<0)){errors.push({status:'error',label:`Talhoes • linha ${row._line}: área inválida.`});return}
+      const current=(record.old?.fields||[]).find(x=>norm(x.name)===norm(name))||{};
+      record.rows.push({line:row._line,key:norm(name),data:mergeNonBlank(current,{name,area:Number.isFinite(area)?area:'',plants:Number.isFinite(number(row.plants))?number(row.plants):'',rowSpacing:Number.isFinite(number(row.rowSpacing))?number(row.rowSpacing):'',plantSpacing:Number.isFinite(number(row.plantSpacing))?number(row.plantSpacing):'',culture:String(row.culture||'').trim(),notes:String(row.notes||'').trim()})});
+    });
+    const operations=[];
+    records.forEach((record,farmKey)=>{
+      const groups=new Map();record.rows.forEach(r=>{if(!groups.has(r.key))groups.set(r.key,[]);groups.get(r.key).push(r)});
+      const accepted=[];
+      groups.forEach((group,fieldKey)=>{
+        const old=(record.old?.fields||[]).filter(x=>norm(x.name)===fieldKey);
+        if(group.length>1){decisions.push({id:`d${decisions.length}`,farmKey,type:'duplicate',label:`${record.data.farm} • duplicidade: ${group.map(x=>`${x.data.name} (${Number(x.data.area)||0} ha)`).join(' / ')}`,group,old,options:[{value:'merge',label:'Unificar e manter os dados mais completos'},...group.map((x,i)=>({value:`row${i}`,label:`Usar linha ${x.line}: ${x.data.name} — ${Number(x.data.area)||0} ha`})),...(old.length?[{value:'current',label:'Manter o cadastro atual'}]:[]),{value:'exclude',label:'Não importar este talhão'}]});return}
+        if(old.length>1){decisions.push({id:`d${decisions.length}`,farmKey,type:'currentDuplicate',label:`${record.data.farm} • duplicidade no cadastro atual: ${old.map(x=>`${x.name} (${Number(x.area)||0} ha)`).join(' / ')} • planilha: ${group[0].data.name} (${Number(group[0].data.area)||0} ha)`,group,old,options:[{value:'sheet',label:'Usar somente o talhão da planilha'},{value:'merge',label:'Unificar e manter os dados mais completos'},{value:'current',label:'Manter somente o cadastro atual mais completo'}]});return}
+        if(Number(group[0].data.area)===0){decisions.push({id:`d${decisions.length}`,farmKey,type:'zero',label:`${record.data.farm} • ${group[0].data.name} possui área 0 ha`,group,old,options:[{value:'zero',label:'Manter área zero'},...(old.some(x=>Number(x.area)>0)?[{value:'current',label:`Usar área atual: ${Number(old.find(x=>Number(x.area)>0).area)} ha`}]:[]),{value:'exclude',label:'Não manter este talhão'}]});return}
+        accepted.push(group[0].data);details.push({status:old.length?'update':'new',label:`${record.data.farm} • Talhão ${group[0].data.name}`});
+      });
+      const incoming=new Set(groups.keys()),oldGroups=new Map();(record.old?.fields||[]).forEach(x=>{const k=norm(x.name);if(!oldGroups.has(k))oldGroups.set(k,[]);oldGroups.get(k).push(x)});
+      oldGroups.forEach((old,fieldKey)=>{if(!incoming.has(fieldKey))decisions.push({id:`d${decisions.length}`,farmKey,type:'missing',label:`${record.data.farm} • ${bestFields(old).name} — ${Number(bestFields(old).area)||0} ha não consta na planilha`,group:[],old,options:[{value:'delete',label:'Enviar para a lixeira'},{value:'keep',label:'Manter no cadastro'}]})});
+      record.accepted=accepted;record.data.fields=accepted.slice().sort(fieldCompare);
+      operations.push({status:record.old?'update':'new',label:`${record.data.producer} • ${record.data.farm}`,data:record.data,farmKey,record});
+    });
+    return{kind:'clients',operations,decisions,items:[...operations.map(x=>({status:x.status,label:`Propriedade • ${x.label}`})),...details,...decisions.map(decision=>({status:'decision',label:decision.label,decision})),...errors],errors};
+  }
+
+  function applyClientDecisions(prepared){
+    const choices=new Map();document.querySelectorAll('[data-import-decision]').forEach(x=>choices.set(x.dataset.importDecision,x.value));prepared.resolutions=[];
+    prepared.operations.forEach(op=>{const fields=(op.record.accepted||[]).map(x=>({...x}));prepared.decisions.filter(d=>d.farmKey===op.farmKey).forEach(d=>{const c=choices.get(d.id);prepared.resolutions.push({type:d.type,label:d.label,choice:c});let value=null;if(d.type==='missing'){if(c==='keep')value=bestFields(d.old)}else if(d.type==='zero'){if(c==='zero')value={...d.group[0].data,area:0};if(c==='current')value=bestFields(d.old)}else if(d.type==='duplicate'){if(c==='merge')value=bestFields([...d.old,...d.group.map(x=>x.data)]);if(c==='current')value=bestFields(d.old);if(/^row\d+$/.test(c))value=d.group[Number(c.slice(3))].data}else if(d.type==='currentDuplicate'){if(c==='sheet')value=d.group[0].data;if(c==='merge')value=bestFields([...d.old,d.group[0].data]);if(c==='current')value=bestFields(d.old)}if(value)fields.push(value)});op.data={...op.data,fields:fields.sort(fieldCompare)};op.status=op.record.old?'update':'new'});return prepared.operations.filter(x=>x.status==='new'||x.status==='update')}
 
   async function prepareProducts(book) {
     const sheet = Object.entries(book).find(([name]) => norm(name) === 'produtos')?.[1] || [];
@@ -290,23 +287,25 @@
 
   function ensureModal() {
     if (document.getElementById('bulkImportModal')) return;
-    document.body.insertAdjacentHTML('beforeend', `<div id="bulkImportModal" class="modal hidden"><div class="modalbox import-modal"><div class="modalhead"><div><h2>Importar planilha</h2><p id="bulkFileName" class="meta"></p></div><button id="bulkClose" class="close">×</button></div><div id="bulkSummary" class="import-summary"></div><div class="notice">A importação não exclui cadastros e células vazias não apagam informações existentes. Confira as atualizações antes de confirmar.</div><div id="bulkPreview" class="import-preview"></div><div class="actions import-actions"><button id="bulkCancel" class="secondary">Cancelar</button><button id="bulkConfirm" class="primary">Confirmar importação</button></div></div></div>`);
+    document.body.insertAdjacentHTML('beforeend', `<div id="bulkImportModal" class="modal hidden"><div class="modalbox import-modal"><div class="modalhead"><div><h2>Revisar importação oficial</h2><p id="bulkFileName" class="meta"></p></div><button id="bulkClose" class="close">×</button></div><div id="bulkSummary" class="import-summary"></div><div class="notice">A planilha será a fonte oficial somente das propriedades presentes nela. Resolva todas as decisões antes de confirmar. Talhões removidos irão para a lixeira.</div><div id="bulkPreview" class="import-preview"></div><div class="actions import-actions"><button id="bulkCancel" class="secondary">Cancelar</button><button id="bulkConfirm" class="primary">Confirmar alterações revisadas</button></div></div></div>`);
   }
 
-  function statusLabel(status) { return ({ new: 'Novo', update: 'Atualizar', same: 'Sem alteração', error: 'Erro' })[status] || status; }
+  function statusLabel(status) { return ({ new: 'Novo', update: 'Atualizar', same: 'Sem alteração', error: 'Erro', decision: 'Decidir' })[status] || status; }
   function renderPreview(prepared) {
     const counts = prepared.items.reduce((a, x) => (a[x.status] = (a[x.status] || 0) + 1, a), {});
-    document.getElementById('bulkSummary').innerHTML = ['new', 'update', 'same', 'error'].map(status => `<div class="import-count ${status}"><b>${counts[status] || 0}</b><span>${statusLabel(status)}</span></div>`).join('');
-    document.getElementById('bulkPreview').innerHTML = prepared.items.length ? prepared.items.map(x => `<div class="import-line"><span class="import-badge ${x.status}">${statusLabel(x.status)}</span><span>${esc(x.label)}</span></div>`).join('') : '<div class="empty">Nenhum registro preenchido foi encontrado.</div>';
+    document.getElementById('bulkSummary').innerHTML = ['new', 'update', 'same', 'decision', 'error'].map(status => `<div class="import-count ${status}"><b>${counts[status] || 0}</b><span>${statusLabel(status)}</span></div>`).join('');
+    document.getElementById('bulkPreview').innerHTML = prepared.items.length ? prepared.items.map(x => x.decision ? `<div class="import-line decision-line"><span class="import-badge decision">Decidir</span><div class="decision-body"><b>${esc(x.label)}</b><select data-import-decision="${esc(x.decision.id)}"><option value="">Escolha o que fazer</option>${x.decision.options.map(o=>`<option value="${esc(o.value)}">${esc(o.label)}</option>`).join('')}</select></div></div>` : `<div class="import-line"><span class="import-badge ${x.status}">${statusLabel(x.status)}</span><span>${esc(x.label)}</span></div>`).join('') : '<div class="empty">Nenhum registro preenchido foi encontrado.</div>';
     const actionable = prepared.operations.filter(x => x.status === 'new' || x.status === 'update').length;
-    const confirm = document.getElementById('bulkConfirm'); confirm.disabled = !actionable; confirm.textContent = actionable ? `Importar ${actionable} registro(s)` : 'Nada para importar';
+    const confirm = document.getElementById('bulkConfirm');
+    const refresh=()=>{const pending=[...document.querySelectorAll('[data-import-decision]')].filter(x=>!x.value).length;confirm.disabled=!!prepared.errors.length||!!pending||(!actionable&&!prepared.decisions?.length);confirm.textContent=pending?`Faltam ${pending} decisão(ões)`:'Confirmar alterações revisadas'};
+    document.querySelectorAll('[data-import-decision]').forEach(x=>x.onchange=refresh);refresh();
   }
 
   function saveHistory(kind, fileName, prepared) {
     let history = [];
     try { history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch (_) {}
     const counts = prepared.items.reduce((a, x) => (a[x.status] = (a[x.status] || 0) + 1, a), {});
-    history.unshift({ id: `imp-${Date.now()}`, kind, fileName, counts, importedAt: new Date().toISOString(), user: window.DoCampoDB?.user?.() || '' });
+    history.unshift({ id: prepared.importBatchId || `imp-${Date.now()}`, kind, fileName, counts, resolutions: prepared.resolutions || [], importedAt: new Date().toISOString(), user: window.DoCampoDB?.user?.() || '' });
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 50)));
   }
 
@@ -333,11 +332,12 @@
     document.getElementById('bulkClose').onclick = document.getElementById('bulkCancel').onclick = close;
     document.getElementById('bulkConfirm').onclick = async () => {
       if (!prepared) return;
-      const actionable = prepared.operations.filter(x => x.status === 'new' || x.status === 'update');
+      const actionable = kind === 'clients' ? applyClientDecisions(prepared) : prepared.operations.filter(x => x.status === 'new' || x.status === 'update');
       if (!actionable.length) return;
       const confirm = document.getElementById('bulkConfirm'); confirm.disabled = true; confirm.textContent = 'Importando...';
       try {
-        if (kind === 'clients') actionable.forEach(op => DoCampoData.mergeFarm(op.data));
+        prepared.importBatchId=`imp-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+        if (kind === 'clients') actionable.forEach(op => DoCampoData.mergeFarm({...op.data,importBatchId:prepared.importBatchId,importSource:fileName}));
         else actionable.forEach(op => DoCampoData.mergeProduct(op.data.category, op.data));
         saveHistory(kind, fileName, prepared); close(); await options.onComplete?.();
         alert(`${actionable.length} registro(s) importado(s). Os dados já estão disponíveis offline e aguardam a sincronização normal.`);
@@ -374,7 +374,7 @@
     }
   }
 
-  window.DoCampoBulkImport = { init, modelUrl: MODEL, readWorkbook, populatedModel };
+  window.DoCampoBulkImport = { init, modelUrl: MODEL, readWorkbook, populatedModel, prepareClients, applyClientDecisions };
   window.addEventListener('DOMContentLoaded', () => {
     const downloadButton = document.getElementById('downloadModel');
     if (downloadButton) { downloadButton.textContent = '↓ Baixar cadastros XLSX'; downloadButton.onclick = downloadModel; }
