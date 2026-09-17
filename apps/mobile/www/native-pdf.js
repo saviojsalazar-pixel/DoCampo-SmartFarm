@@ -2,6 +2,34 @@
   'use strict';
 
   const BUCKET = 'docampo-documents';
+  let generationJob = null;
+
+  async function esperarLayout() {
+    if (document.fonts && document.fonts.ready) await Promise.race([document.fonts.ready, new Promise(resolve => setTimeout(resolve, 2500))]);
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  }
+
+  async function gerarDataUri(elemento, opcoes) {
+    if (generationJob) throw new Error('Já existe um PDF sendo gerado. Aguarde a conclusão antes de tentar novamente.');
+    generationJob = (async () => {
+      if (!window.html2pdf) throw new Error('O gerador de PDF não foi carregado. Feche e abra o aplicativo e tente novamente.');
+      if (!elemento || !elemento.isConnected) throw new Error('O conteúdo do documento não está pronto para gerar o PDF.');
+      await esperarLayout();
+      const native = plugins().native;
+      const escalas = native ? [1.45, 1.1] : [Number(opcoes?.html2canvas?.scale)||1.8, 1.35];
+      let ultimoErro;
+      for (const scale of escalas) {
+        try {
+          const config={...(opcoes||{}),html2canvas:{...((opcoes&&opcoes.html2canvas)||{}),scale,useCORS:true,logging:false}};
+          const dataUri=await html2pdf().set(config).from(elemento).outputPdf('datauristring');
+          validarPdf(String(dataUri).split(',')[1]||'');
+          return dataUri;
+        } catch (error) { ultimoErro=error; await new Promise(resolve=>setTimeout(resolve,200)); }
+      }
+      throw new Error('Não foi possível montar o PDF. Libere memória do aparelho e tente novamente. Detalhe: '+String(ultimoErro?.message||ultimoErro||''));
+    })();
+    try{return await generationJob}finally{generationJob=null}
+  }
 
   function limparNome(nome) {
     return String(nome || 'Relatorio_Do_Campo.pdf')
@@ -268,6 +296,7 @@
   }
 
   window.DoCampoPDF = {
+    gerarDataUri,
     salvarECompartilhar,
     uploadPendingDocuments,
     downloadOne,

@@ -1,0 +1,1658 @@
+{
+  "schemaVersion": 1,
+  "sourceVersion": "1.9.41",
+  "farms": [
+    {
+      "farm": "Fazenda Alcantilado-São Francisco",
+      "producer": "Francisco Lacerda de Aguiar Neto",
+      "cpf": "813.253.397-68",
+      "address": "Avenida Governador Francisco, Bairro São Tiago, Guaçuí, Espírito Santo",
+      "fields": [
+        {
+          "name": "1.1 Fazenda",
+          "area": 3.7
+        },
+        {
+          "name": "2.1 Joselito Piloto",
+          "area": 0.9
+        },
+        {
+          "name": "3.1 Regiane Tavares",
+          "area": 1.6
+        },
+        {
+          "name": "3.2 Luciana Lopes",
+          "area": 0.6
+        },
+        {
+          "name": "3.3 Fazenda",
+          "area": 0.6
+        },
+        {
+          "name": "3.4 João Martins",
+          "area": 0.7
+        },
+        {
+          "name": "4.1 Jorge Gumeiro",
+          "area": 1.4
+        },
+        {
+          "name": "4.2 Jorge Gumeiro",
+          "area": 0.4
+        },
+        {
+          "name": "5.1 Jerusa Tavares",
+          "area": 0.4
+        },
+        {
+          "name": "6.1 Angelica Flores",
+          "area": 0.2
+        },
+        {
+          "name": "6.2 Fazenda",
+          "area": 1.3
+        },
+        {
+          "name": "6.3 Jerusa Tavares",
+          "area": 1.1
+        },
+        {
+          "name": "6.4 Viviane Flores",
+          "area": 0.8
+        },
+        {
+          "name": "6.5 Sonia Tavares",
+          "area": 0.8
+        },
+        {
+          "name": "6.6 Afonso Tavares",
+          "area": 1.7
+        },
+        {
+          "name": "6.7 Joselito Piloto",
+          "area": 1.7
+        },
+        {
+          "name": "7.1 José Flores",
+          "area": 0.8
+        },
+        {
+          "name": "7.2 Fazenda",
+          "area": 1.1
+        },
+        {
+          "name": "7.3 Fazenda",
+          "area": 1.6
+        },
+        {
+          "name": "7.4 Maria Januária",
+          "area": 1.1
+        },
+        {
+          "name": "7.5 Janaina Lourenço",
+          "area": 0.6
+        },
+        {
+          "name": "7.6 Celi Raimundo",
+          "area": 2.3
+        },
+        {
+          "name": "7.7 Izael da Silva",
+          "area": 0.6
+        },
+        {
+          "name": "8.1 Fazenda",
+          "area": 0.5
+        },
+        {
+          "name": "8.2 Alcemar Venancio",
+          "area": 0.8
+        },
+        {
+          "name": "8.3 Fazenda",
+          "area": 0.8
+        },
+        {
+          "name": "8.4 Fazenda",
+          "area": 0.6
+        },
+        {
+          "name": "8.5 Angelica Flores",
+          "area": 0.6
+        },
+        {
+          "name": "9.1 Edmilson Teixeira",
+          "area": 2.5
+        },
+        {
+          "name": "9.2 Fazenda",
+          "area": 0.7
+        },
+        {
+          "name": "10.1 Felipe Sabino",
+          "area": 0.9
+        },
+        {
+          "name": "10.2 Fazenda",
+          "area": 1.3
+        },
+        {
+          "name": "10.3 Fazenda",
+          "area": 0.5
+        },
+        {
+          "name": "10.4 Fazenda",
+          "area": 0.7
+        },
+        {
+          "name": "10.5 Fazenda",
+          "area": 1.2
+        },
+        {
+          "name": "10.6 Fazenda",
+          "area": 0.6
+        },
+        {
+          "name": "10.7 Fazenda",
+          "area": 1.2
+        },
+        {
+          "name": "10.8 Fazenda",
+          "area": 1.1
+        },
+        {
+          "name": "10.9 Fazenda",
+          "area": 0.4
+        },
+        {
+          "name": "11.1 Moises Lourenço",
+          "area": 0.7
+        },
+        {
+          "name": "11.2 Fazenda",
+          "area": 1.7
+        },
+        {
+          "name": "11.3 Fazenda",
+          "area": 0.7
+        },
+        {
+          "name": "11.4 Natalino Lourenço",
+          "area": 0.8
+        },
+        {
+          "name": "11.5 João Lourenço",
+          "area": 0.6
+        },
+        {
+          "name": "11.6 Fazenda",
+          "area": 2.3
+        },
+        {
+          "name": "12.1 Moises Lourenço",
+          "area": 1.3
+        },
+        {
+          "name": "12.2 Fazenda",
+          "area": 5.3
+        },
+        {
+          "name": "14.1 Fazenda",
+          "area": 2.2
+        },
+        {
+          "name": "14.2 Fazenda",
+          "area": 1.4
+        },
+        {
+          "name": "15.1 Fazenda",
+          "area": 9.7
+        },
+        {
+          "name": "15.2 Fazenda",
+          "area": 1.3
+        },
+        {
+          "name": "15.3 Fazenda",
+          "area": 3.5
+        },
+        {
+          "name": "16.1 Fazenda",
+          "area": 9.3
+        }
+      ]
+    },
+    {
+      "farm": "Fazenda Cafarnaum",
+      "producer": "Olavo de Sousa Costa",
+      "cpf": "031.209.246-60",
+      "address": "Praça Coronel Maximiano, 41, ap. 901, Centro, Carangola, Minas Gerais",
+      "fields": [
+        {
+          "name": "1. Boboleta",
+          "area": 1.7
+        },
+        {
+          "name": "2. 2016",
+          "area": 10
+        },
+        {
+          "name": "3. 2017",
+          "area": 10
+        },
+        {
+          "name": "4. 2018",
+          "area": 12.6
+        },
+        {
+          "name": "5. Recepa 2024",
+          "area": 10.7
+        }
+      ]
+    },
+    {
+      "farm": "Fazenda Flávia Adriana Elvira",
+      "producer": "Elvira Maria de Oliveira e Sousa",
+      "cpf": "811.507.766-68",
+      "address": "Córrego dos Vieiras, Dom Corrêa, Manhuaçu, Minas Gerais",
+      "fields": [
+        {
+          "name": "1.1 Realeza (esquerda)",
+          "area": 7
+        },
+        {
+          "name": "1.2 Realeza (direita)",
+          "area": 5
+        },
+        {
+          "name": "2.1 BR (direita)",
+          "area": 2.3
+        },
+        {
+          "name": "2.2 BR (esquerda)",
+          "area": 1.6
+        },
+        {
+          "name": "3.1 Recanto Recepa do Alto",
+          "area": 1.4
+        },
+        {
+          "name": "3.2 Recanto Zé Carlos Velha",
+          "area": 2.8
+        },
+        {
+          "name": "3.3 Recanto Recepa de Baixo",
+          "area": 1.1
+        },
+        {
+          "name": "3.4 Recanto Zé Carlos Nova",
+          "area": 3.7
+        },
+        {
+          "name": "3.5 Recanto Fiete",
+          "area": 1.9
+        },
+        {
+          "name": "3.6 Recanto Leo Fortão",
+          "area": 1.8
+        },
+        {
+          "name": "4.1 Alto Peão",
+          "area": 10
+        },
+        {
+          "name": "5.1 Gameleira Velha",
+          "area": 0.9
+        },
+        {
+          "name": "5.2 Gameleira Nova",
+          "area": 1.8
+        },
+        {
+          "name": "5.3 Gameleira Plantio",
+          "area": 0.5
+        },
+        {
+          "name": "6.1 Viturino Nascentes",
+          "area": 1
+        },
+        {
+          "name": "6.2 Viturino Lav. das Pedras",
+          "area": 0.3
+        },
+        {
+          "name": "6.3 Viturino Lav. Velha",
+          "area": 0.2
+        }
+      ]
+    },
+    {
+      "farm": "Fazenda Hott",
+      "producer": "Ronaldo Luiz Hott",
+      "cpf": "570.632.906-06",
+      "address": "Rua Ulisses Calheiros Araújo, 139, Bairro Bom Pastor, Manhuaçu, Minas Gerais",
+      "fields": [
+        {
+          "name": "1.1 Extrema",
+          "area": 1.7
+        },
+        {
+          "name": "2.1 Diamante Broto",
+          "area": 0.6
+        },
+        {
+          "name": "2.2 Diamante Recepa 25",
+          "area": 2.5
+        },
+        {
+          "name": "2.3 Diamante Julio",
+          "area": 2.1
+        },
+        {
+          "name": "3.1 Luan e Gabriel",
+          "area": 1.3
+        },
+        {
+          "name": "3.2 Lagoinha + Ararinha",
+          "area": 1.6
+        },
+        {
+          "name": "3.3 Terreiro",
+          "area": 1.7
+        },
+        {
+          "name": "3.4 Pasto plantio 25",
+          "area": 2.2
+        },
+        {
+          "name": "4.1 Eucalipto Nova",
+          "area": 4.2
+        },
+        {
+          "name": "4.2 Eucalipto Velha",
+          "area": 2
+        },
+        {
+          "name": "5.1 Abaixo do Mato",
+          "area": 3
+        },
+        {
+          "name": "6.1 Gameleira Plantio 25",
+          "area": 1.1
+        },
+        {
+          "name": "6.2 Gameleira do Alto",
+          "area": 1.2
+        },
+        {
+          "name": "6.3 Gameleira Recepa 23",
+          "area": 0.6
+        },
+        {
+          "name": "6.4 Gameleira de Baixo",
+          "area": 1.3
+        }
+      ]
+    },
+    {
+      "farm": "Fazenda Mafort",
+      "producer": "Otaviano Mendes Mafort",
+      "cpf": "012.845.486-51",
+      "address": "Córrego dos Hott, Zona Rural, Manhuaçu, Minas Gerais",
+      "fields": [
+        {
+          "name": "1.1 Alto da Pedra",
+          "area": 5
+        },
+        {
+          "name": "1.2 Baixada do Alto",
+          "area": 1.7
+        },
+        {
+          "name": "1.3 Otaviano Cachoeira 23",
+          "area": 3.3
+        },
+        {
+          "name": "1.4 Gustavo Cachoeira 23",
+          "area": 0.7
+        },
+        {
+          "name": "1.5 Davi Cachoeira 23",
+          "area": 0.7
+        },
+        {
+          "name": "1.6 Cachoeira Recepa 23",
+          "area": 4.3
+        },
+        {
+          "name": "1.7 Pasto",
+          "area": 3.8
+        },
+        {
+          "name": "1.8 Agulheiro",
+          "area": 1.1
+        },
+        {
+          "name": "1.9 Grota Gustavo Esq. 24",
+          "area": 0.8
+        },
+        {
+          "name": "1.10 Grota Gustavo",
+          "area": 1.8
+        },
+        {
+          "name": "1.11 Grota do Davi",
+          "area": 1.9
+        },
+        {
+          "name": "1.12 Despolpador",
+          "area": 0.4
+        },
+        {
+          "name": "1.13 Despolpador Davi",
+          "area": 0.3
+        },
+        {
+          "name": "1.14 Lav 17 mil",
+          "area": 6
+        },
+        {
+          "name": "1.15 Pasto dos Cabritos",
+          "area": 1
+        },
+        {
+          "name": "1.16 Lav. do Barraco",
+          "area": 3.7
+        },
+        {
+          "name": "1.17 Lav. do Eucalipto",
+          "area": 1
+        },
+        {
+          "name": "1.18 Morro Redondo Recepa 24",
+          "area": 0.8
+        },
+        {
+          "name": "1.19 Morro Redondo",
+          "area": 0.5
+        },
+        {
+          "name": "1.20 Quintal",
+          "area": 0.6
+        },
+        {
+          "name": "1.21 Lav. 11 mil",
+          "area": 5.5
+        },
+        {
+          "name": "1.22 Lav. 5 mil",
+          "area": 2.5
+        },
+        {
+          "name": "2.1 Hot Casa",
+          "area": 0.3
+        },
+        {
+          "name": "2.2 785 do Hott Nova",
+          "area": 2.5
+        },
+        {
+          "name": "2.3 Zé Carlos Hott",
+          "area": 2.5
+        },
+        {
+          "name": "2.4 Hott Divisa do Orlando",
+          "area": 0.3
+        },
+        {
+          "name": "3.1 Jaca Otaviano",
+          "area": 4.7
+        },
+        {
+          "name": "3.2 Jaca Gustavo",
+          "area": 2.7
+        },
+        {
+          "name": "4.1 Gameleira",
+          "area": 5.6
+        },
+        {
+          "name": "5.1 Vila Margem Rio",
+          "area": 2.7
+        },
+        {
+          "name": "5.2 Vila Ronaldo",
+          "area": 1.5
+        },
+        {
+          "name": "5.3 Vila Terreiro",
+          "area": 0.8
+        },
+        {
+          "name": "5.4 Vila Bananeiras",
+          "area": 3.5
+        },
+        {
+          "name": "5.5 Vila Pé de Limão",
+          "area": 1.5
+        },
+        {
+          "name": "5.6 Vila Canto da Mata",
+          "area": 0.2
+        },
+        {
+          "name": "5.7 Vila Vestido",
+          "area": 0.7
+        },
+        {
+          "name": "5.8 Vila Barra do Mato",
+          "area": 0.8
+        },
+        {
+          "name": "5.9 Vila Barra da Pedra",
+          "area": 0.8
+        },
+        {
+          "name": "5.11 Vila 3 Coqueiros",
+          "area": 1.5
+        },
+        {
+          "name": "5.12 Vila Acima da Mata",
+          "area": 0.5
+        }
+      ]
+    },
+    {
+      "farm": "Fazenda Riacho Fundo",
+      "producer": "Mariana Raissa Moreira Martins",
+      "cpf": "089.339.946-96",
+      "address": "Rua Onofre Martins Chaves, 307, ap. 301, Bairro Centro, Matipó, Minas Gerais",
+      "fields": [
+        {
+          "name": "1.",
+          "area": 0.5
+        },
+        {
+          "name": "2.",
+          "area": 1.1
+        },
+        {
+          "name": "3.",
+          "area": 0.3
+        },
+        {
+          "name": "4.",
+          "area": 0.3
+        },
+        {
+          "name": "5.",
+          "area": 0.9
+        },
+        {
+          "name": "6.",
+          "area": 2.7
+        },
+        {
+          "name": "7.",
+          "area": 0.3
+        },
+        {
+          "name": "8.",
+          "area": 0.5
+        },
+        {
+          "name": "9.",
+          "area": 0.3
+        },
+        {
+          "name": "10.",
+          "area": 0.6
+        },
+        {
+          "name": "11.",
+          "area": 0.6
+        },
+        {
+          "name": "12.",
+          "area": 0.3
+        },
+        {
+          "name": "13.",
+          "area": 1.3
+        },
+        {
+          "name": "14.",
+          "area": 1.3
+        },
+        {
+          "name": "15.",
+          "area": 1.6
+        },
+        {
+          "name": "16.",
+          "area": 0.9
+        },
+        {
+          "name": "17.",
+          "area": 1.1
+        },
+        {
+          "name": "18.",
+          "area": 1.6
+        },
+        {
+          "name": "19.",
+          "area": 0.9
+        },
+        {
+          "name": "20.",
+          "area": 0.6
+        },
+        {
+          "name": "21.",
+          "area": 1.1
+        },
+        {
+          "name": "22.",
+          "area": 0.9
+        }
+      ]
+    },
+    {
+      "farm": "Fazenda Santa Apolinária",
+      "producer": "Edna Huebra Alves",
+      "cpf": "063.341.206-62",
+      "address": "Fazenda Santa Apolinária, zona rural, Córrego Jequitibá, Reduto, Minas Gerais",
+      "fields": [
+        {
+          "name": "1. Brotos",
+          "area": 0.7
+        },
+        {
+          "name": "2. Acima do Secador",
+          "area": 1.9
+        },
+        {
+          "name": "3. Abaixo do Secador",
+          "area": 0.7
+        },
+        {
+          "name": "4. Canto da Mata",
+          "area": 1
+        }
+      ]
+    },
+    {
+      "farm": "Fazendas Café Realeza",
+      "producer": "Luiz Eduardo Santos de Sousa",
+      "cpf": "148.005.796-78",
+      "address": "Córrego dos Dutra, São Pedro do Avaí, Manhuaçu, Minas Gerais",
+      "fields": [
+        {
+          "name": "1.1 São Pedro",
+          "area": 4.3
+        },
+        {
+          "name": "1.2 São Pedro",
+          "area": 2
+        },
+        {
+          "name": "2.1 Vila Cruzeiro",
+          "area": 3.4
+        },
+        {
+          "name": "2.2 Vila Natal",
+          "area": 2
+        },
+        {
+          "name": "2.3 Vila",
+          "area": 14
+        },
+        {
+          "name": "2.4 Vila Pomar",
+          "area": 0.8
+        },
+        {
+          "name": "2.5 Vila Galpão",
+          "area": 1.5
+        },
+        {
+          "name": "2.6 Vila Eucalipto",
+          "area": 1.5
+        },
+        {
+          "name": "2.7 Vila Curral",
+          "area": 1.5
+        },
+        {
+          "name": "2.8 Vila Arara",
+          "area": 1.7
+        },
+        {
+          "name": "3.1 Realeza 785",
+          "area": 0.8
+        },
+        {
+          "name": "3.2 Realeza Lav. da Pedra",
+          "area": 0.7
+        },
+        {
+          "name": "3.3 Realeza Arara",
+          "area": 1
+        },
+        {
+          "name": "3.4 Realeza Velha 10",
+          "area": 10
+        },
+        {
+          "name": "3.5 Realeza Nova",
+          "area": 28
+        },
+        {
+          "name": "4.1 Taquara Velha",
+          "area": 13.5
+        },
+        {
+          "name": "4.2 Taquara Esqueletada",
+          "area": 2.5
+        }
+      ]
+    },
+    {
+      "farm": "Propriedade Cristina Sousa",
+      "producer": "Maria Cristina de Sousa Amâncio",
+      "cpf": "536.173.556-68",
+      "address": "Rua Andresa Filgueiras Batista, 48, ap. 101, Bairro Pinheiro, Manhuaçu, Minas Gerais",
+      "fields": [
+        {
+          "name": "1.1 Serra (produção)",
+          "area": 7
+        },
+        {
+          "name": "1.1 Serra (brotos)",
+          "area": 2
+        },
+        {
+          "name": "2.1 Curral",
+          "area": 3.5
+        }
+      ]
+    },
+    {
+      "farm": "Propriedade Marcélia",
+      "producer": "Marcélia de Souza",
+      "cpf": "033.426.596-70",
+      "address": "Rua Manoel Barros da Costa, nº 61, ap. 202, Jardim Camburi, Vitória, Espírito Santo",
+      "fields": [
+        {
+          "name": "1. Arara",
+          "area": 1.5
+        },
+        {
+          "name": "2. Esqueletada 25 (Q6-Q7)",
+          "area": 1
+        },
+        {
+          "name": "3. Lavoura Velha",
+          "area": 4
+        }
+      ]
+    },
+    {
+      "farm": "Propriedades Daniel",
+      "producer": "Daniel Vinicius Ferreira Lopes",
+      "cpf": "128.709.756-19",
+      "address": "Córrego Soledade, Zona rural, Manhuaçu, Minas Gerais",
+      "fields": [
+        {
+          "name": "1.1 Manhuaçuzinho (produção)",
+          "area": 6.2
+        },
+        {
+          "name": "1.2 Manhuaçuzinho (nova)",
+          "area": 3
+        },
+        {
+          "name": "1.3 Manhuaçuzinho (nova)",
+          "area": 0.7
+        },
+        {
+          "name": "2.1 Soledade",
+          "area": 1.4
+        },
+        {
+          "name": "2.2 Soledade",
+          "area": 0.4
+        },
+        {
+          "name": "2.3 Soledade",
+          "area": 0.7
+        },
+        {
+          "name": "2.4 Soledade",
+          "area": 1.2
+        },
+        {
+          "name": "2.5 Soledade",
+          "area": 0.9
+        },
+        {
+          "name": "2.6 Soledade",
+          "area": 0.8
+        },
+        {
+          "name": "2.7 Soledade",
+          "area": 0.3
+        },
+        {
+          "name": "2.8 Soledade",
+          "area": 0.3
+        },
+        {
+          "name": "3.1 Dom Corrêa",
+          "area": 5.2
+        },
+        {
+          "name": "3.2 Dom Corrêa",
+          "area": 1.3
+        },
+        {
+          "name": "3.3 Dom Corrêa",
+          "area": 0.9
+        }
+      ]
+    },
+    {
+      "farm": "Propriedades Gabriel e Thalys",
+      "producer": "Gabriel de Sá Rodrigues",
+      "cpf": "111.892.556-42",
+      "address": "Córrego do Lessa, Zona Rural, Manhumirim, Minas Gerais",
+      "fields": [
+        {
+          "name": "1.1 Antonio",
+          "area": 0.5
+        },
+        {
+          "name": "1.2 Antonio",
+          "area": 0.6
+        },
+        {
+          "name": "1.3 Antonio",
+          "area": 1.3
+        },
+        {
+          "name": "1.4 Antonio",
+          "area": 0.9
+        },
+        {
+          "name": "1.5 Antonio",
+          "area": 1.2
+        },
+        {
+          "name": "1.6 Antonio",
+          "area": 0.2
+        },
+        {
+          "name": "1.7 Antonio",
+          "area": 2.5
+        },
+        {
+          "name": "1.8 Antonio",
+          "area": 3.1
+        },
+        {
+          "name": "1.9 Antonio",
+          "area": 1.5
+        },
+        {
+          "name": "1.10 Antonio",
+          "area": 3.8
+        },
+        {
+          "name": "2.1 Estrada Limeira",
+          "area": 2.1
+        },
+        {
+          "name": "3.1 Limeira",
+          "area": 8.5
+        },
+        {
+          "name": "3.2 Limeira",
+          "area": 19.5
+        },
+        {
+          "name": "4.1 Santinha",
+          "area": 2.5
+        },
+        {
+          "name": "5.1 Ventania",
+          "area": 1.8
+        },
+        {
+          "name": "5.2 Ventania",
+          "area": 0.9
+        },
+        {
+          "name": "5.3 Ventania",
+          "area": 0.7
+        },
+        {
+          "name": "5.4 Ventania",
+          "area": 0.9
+        },
+        {
+          "name": "6.1 Flaviano",
+          "area": 1.9
+        },
+        {
+          "name": "6.2 Flaviano",
+          "area": 3.1
+        }
+      ]
+    },
+    {
+      "farm": "Sítio Boa Vista",
+      "producer": "José Roberto de Sousa",
+      "cpf": "347.845.786-68",
+      "address": "Sítio Boa Vista, Dom Corrêa, Manhuaçu, Minas Gerais",
+      "fields": [
+        {
+          "name": "1. Porteira",
+          "area": 1
+        },
+        {
+          "name": "2. Antena",
+          "area": 0.5
+        },
+        {
+          "name": "3. Central",
+          "area": 1
+        },
+        {
+          "name": "4. Encosta da Mata",
+          "area": 1.5
+        }
+      ]
+    },
+    {
+      "farm": "Sítio Santa Catarina",
+      "producer": "Célio da Silva Araujo",
+      "cpf": "592.455.816-91",
+      "address": "Córrego João Bento, Dom Corrêa, Manhuaçu, Minas Gerais",
+      "fields": [
+        {
+          "name": "1. Célio",
+          "area": 1.1
+        },
+        {
+          "name": "2. Célio",
+          "area": 0.6
+        },
+        {
+          "name": "3. Tirré",
+          "area": 0.3
+        },
+        {
+          "name": "4. Glaucio",
+          "area": 0.7
+        },
+        {
+          "name": "5. Célio",
+          "area": 0.8
+        },
+        {
+          "name": "6. Glaucio",
+          "area": 0.5
+        },
+        {
+          "name": "7. Célio",
+          "area": 0.7
+        },
+        {
+          "name": "8. Mirella",
+          "area": 1.5
+        },
+        {
+          "name": "9. Tirré",
+          "area": 0.5
+        },
+        {
+          "name": "10. Célio",
+          "area": 0.1
+        },
+        {
+          "name": "11. Glaucio",
+          "area": 0.1
+        }
+      ]
+    }
+  ],
+  "products": {
+    "Fungicidas": [
+      {
+        "name": "Boscalid-WG-Nortox",
+        "dose": 0.15,
+        "unit": "kg/ha",
+        "target": "Phoma/Ascochyta",
+        "active": "Boscalida"
+      },
+      {
+        "name": "Opera-SE-Basf",
+        "dose": 1.5,
+        "unit": "L/ha",
+        "target": "Ferrugem/Cercosporiose",
+        "active": "Piraclostrobina; Epoxiconazol"
+      },
+      {
+        "name": "Abacus-SC-Basf",
+        "dose": 0.45,
+        "unit": "L/ha",
+        "target": "Ferrugem/Cercosporiose",
+        "active": "Piraclostrobina; Epoxiconazol"
+      },
+      {
+        "name": "Orkestra-SC-Basf",
+        "dose": 0.5,
+        "unit": "L/ha",
+        "target": "Ferrugem/Cercosporiose/Phoma",
+        "active": "Piraclostrobina; Fluxapiroxade"
+      },
+      {
+        "name": "Comet-EC-Basf",
+        "dose": 0.8,
+        "unit": "L/ha",
+        "target": "Ferrugem/Cercosporiose/Phoma",
+        "active": "Piraclostrobina"
+      },
+      {
+        "name": "Cantus-WG-Basf",
+        "dose": 0.15,
+        "unit": "kg/ha",
+        "target": "Phoma",
+        "active": "Boscalida"
+      },
+      {
+        "name": "Melyra-SC-Basf",
+        "dose": 0.8,
+        "unit": "L/ha",
+        "target": "Cercosporiose/Ferrugem",
+        "active": "Mefentrifluconazole; Piraclostrobina"
+      },
+      {
+        "name": "Sphere Max-SC-Bayer",
+        "dose": 0.5,
+        "unit": "L/ha",
+        "target": "Ferrugem/Phoma",
+        "active": "Trifloxistrobina; Ciproconazol"
+      },
+      {
+        "name": "Nativo-SC-Bayer",
+        "dose": 1,
+        "unit": "L/ha",
+        "target": "Phoma",
+        "active": "Trifloxistrobina; Tebuconazol"
+      },
+      {
+        "name": "Miravis Duo-SC-Syngenta",
+        "dose": 0.3,
+        "unit": "L/ha",
+        "target": "Phoma/Bactéria",
+        "active": "Difenoconazol; Pidiflumetofem"
+      },
+      {
+        "name": "Priori Top-SC-Syngenta",
+        "dose": 0.4,
+        "unit": "L/ha",
+        "target": "Phoma",
+        "active": "Azoxistrobina; Difenoconazol"
+      },
+      {
+        "name": "Priori Extra-SC-Syngenta",
+        "dose": 0.5,
+        "unit": "L/ha",
+        "target": "Ferrugem/Cercosporiose",
+        "active": "Azoxistrobina; Ciproconazol"
+      },
+      {
+        "name": "Auto 100-SL-Syngenta",
+        "dose": 0.75,
+        "unit": "L/ha",
+        "target": "Ferrugem",
+        "active": "Ciproconazol"
+      },
+      {
+        "name": "Cercobin-WG-Ihara",
+        "dose": 0.7,
+        "unit": "kg/ha",
+        "target": "Cercosporiose/Phoma",
+        "active": "Tiofanato-metílico"
+      },
+      {
+        "name": "Fusão-EC-Ihara",
+        "dose": 1.2,
+        "unit": "L/ha",
+        "target": "Ferrugem/Phoma",
+        "active": "Metominostrobina; Tebuconazol"
+      },
+      {
+        "name": "Aproach Power-EC-Corteva",
+        "dose": 1,
+        "unit": "L/ha",
+        "target": "Ferrugem/Cercosporiose/Phoma",
+        "active": "Picoxistrobina; Ciproconazol"
+      },
+      {
+        "name": "Impact-SC-FMC",
+        "dose": 2,
+        "unit": "L/ha",
+        "target": "Ferrugem",
+        "active": "Flutriafol"
+      },
+      {
+        "name": "Azimut-SC-Adama",
+        "dose": 0.75,
+        "unit": "L/ha",
+        "target": "Ferrugem/Cercosporiose/Phoma",
+        "active": "Azoxistrobina; Tebuconazol"
+      },
+      {
+        "name": "Convicto-SC-Adama",
+        "dose": 1,
+        "unit": "L/ha",
+        "target": "Ferrugem/Cercosporiose",
+        "active": "Azoxistrobina; Epoxiconazol"
+      },
+      {
+        "name": "Symboll-SC-Albaugh",
+        "dose": 2,
+        "unit": "L/ha",
+        "target": "Ferrugem",
+        "active": "Flutriafol"
+      },
+      {
+        "name": "Audaz-SC-Oxiquímica",
+        "dose": 1,
+        "unit": "L/ha",
+        "target": "Phoma",
+        "active": "Fluxapiroxade; Oxicloreto de Cobre"
+      }
+    ],
+    "Fungicidas Protetores": [
+      {
+        "name": "Recop-WP-Albaugh",
+        "dose": 3,
+        "unit": "kg/ha",
+        "target": "Ferrugem/Cercosporiose/Antracnose/Bactéria",
+        "active": "Oxicloreto de Cobre"
+      },
+      {
+        "name": "Supera-SC-Oxiquímica",
+        "dose": 4,
+        "unit": "L/ha",
+        "target": "Cercosporiose",
+        "active": "Hidróxido de Cobre"
+      },
+      {
+        "name": "Scooter-OD-Oxiquímica",
+        "dose": 2,
+        "unit": "L/ha",
+        "target": "Cercosporiose/Bactéria/Ácaro",
+        "active": "Mancozebe; Oxicloreto de cobre"
+      },
+      {
+        "name": "Kocide-WG-Mitsui",
+        "dose": 2,
+        "unit": "kg/ha",
+        "target": "Ferrugem/Cercosporiose",
+        "active": "Hidróxido de Cobre"
+      },
+      {
+        "name": "Manzate-WG-UPL",
+        "dose": 5,
+        "unit": "kg/ha",
+        "target": "Ferrugem",
+        "active": "Mancozebe"
+      },
+      {
+        "name": "Tutor-WG-BASF",
+        "dose": 2.5,
+        "unit": "kg/ha",
+        "target": "Ferrugem/Cercosporiose",
+        "active": "Hidróxido de Cobre"
+      }
+    ],
+    "Inseticida-Acaricida": [
+      {
+        "name": "Premio Star-SC-FMC",
+        "dose": 0.5,
+        "unit": "L/ha",
+        "target": "Broca/Bicho Mineiro",
+        "active": "Clorantraniliprole; Bifentrina"
+      },
+      {
+        "name": "Altacor-WG-FMC",
+        "dose": 0.09,
+        "unit": "kg/ha",
+        "target": "Bicho mineiro",
+        "active": "Clorantraniliprole"
+      },
+      {
+        "name": "Benevia-OD-FMC",
+        "dose": 1.5,
+        "unit": "L/ha",
+        "target": "Broca/Bicho Mineiro",
+        "active": "Clorantraniliprole"
+      },
+      {
+        "name": "Oberon-SC-Bayer",
+        "dose": 0.5,
+        "unit": "L/ha",
+        "target": "Ácaro Vermelho/Ácaro Leprose",
+        "active": "Espiromesifeno"
+      },
+      {
+        "name": "Decis 25-EC-Bayer",
+        "dose": 0.4,
+        "unit": "L/ha",
+        "target": "Bicho mineiro/Lagartas",
+        "active": "Deltametrina"
+      },
+      {
+        "name": "Curbix-SC-Bayer",
+        "dose": 2.5,
+        "unit": "L/ha",
+        "target": "Broca do café",
+        "active": "Etiprole"
+      },
+      {
+        "name": "Sivanto Prime-SL-Bayer",
+        "dose": 0.5,
+        "unit": "L/ha",
+        "target": "Bicho Mineiro/Cochonilha",
+        "active": "Flupiradifurona"
+      },
+      {
+        "name": "Joiner-SC-Syngenta",
+        "dose": 0.2,
+        "unit": "L/ha",
+        "target": "Broca/Bicho Mineiro/Ácaro V./Ácaro L.",
+        "active": "Isocicloseram"
+      },
+      {
+        "name": "Curyom-EC-Syngenta",
+        "dose": 0.8,
+        "unit": "L/ha",
+        "target": "Broca/Bicho Mineiro",
+        "active": "Profenofós; Lufenuron"
+      },
+      {
+        "name": "Polo-SC-Syngenta",
+        "dose": 0.8,
+        "unit": "L/ha",
+        "target": "Ácaro Vermelho/Ácaro Leprose",
+        "active": "Diafentiuron"
+      },
+      {
+        "name": "Voliam Targo-SC-Syngenta",
+        "dose": 0.6,
+        "unit": "L/ha",
+        "target": "Bicho Mineiro/Broca/Ácaro V.",
+        "active": "Clorantraniliprole; Abamectina"
+      },
+      {
+        "name": "Sperto-WG-UPL",
+        "dose": 0.5,
+        "unit": "kg/ha",
+        "target": "Bicho mineiro/Broca/Cochonilha/Ácaro V.",
+        "active": "Acetamiprido; Bifentrina"
+      },
+      {
+        "name": "Klorpan-EC-Sumitomo",
+        "dose": 1.5,
+        "unit": "L/ha",
+        "target": "Broca/Bicho Mineiro/Cochonilha",
+        "active": "Clorpirifós"
+      },
+      {
+        "name": "Okay-SC-Ihara",
+        "dose": 0.8,
+        "unit": "L/ha",
+        "target": "Ácaro Vermelho/Ácaro Leprose",
+        "active": "Ciflumetofem"
+      },
+      {
+        "name": "Clorpirifós-EC-Nortox",
+        "dose": 1.5,
+        "unit": "L/ha",
+        "target": "Broca/Bicho Mineiro/Cochonilha",
+        "active": "Clorpirifós"
+      },
+      {
+        "name": "Afiado-SC-Albaugh",
+        "dose": 0.5,
+        "unit": "L/ha",
+        "target": "Broca/Bicho Mineiro/Ácaro V.",
+        "active": "Acetamiprido; Bifentrina"
+      },
+      {
+        "name": "Bioolimpo-WP-Total Biotecnologia",
+        "dose": 0.2,
+        "unit": "kg/ha",
+        "target": "Euschistus heros",
+        "active": "Beauveria bassiana; Metarhizium anisopliae"
+      },
+      {
+        "name": "Boveria-Turbo-SC-Vittia",
+        "dose": 1,
+        "unit": "L/ha",
+        "target": "Broca do café",
+        "active": "Beauveria bassiana BV13"
+      },
+      {
+        "name": "Rimon Supra-EC-Adama",
+        "dose": 0.3,
+        "unit": "L/ha",
+        "target": "Bicho mineiro",
+        "active": "Novaluron"
+      },
+      {
+        "name": "Fastac 100-EC-Basf",
+        "dose": 0.25,
+        "unit": "L/ha",
+        "target": "Bicho mineiro",
+        "active": "Alfa-Cipermetrina"
+      }
+    ],
+    "Nutricional": [
+      {
+        "name": "Dacafe-SL-Stoller",
+        "dose": 2,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, S, B, Fe, Zn"
+      },
+      {
+        "name": "Kellus Copper-WP-ICL",
+        "dose": 1,
+        "unit": "kg/ha",
+        "target": "Nutricional",
+        "active": "Quelato de Cu; Hidróxido de K"
+      },
+      {
+        "name": "Profol Exclusive-WP-ICL",
+        "dose": 2,
+        "unit": "kg/ha",
+        "target": "Nutricional",
+        "active": "N, K, S, Mg, B, Cu, Fe, Mn, Mo, Zn"
+      },
+      {
+        "name": "Triplus-SL-ICL",
+        "dose": 0.5,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "P, B, Co, Mo, Ni"
+      },
+      {
+        "name": "Concorde-SL-ICL",
+        "dose": 1,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, P, K, S, Cu, Mn, Mo, Zn, Co"
+      },
+      {
+        "name": "Magtrac-SL-Yara",
+        "dose": 1,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, Mg, Co"
+      },
+      {
+        "name": "Bortrac-SL-Yara",
+        "dose": 0.5,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, B"
+      },
+      {
+        "name": "Zintrac-SC-Yara",
+        "dose": 0.5,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, Zn"
+      },
+      {
+        "name": "CP perenes-WP-Agrocp",
+        "dose": 3,
+        "unit": "kg/ha",
+        "target": "Nutricional",
+        "active": "B, K, Mn, Zn, Mg, Cu, Mo"
+      },
+      {
+        "name": "Promove-SL-AgroCp",
+        "dose": 0.5,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "K, S, Mg, Mn, B, Mo, Zn"
+      },
+      {
+        "name": "Boromag-WP-Multiprime",
+        "dose": 2,
+        "unit": "kg/ha",
+        "target": "Nutricional",
+        "active": "P, Mg, S, B"
+      },
+      {
+        "name": "SL turbo-WP-Multiprime",
+        "dose": 2,
+        "unit": "kg/ha",
+        "target": "Nutricional",
+        "active": "K, Mg, S, B, Mn, Zn, Mo"
+      },
+      {
+        "name": "Top zinc-SC-Giro",
+        "dose": 0.5,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, Zn"
+      },
+      {
+        "name": "Mais Café-SL-Giro",
+        "dose": 2,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "B, N, S, Mn, Zn"
+      },
+      {
+        "name": "Cobre Red-SC-Giro",
+        "dose": 1,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "Cu"
+      },
+      {
+        "name": "Bor Folha-SL-Giro",
+        "dose": 0.5,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, B"
+      },
+      {
+        "name": "Borum max-SL-CAF",
+        "dose": 1,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, B"
+      },
+      {
+        "name": "Aminozinc-SC-CAF",
+        "dose": 2,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, S, Zn"
+      },
+      {
+        "name": "Folha A-SL-Biogrow",
+        "dose": 2,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, Co, Mg, Fe, Mn, Zn, S"
+      },
+      {
+        "name": "Folha B-SL-Biogrow",
+        "dose": 2,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, Co, Cu, B, Mo, S"
+      },
+      {
+        "name": "Aux Café-SL-Biogrow",
+        "dose": 1,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, Co, Mg, Fe, Mn, Zn, Mo, S"
+      },
+      {
+        "name": "Speed-WP-Nitro",
+        "dose": 2,
+        "unit": "kg/ha",
+        "target": "Nutricional",
+        "active": "Mn, Zn, K, Mg, B"
+      },
+      {
+        "name": "Revita-SL-Nitro",
+        "dose": 1,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, P, K, S, Co"
+      },
+      {
+        "name": "Agrumax-WP-Biolchim",
+        "dose": 2,
+        "unit": "kg/ha",
+        "target": "Nutricional",
+        "active": "N, S, B, Cu, Fe, Mn, Zn"
+      },
+      {
+        "name": "Fylloton-SL-Biolchim",
+        "dose": 2,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, Co"
+      },
+      {
+        "name": "Nutrioxi-WP-Oxiquímica",
+        "dose": 2.5,
+        "unit": "kg/ha",
+        "target": "Nutricional",
+        "active": "B, S, Mg, Fe, Mo, Zn"
+      },
+      {
+        "name": "Flow-SL-Aryse",
+        "dose": 1,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, B"
+      },
+      {
+        "name": "MS2-WP-Ubifol",
+        "dose": 1,
+        "unit": "kg/ha",
+        "target": "Nutricional",
+        "active": "N, Mg, S, B, Cu, Mn, Mo, Zn"
+      },
+      {
+        "name": "Café das Montanhas-WP-Multisais",
+        "dose": 2.5,
+        "unit": "kg/ha",
+        "target": "Nutricional",
+        "active": "K, Zn, S, B, Mn, Mg"
+      },
+      {
+        "name": "Evo Mag-SL-Giro",
+        "dose": 1,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "Óxido de Mg"
+      },
+      {
+        "name": "Corona Frutmax-WP-Timac",
+        "dose": 2,
+        "unit": "kg/ha",
+        "target": "Nutricional",
+        "active": "N, P, K, S, B, Cu, Mn, Zn"
+      },
+      {
+        "name": "SeTT-SL-Stoller",
+        "dose": 0.7,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, Ca, Bo"
+      },
+      {
+        "name": "Mover-SL-Stoller",
+        "dose": 0.45,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, Cu, Mo, Zn, B"
+      },
+      {
+        "name": "Master Mins-SL-Stoller",
+        "dose": 0.25,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, P, K, Mg, B, Cu, Mn, Mo, Zn"
+      },
+      {
+        "name": "Multicafe Solo A-SL-BioGrow",
+        "dose": 2,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, Co, Mg, Fe, Mn, Zn, Cu, Mo, S"
+      },
+      {
+        "name": "Osmokontrol-SL-BioGrow",
+        "dose": 0.5,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "Co, N"
+      },
+      {
+        "name": "Mancozin-SL-Yara",
+        "dose": 1,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, Cu, Mn, Zn"
+      },
+      {
+        "name": "BioFerro-Wp-Multiprime",
+        "dose": 1,
+        "unit": "kg/ha",
+        "target": "Nutricional",
+        "active": "N, Fe"
+      },
+      {
+        "name": "Citobloom-SL-Biogrow",
+        "dose": 0.3,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "K, Co, N"
+      },
+      {
+        "name": "SMBoro-SL-Ajinomoto",
+        "dose": 1,
+        "unit": "L/ha",
+        "target": "Nutricional",
+        "active": "N, B"
+      }
+    ],
+    "Hormonal": [
+      {
+        "name": "Stimulate-SL-Stoller",
+        "dose": 0.5,
+        "unit": "L/ha",
+        "target": "Hormônio sintético",
+        "active": "Cinetina, Ácido giberélico e Indolbutírico"
+      }
+    ]
+  }
+}

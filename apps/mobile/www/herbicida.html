@@ -1787,6 +1787,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                             return Object.assign({}, product);
                         });
                     });
+                    return;
                 } catch (centralError) {
                     console.warn('Não foi possível atualizar o cadastro central; usando a cópia offline disponível.', centralError);
                 }
@@ -3300,11 +3301,10 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
             };
 
             setTimeout(function() {
-                if (typeof html2pdf !== 'undefined') {
-                    html2pdf().set(opt).from(clonedContent).outputPdf('datauristring').then(async function(pdfData) {
-                        if (window.DoCampoPDF) {
-                            const docFarm = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
-                            await window.DoCampoPDF.salvarECompartilhar(pdfData, filename, 'Receituário de Herbicida', {
+                if (window.DoCampoPDF && window.DoCampoPDF.gerarDataUri) {
+                    window.DoCampoPDF.gerarDataUri(clonedContent, opt).then(async function(pdfData) {
+                        const docFarm = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+                        await window.DoCampoPDF.salvarECompartilhar(pdfData, filename, 'Receituário de Herbicida', {
                                 typeLabel: 'Receituário de Herbicida',
                                 producer: docFarm ? (docFarm.producer || docFarm.proprietor || '') : '',
                                 farm: selectedFarm,
@@ -3312,9 +3312,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                                 documentCode: documentCode,
                                 fontLevel: pdfFontLevel,
                                 responsible: (document.getElementById('agronomist-name') || {}).value || (window.DoCampoDB ? DoCampoDB.user() : '')
-                            });
-                        }
-                        else await html2pdf().set(opt).from(clonedContent).save();
+                        });
                         if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
                         if (wrapper) wrapper.classList.add('hidden');
                         if (btnText) btnText.innerText = "Gerar Relatório PDF de Herbicidas";

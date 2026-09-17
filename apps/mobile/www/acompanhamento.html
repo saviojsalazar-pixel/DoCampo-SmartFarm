@@ -2043,8 +2043,8 @@
             };
 
             setTimeout(function() {
-                if (typeof html2pdf !== 'undefined') {
-                    html2pdf().set(opt).from(clonedContent).outputPdf('datauristring').then(async function(dataUri) {
+                if (window.DoCampoPDF && window.DoCampoPDF.gerarDataUri) {
+                    window.DoCampoPDF.gerarDataUri(clonedContent, opt).then(async function(dataUri) {
                         const farmData=EMBEDDED_DATABASE.find(function(f){return f.farm===selectedFarm})||{};
                         const responsible=selectedAgronomists.map(i=>AGRONOMISTS_LIST[i]?.name).filter(Boolean).join(' e ');
                         const code=window.DoCampoDocumentCode?DoCampoDocumentCode.reservar('PROD',responsible):('PROD-'+Date.now());

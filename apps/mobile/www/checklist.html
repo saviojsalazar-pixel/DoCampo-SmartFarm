@@ -14,6 +14,7 @@
     <script src="supabase-config.js"></script>
     <script src="unified-db.js"></script>
     <script src="shared-data.js"></script>
+    <script src="registry-loader.js"></script>
     <script src="sync-engine.js"></script>
     <script src="native-pdf.js"></script>
     <script src="document-code.js"></script>
@@ -833,15 +834,29 @@
             painel.classList.remove('hidden');
         }
 
-        function carregarTudoDoLocalStorage() {
+        async function carregarTudoDoLocalStorage() {
             try {
+                let cadastroCentralCarregado = false;
+                if (window.DoCampoRegistry) {
+                    const central = await window.DoCampoRegistry.all();
+                    if (Array.isArray(central.farms) && central.farms.length) {
+                        Object.keys(talhoesPorFazenda).forEach(k => delete talhoesPorFazenda[k]);
+                        Object.keys(produtoresPorFazenda).forEach(k => delete produtoresPorFazenda[k]);
+                        central.farms.forEach(f => {
+                            if (!f || !f.farm) return;
+                            talhoesPorFazenda[f.farm] = (f.fields || []).map(t => t.name).filter(Boolean);
+                            produtoresPorFazenda[f.farm] = f.producer || f.proprietor || '';
+                        });
+                        cadastroCentralCarregado = true;
+                    }
+                }
                 const localFazendas = localStorage.getItem('docampo_talhoesPorFazenda');
-                if (localFazendas) {
+                if (!cadastroCentralCarregado && localFazendas) {
                     const parsed = JSON.parse(localFazendas);
                     Object.assign(talhoesPorFazenda, parsed);
                 }
                 const localProdutores = localStorage.getItem('docampo_produtoresPorFazenda');
-                if (localProdutores) {
+                if (!cadastroCentralCarregado && localProdutores) {
                     const parsed = JSON.parse(localProdutores);
                     Object.assign(produtoresPorFazenda, parsed);
                 }
@@ -864,7 +879,7 @@
                 if (localProprietario && document.getElementById('nomeProprietario')) {
                     document.getElementById('nomeProprietario').value = localProprietario;
                 }
-                if (window.DoCampoData) {
+                if (!cadastroCentralCarregado && window.DoCampoData) {
                     window.DoCampoData.read().farms.forEach(f => {
                         if (!f || !f.farm) return;
                         talhoesPorFazenda[f.farm] = (f.fields || []).map(t => t.name).filter(Boolean);
@@ -877,7 +892,7 @@
         }
 
         async function initFirebase() {
-            carregarTudoDoLocalStorage();
+            await carregarTudoDoLocalStorage();
             if (localStorage.getItem('docampo_start_new_visit') === '1') {
                 localStorage.removeItem('docampo_start_new_visit');
                 localStorage.removeItem('docampo_current_visit_id');

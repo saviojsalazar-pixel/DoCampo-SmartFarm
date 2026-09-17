@@ -10,7 +10,7 @@ const localStorage = {
 const embedded = [{ farm: 'Fazenda Teste', proprietor: 'Produtor', fields: [{ name: 'Talhão 1', area: 1, plants: 4000 }] }];
 const context = {
   console, localStorage, CustomEvent: function () {},
-  fetch: async () => ({ text: async () => `const EMBEDDED_DATABASE = ${JSON.stringify(embedded)}; const PRODUCT_CATALOG = {};` }),
+  fetch: async () => ({ ok:true, json: async () => ({ farms:embedded, products:{} }) }),
   window: { dispatchEvent() {} },
 };
 context.window.window = context.window;

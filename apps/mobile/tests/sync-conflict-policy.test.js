@@ -1,0 +1,21 @@
+const assert = require('assert');
+const fs = require('fs');
+const vm = require('vm');
+
+const storage = new Map();
+const localStorage = {getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,String(v))};
+const context = {console,localStorage,navigator:{onLine:true},setTimeout:()=>0,CustomEvent:function(){},crypto:{randomUUID:()=>Math.random().toString(36).slice(2)},window:{dispatchEvent(){},addEventListener(){}}};
+context.window.window=context.window;
+vm.createContext(context);
+vm.runInContext(fs.readFileSync('www/unified-db.js','utf8'),context);
+const db=context.window.DoCampoDB;
+const local=db.upsert('fields',{id:'field-1',name:'Talhão local',farmId:'farm-1'});
+const remote={id:'remote-1',entity_type:'fields',entity_id:'field-1',operation:'upsert',device_id:'celular-2',created_at:'2099-01-01T00:00:00.000Z',payload:{id:'field-1',name:'Talhão remoto',farmId:'farm-1',updatedAt:'2099-01-01T00:00:00.000Z'}};
+assert.strictEqual(db.applyRemote(remote),'conflict','Alteração local pendente não pode ser apagada pelo outro celular.');
+assert.strictEqual(db.applyRemote(remote),'known','O mesmo evento remoto deve ser idempotente.');
+assert.strictEqual(db.read().conflicts.length,1,'O mesmo conflito não pode ser duplicado.');
+db.markSynced(db.pendingEvents().map(e=>e.id));
+const remote2={...remote,id:'remote-2',payload:{...remote.payload,name:'Talhão remoto confirmado',updatedAt:'2099-01-02T00:00:00.000Z'},created_at:'2099-01-02T00:00:00.000Z'};
+assert.strictEqual(db.applyRemote(remote2),'applied','Sem edição pendente, a versão remota mais nova deve ser aplicada.');
+assert.strictEqual(db.get('fields','field-1').name,'Talhão remoto confirmado');
+console.log('sync-conflict-policy: ok');

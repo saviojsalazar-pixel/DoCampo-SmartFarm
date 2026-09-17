@@ -11,7 +11,7 @@
   function read(){try{let d=JSON.parse(localStorage.getItem(DB_KEY)||'null')||empty();TYPES.forEach(t=>d.entities[t]||(d.entities[t]={}));d.events||=[];d.queue||=[];d.conflicts||=[];d.trash||=[];return d}catch(_){return empty()}}
   function write(d){localStorage.setItem(DB_KEY,JSON.stringify(d));emit();return d}
   function emit(){window.dispatchEvent(new CustomEvent('docampo:db-status',{detail:status()}))}
-  function eventFor(type,id,operation,payload,baseRevision){return{id:uuid(),entityType:type,entityId:id,operation,payload,deviceId:deviceId(),userName:user(),createdAt:now(),baseRevision:baseRevision||0,appVersion:'1.9.40'}}
+  function eventFor(type,id,operation,payload,baseRevision){return{id:uuid(),entityType:type,entityId:id,operation,payload,deviceId:deviceId(),userName:user(),createdAt:now(),baseRevision:baseRevision||0,appVersion:'1.9.42'}}
   function upsert(type,input,options={}){if(!TYPES.includes(type))throw Error('Tipo de registro inválido');let d=read(),id=input.id||uuid(),old=d.entities[type][id],revision=(old?.revision||0)+1,timestamp=now();let record={...(old||{}),...input,id,type,revision,createdAt:old?.createdAt||timestamp,updatedAt:timestamp,updatedBy:user(),deviceId:deviceId(),deletedAt:null,verified:input.verified!==false};if(type==='products'&&!old&&input.verified!==true){record.verified=false;record.localStatus='Cadastro local — conferir'}d.entities[type][id]=record;let ev=eventFor(type,id,'upsert',record,old?.revision||0);d.events.push(ev);if(options.enqueue!==false)d.queue.push(ev.id);write(d);return record}
   function softDelete(type,id){let d=read(),old=d.entities[type]?.[id];if(!old)return false;let timestamp=now(),record={...old,revision:(old.revision||0)+1,deletedAt:timestamp,updatedAt:timestamp,updatedBy:user(),deviceId:deviceId()};d.entities[type][id]=record;d.trash.push({type,id,deletedAt:timestamp});let ev=eventFor(type,id,'delete',record,old.revision||0);d.events.push(ev);d.queue.push(ev.id);write(d);return true}
   function restore(type,id){let d=read(),old=d.entities[type]?.[id];if(!old)return false;d.trash=d.trash.filter(x=>!(x.type===type&&x.id===id));write(d);upsert(type,{...old,deletedAt:null,restoredAt:now()});return true}
@@ -26,7 +26,23 @@
   function status(){let d=read();return{online:navigator.onLine,pending:d.queue.length,conflicts:d.conflicts.length,lastSyncAt:d.lastSyncAt,configured:!!window.DoCampoCloudConfig?.configured,deviceId:deviceId(),user:user()}}
   function pendingEvents(){let d=read(),set=new Set(d.queue);return d.events.filter(e=>set.has(e.id))}
   function markSynced(ids,cursor){let d=read(),set=new Set(ids);d.queue=d.queue.filter(id=>!set.has(id));d.lastSyncAt=now();if(cursor)d.lastRemoteCursor=cursor;write(d)}
-  function applyRemote(ev){let d=read(),type=ev.entity_type||ev.entityType,id=ev.entity_id||ev.entityId;if(d.events.some(x=>x.id===ev.id))return'known';let local=d.entities[type]?.[id],payload={...(ev.payload||{})};if(type==='documents'){delete payload.localPath;delete payload.localAvailable;payload={...payload,localAvailable:!!local?.localAvailable,localPath:local?.localPath||''}}if(local&&local.deviceId!==ev.device_id&&local.revision>Number(ev.base_revision||0)&&local.updatedAt>ev.created_at){d.conflicts.push({id:uuid(),entityType:type,entityId:id,local,remote:payload,remoteEventId:ev.id,createdAt:now(),resolvedAt:null});d.events.push({id:ev.id,remote:true});write(d);return'conflict'}if(ev.operation==='delete')d.entities[type][id]={...payload,deletedAt:payload.deletedAt||ev.created_at};else d.entities[type][id]=payload;d.events.push({id:ev.id,remote:true});write(d);return'applied'}
+  function applyRemote(ev){
+    let d=read(),type=ev.entity_type||ev.entityType,id=ev.entity_id||ev.entityId;
+    if(!TYPES.includes(type)||!id)return'invalid';
+    if(d.events.some(x=>x.id===ev.id))return'known';
+    let local=d.entities[type]?.[id],payload={...(ev.payload||{})},queued=new Set(d.queue);
+    const hasPending=d.events.some(x=>queued.has(x.id)&&x.entityType===type&&x.entityId===id);
+    if(type==='documents'){delete payload.localPath;delete payload.localAvailable;payload={...payload,localAvailable:!!local?.localAvailable,localPath:local?.localPath||''}}
+    if(local&&local.deviceId!==(ev.device_id||ev.deviceId)&&hasPending){
+      if(!d.conflicts.some(x=>x.remoteEventId===ev.id))d.conflicts.push({id:uuid(),entityType:type,entityId:id,local,remote:payload,remoteEventId:ev.id,createdAt:now(),resolvedAt:null});
+      d.events.push({id:ev.id,remote:true});write(d);return'conflict';
+    }
+    const remoteTime=String(payload.updatedAt||ev.created_at||'');
+    const localTime=String(local?.updatedAt||'');
+    if(local&&!hasPending&&localTime&&remoteTime&&localTime>remoteTime){d.events.push({id:ev.id,remote:true});write(d);return'stale'}
+    if(ev.operation==='delete')d.entities[type][id]={...payload,id,deletedAt:payload.deletedAt||ev.created_at};else d.entities[type][id]={...payload,id};
+    d.events.push({id:ev.id,remote:true});write(d);return'applied';
+  }
   function resolveConflict(id,choice){let d=read(),c=d.conflicts.find(x=>x.id===id&&!x.resolvedAt);if(!c)return false;c.resolvedAt=now();c.resolution=choice;write(d);if(choice==='remote')upsert(c.entityType,{...c.remote,id:c.entityId});else upsert(c.entityType,{...c.local,id:c.entityId});return true}
   function migrateLegacy(){let d=read();if(d.migratedLegacy)return;let shared={};try{shared=JSON.parse(localStorage.getItem('docampo_shared_v1')||'{}')}catch(_){};(shared.farms||[]).forEach(f=>{let farm=upsert('farms',{name:f.farm,producerName:f.producer||'',cpf:f.cpf||'',address:f.address||'',verified:true},{enqueue:false});(f.fields||[]).forEach(field=>upsert('fields',{farmId:farm.id,name:field.name,area:Number(field.area)||0,plants:Number(field.plants)||0,verified:true},{enqueue:false}))});Object.entries(shared.products||{}).forEach(([category,items])=>(items||[]).forEach(p=>upsert('products',{...p,category,verified:p.verified===true},{enqueue:false})));d=read();d.migratedLegacy=true;write(d)}
   window.DoCampoDB={read,list,get,upsert,softDelete,restore,hardDelete,archiveOldDocuments,addDocument,patchDocumentLocal,patchDocumentCloud,status,pendingEvents,markSynced,applyRemote,resolveConflict,setUser,user,deviceId,migrateLegacy};

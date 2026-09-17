@@ -5,8 +5,11 @@
   const fieldKey=v=>norm(v).replace(/[.\-–—,:;]+\s*$/,'').trim();
   const fieldCompare=(a,b)=>String(a?.name||'').localeCompare(String(b?.name||''),'pt-BR',{numeric:true,sensitivity:'base'});
   function cleanFields(list){const map=new Map();(Array.isArray(list)?list:[]).forEach(raw=>{const f=typeof raw==='object'&&raw?{...raw}:{name:raw},name=clean(f.name||f.talhao);if(!name)return;const k=fieldKey(name),old=map.get(k)||{};map.set(k,{...old,...f,name,area:Number(f.area)||Number(old.area)||0,plants:Number(f.plants)||Number(old.plants)||0})});return Array.from(map.values()).sort(fieldCompare)}
-  function extract(source,label,open,close){const start=source.indexOf(label);if(start<0)return null;const first=source.indexOf(open,start);let depth=0,quote='',escape=false;for(let i=first;i<source.length;i++){const c=source[i];if(quote){if(escape)escape=false;else if(c==='\\')escape=true;else if(c===quote)quote='';continue}if(c==='"'||c==="'"||c==='`'){quote=c;continue}if(c===open)depth++;else if(c===close&&--depth===0)return source.slice(first,i+1)}return null}
-  async function defaults(){try{const source=await fetch('pulverizacao.html').then(r=>r.text()),farmsText=extract(source,'const EMBEDDED_DATABASE','[',']'),productsText=extract(source,'const PRODUCT_CATALOG','{','}');return{farms:farmsText?Function('return ('+farmsText+')')():[],products:productsText?Function('return ('+productsText+')')():{}}}catch(e){console.error(e);return{farms:[],products:{}}}}
+  let seedPromise=null;
+  async function defaults(){
+    if(!seedPromise)seedPromise=fetch('seed-data.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Cadastro-base indisponível: '+r.status);return r.json()}).then(data=>({farms:Array.isArray(data.farms)?data.farms:[],products:data.products&&typeof data.products==='object'?data.products:{}})).catch(e=>{seedPromise=null;console.error(e);return{farms:[],products:{}}});
+    return seedPromise;
+  }
   function mergeFarm(list, farm, replaceFields) {
     if (!farm || !String(farm.farm || '').trim()) return;
     const name = String(farm.farm).trim();
