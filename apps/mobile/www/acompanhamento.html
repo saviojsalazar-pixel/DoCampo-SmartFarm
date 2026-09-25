@@ -96,6 +96,12 @@
             break-before: page !important;
         }
 
+        .pdf-page-3 {
+            min-height: 1115px !important;
+            page-break-before: always !important;
+            break-before: page !important;
+        }
+
         .pdf-table {
             width: 100%;
             border-collapse: separate;
@@ -533,7 +539,7 @@
                     <i class="fa-solid fa-file-pdf text-amber-500 text-base"></i>
                     Visualização do Relatório de Acompanhamento da Produção
                 </span>
-                <div class="flex gap-2"><button onclick="confirmSavePDF()" class="bg-emerald-700 text-white text-sm font-bold px-3 py-2 rounded-lg cursor-pointer"><i class="fa-solid fa-floppy-disk"></i> Salvar PDF</button><button onclick="closePDFModal()" class="text-slate-500 bg-slate-100 text-sm font-bold px-3 py-2 rounded-lg cursor-pointer"><i class="fa-solid fa-arrow-left"></i> Voltar e corrigir</button></div>
+                <div class="flex gap-2"><button id="pdf-save-button" onclick="confirmSavePDF()" class="bg-emerald-700 text-white text-sm font-bold px-3 py-2 rounded-lg cursor-pointer disabled:opacity-60"><i class="fa-solid fa-floppy-disk"></i> Salvar PDF</button><button onclick="closePDFModal()" class="text-slate-500 bg-slate-100 text-sm font-bold px-3 py-2 rounded-lg cursor-pointer"><i class="fa-solid fa-arrow-left"></i> Voltar e corrigir</button></div>
             </div>
 
             <div class="overflow-x-auto w-full flex justify-center bg-slate-100/60 p-3 rounded-xl border border-slate-200">
@@ -640,11 +646,11 @@
                                     <img src="assets/logo.png" alt="Logo Do Campo" style="background:white;width:36px;height:36px;border-radius:6px;object-fit:contain;padding:2px;">
                                     <div>
                                         <h1 style="font-size: 16px; font-weight: 800; color: #15803d; margin: 0; line-height: 1.1;">DO CAMPO AGRONEGÓCIOS</h1>
-                                        <p style="font-size: 9px; font-weight: 700; color: #475569; margin: 0; text-transform: uppercase;">Gráficos Analíticos da Safra (Página 2)</p>
+                                        <p style="font-size: 9px; font-weight: 700; color: #475569; margin: 0; text-transform: uppercase;">Produção por Talhão</p>
                                     </div>
                                 </div>
                                 <div class="text-right">
-                                    <span style="font-size: 9.5px; color: #64748b;">Página 2 de 2</span>
+                                    <span style="font-size: 9.5px; color: #64748b;">Página 2 de 3</span>
                                 </div>
                             </div>
 
@@ -695,16 +701,11 @@
                                 </div>
                             </div>
 
-                            <div class="space-y-4 pt-1">
-                                <div class="pdf-box text-center" style="background-color: #ffffff; padding: 6px;">
+                            <div class="pt-1">
+                                <div class="pdf-box text-center" style="background-color: #ffffff; padding: 10px; min-height:760px;">
                                     <span style="font-size: 9.5px; color: #15803d; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 3px;">Gráfico de Produção por Talhão (Sacas)</span>
-                                    <img id="pdf-chart-prod-img" style="max-height: 290px; width: 100%; object-fit: contain; display: block; margin: 0 auto;" alt="Gráfico Produção">
-                                    <div id="pdf-chart-prod-legend" style="display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;text-align:left;font-size:7.5px;color:#475569;margin-top:3px;"></div>
-                                </div>
-                                <div class="pdf-box text-center" style="background-color: #ffffff; padding: 6px;">
-                                    <span style="font-size: 9.5px; color: #b45309; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 3px;">Gráfico de Produtividade por Talhão (sc/ha)</span>
-                                    <img id="pdf-chart-prodty-img" style="max-height: 290px; width: 100%; object-fit: contain; display: block; margin: 0 auto;" alt="Gráfico Produtividade">
-                                    <div id="pdf-chart-prodty-legend" style="display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;text-align:left;font-size:7.5px;color:#475569;margin-top:3px;"></div>
+                                    <img id="pdf-chart-prod-img" style="height:430px; width:100%; object-fit:contain; display:block; margin:4px auto 8px;" alt="Gráfico Produção">
+                                    <div id="pdf-chart-prod-legend" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;text-align:left;font-size:8px;line-height:1.35;color:#334155;margin-top:6px;"></div>
                                 </div>
                             </div>
                         </div>
@@ -715,6 +716,29 @@
                                 Rua Do Campo, SN, Reduto - Minas Gerais | CNPJ: 52.124.298/0001-45 | Telefone: (33) 98468-9806
                             </p>
                         </div>
+                    </div>
+
+                    <!-- PÁGINA 3 DO RELATÓRIO PDF (PRODUTIVIDADE) -->
+                    <div class="pdf-page pdf-page-3">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center border-b-2 border-amber-600 pb-1.5">
+                                <div class="flex items-center gap-3">
+                                    <img src="assets/logo.png" alt="Logo Do Campo" style="background:white;width:36px;height:36px;border-radius:6px;object-fit:contain;padding:2px;">
+                                    <div><h1 style="font-size:16px;font-weight:800;color:#15803d;margin:0;line-height:1.1;">DO CAMPO AGRONEGÓCIOS</h1><p style="font-size:9px;font-weight:700;color:#475569;margin:0;text-transform:uppercase;">Produtividade por Talhão</p></div>
+                                </div>
+                                <span style="font-size:9.5px;color:#64748b;">Página 3 de 3</span>
+                            </div>
+                            <div class="pdf-box" style="font-size:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                                <div><strong style="color:#64748b;font-size:8.5px;text-transform:uppercase;display:block;">Propriedade / Fazenda</strong><span id="pdf-farm-p3" style="font-weight:700;">--</span></div>
+                                <div><strong style="color:#64748b;font-size:8.5px;text-transform:uppercase;display:block;">Produtor Rural</strong><span id="pdf-producer-p3" style="font-weight:700;">--</span></div>
+                            </div>
+                            <div class="pdf-box text-center" style="background:#fff;padding:10px;min-height:850px;">
+                                <span style="font-size:9.5px;color:#b45309;font-weight:800;text-transform:uppercase;display:block;margin-bottom:3px;">Gráfico de Produtividade por Talhão (sc/ha)</span>
+                                <img id="pdf-chart-prodty-img" style="height:470px;width:100%;object-fit:contain;display:block;margin:4px auto 8px;" alt="Gráfico Produtividade">
+                                <div id="pdf-chart-prodty-legend" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;text-align:left;font-size:8px;line-height:1.35;color:#334155;margin-top:6px;"></div>
+                            </div>
+                        </div>
+                        <div style="margin-top:auto;padding-top:6px;border-top:1px solid #cbd5e1;text-align:center;" class="pdf-box"><p style="font-weight:800;color:#15803d;font-size:8.5px;margin:0;text-transform:uppercase;">DO CAMPO AGRONEGÓCIOS</p><p style="color:#475569;font-size:8px;margin:1px 0 0;">Rua Do Campo, SN, Reduto - Minas Gerais | CNPJ: 52.124.298/0001-45 | Telefone: (33) 98468-9806</p></div>
                     </div>
 
                 </div>
@@ -1076,6 +1100,7 @@
         let newFarmFieldCounter = 0;
         let productionChartInstance = null;
         let productivityChartInstance = null;
+        let pdfGenerationActive = false;
 
         const AGRONOMISTS_LIST = [
             {
@@ -1156,6 +1181,15 @@
 
         async function loadStoredData() {
             try {
+                // Migracao unica das chaves exclusivas do HTML antigo para o
+                // cadastro central. So removemos a copia depois de incorporada.
+                if(window.DoCampoData){
+                    const antigas=JSON.parse(localStorage.getItem('agri_prod_custom_farms')||'[]');
+                    antigas.forEach(f=>window.DoCampoData.mergeFarm(f));
+                    const excluidas=JSON.parse(localStorage.getItem('agri_prod_deleted_farms')||'[]');
+                    excluidas.forEach(nome=>window.DoCampoData.removeFarm(nome));
+                    if(antigas.length||excluidas.length){localStorage.removeItem('agri_prod_custom_farms');localStorage.removeItem('agri_prod_deleted_farms')}
+                }
                 const central = await window.DoCampoRegistry.all();
                 EMBEDDED_DATABASE.splice(0, EMBEDDED_DATABASE.length);
                 (central.farms || []).forEach(function(farm){EMBEDDED_DATABASE.push({farm:farm.farm,producer:farm.producer||farm.proprietor||'',proprietor:farm.producer||farm.proprietor||'',cpf:farm.cpf||'',address:farm.address||'',fields:(farm.fields||[]).map(field=>({name:field.name,area:Number(field.area)||0,plants:Number(field.plants)||0}))})});
@@ -1164,14 +1198,6 @@
 
         function saveStoredFarm(farmObj) {
             try {
-                let stored = JSON.parse(localStorage.getItem('agri_prod_custom_farms') || '[]');
-                const idx = stored.findIndex(function(f) { return f.farm.toLowerCase() === farmObj.farm.toLowerCase(); });
-                if (idx !== -1) {
-                    stored[idx] = farmObj;
-                } else {
-                    stored.unshift(farmObj);
-                }
-                localStorage.setItem('agri_prod_custom_farms', JSON.stringify(stored));
                 if(window.DoCampoData)window.DoCampoData.mergeFarm(farmObj);
             } catch(e) {
                 console.error("Erro ao salvar propriedade", e);
@@ -1331,6 +1357,37 @@
             const legend=names.map((name,index)=>'<div><strong>'+(index+1)+'</strong> — '+String(name).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))+'</div>').join('');
             const prodLegend=document.getElementById('productionChartLegend'),prodtyLegend=document.getElementById('productivityChartLegend');
             if(prodLegend)prodLegend.innerHTML=legend;if(prodtyLegend)prodtyLegend.innerHTML=legend;
+        }
+
+        function passoArredondado(maximo) {
+            const bruto=Math.max(1,maximo)/5,expo=Math.pow(10,Math.floor(Math.log10(bruto))),fracao=bruto/expo;
+            return (fracao<=1?1:fracao<=2?2:fracao<=5?5:10)*expo;
+        }
+
+        function montarGraficoPdf(registros,tipo) {
+            const canvas=document.createElement('canvas'),largura=1440,altura=720,escala=2;
+            canvas.width=largura*escala;canvas.height=altura*escala;
+            const ctx=canvas.getContext('2d');ctx.scale(escala,escala);ctx.fillStyle='#fff';ctx.fillRect(0,0,largura,altura);
+            const valores=registros.map(r=>tipo==='producao'?r.total:r.produtividade),cor=tipo==='producao'?'#22c55e':'#eab308',borda=tipo==='producao'?'#15803d':'#b45309';
+            const esquerda=105,direita=largura-34,topo=105,base=altura-82,maxValor=Math.max(1,...valores),passo=passoArredondado(maxValor*1.12),maxEscala=Math.max(passo*5,Math.ceil(maxValor/passo)*passo),faixas=Math.round(maxEscala/passo);
+            ctx.font='22px Arial';ctx.textBaseline='middle';ctx.lineWidth=1;
+            for(let i=0;i<=faixas;i++){const valor=i*passo,y=base-(base-topo)*(valor/maxEscala);ctx.strokeStyle='#dbe5df';ctx.beginPath();ctx.moveTo(esquerda,y);ctx.lineTo(direita,y);ctx.stroke();ctx.fillStyle='#64748b';ctx.textAlign='right';ctx.fillText(valor.toLocaleString('pt-BR',{maximumFractionDigits:1}),esquerda-14,y)}
+            ctx.strokeStyle='#64748b';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(esquerda,topo);ctx.lineTo(esquerda,base);ctx.lineTo(direita,base);ctx.stroke();
+            const slot=(direita-esquerda)/Math.max(1,valores.length),barra=Math.max(12,Math.min(48,slot*.62));
+            valores.forEach((valor,i)=>{const h=(base-topo)*(valor/maxEscala),x=esquerda+i*slot+(slot-barra)/2,y=base-h;ctx.fillStyle=cor;ctx.fillRect(x,y,barra,h);ctx.strokeStyle=borda;ctx.lineWidth=2;ctx.strokeRect(x,y,barra,h);ctx.fillStyle='#0f172a';ctx.font='bold 18px Arial';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(String(i+1),x+barra/2,base+16);const rotulo=Number(valor).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});ctx.save();ctx.translate(x+barra/2,y-10-(i%2)*25);ctx.rotate(-Math.PI/3);ctx.textAlign='left';ctx.textBaseline='middle';ctx.font='bold 17px Arial';ctx.fillStyle='#1e293b';ctx.fillText(rotulo,0,0);ctx.restore()});
+            if(tipo==='produtividade'&&valores.length){const media=valores.reduce((a,b)=>a+b,0)/valores.length,y=base-(base-topo)*(media/maxEscala);ctx.save();ctx.setLineDash([14,10]);ctx.strokeStyle='#0f172a';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(esquerda,y);ctx.lineTo(direita,y);ctx.stroke();ctx.restore();const texto='Media: '+media.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' sc/ha';ctx.font='bold 20px Arial';const w=ctx.measureText(texto).width+28;ctx.fillStyle='#fff';ctx.strokeStyle='#0f172a';ctx.lineWidth=2;ctx.fillRect(direita-w,28,w,42);ctx.strokeRect(direita-w,28,w,42);ctx.fillStyle='#0f172a';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(texto,direita-w/2,49)}
+            ctx.fillStyle='#475569';ctx.font='18px Arial';ctx.textAlign='center';ctx.fillText(tipo==='producao'?'Producao (sacas)':'Produtividade (sc/ha)',34,(topo+base)/2);
+            return canvas.toDataURL('image/jpeg',0.92);
+        }
+
+        function atualizarGraficosPdf(registros) {
+            const prod=document.getElementById('pdf-chart-prod-img'),prodty=document.getElementById('pdf-chart-prodty-img');
+            if(prod)prod.src=montarGraficoPdf(registros,'producao');
+            if(prodty)prodty.src=montarGraficoPdf(registros,'produtividade');
+            const esc=v=>String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+            const legendaProducao=registros.map((r,i)=>'<div><strong>'+(i+1)+'</strong> — '+esc(r.nome)+' <span style="color:#15803d;font-weight:700;">('+r.total.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' sc)</span></div>').join('');
+            const legendaProdutividade=registros.map((r,i)=>'<div><strong>'+(i+1)+'</strong> — '+esc(r.nome)+' <span style="color:#b45309;font-weight:700;">('+r.produtividade.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' sc/ha)</span></div>').join('');
+            const l1=document.getElementById('pdf-chart-prod-legend'),l2=document.getElementById('pdf-chart-prodty-legend');if(l1)l1.innerHTML=legendaProducao;if(l2)l2.innerHTML=legendaProdutividade;
         }
 
         function toggleAgronomist(index) {
@@ -1501,12 +1558,6 @@
 
             saveStoredFarm(farmObj);
 
-            try {
-                let deletedFarms = JSON.parse(localStorage.getItem('agri_prod_deleted_farms') || '[]');
-                deletedFarms = deletedFarms.filter(function(n) { return n.toLowerCase() !== farmName.toLowerCase(); });
-                localStorage.setItem('agri_prod_deleted_farms', JSON.stringify(deletedFarms));
-            } catch(e) {}
-
             populateFarmDropdown();
 
             const select = document.getElementById('farm-select');
@@ -1548,19 +1599,6 @@
                 EMBEDDED_DATABASE.splice(farmIdx, 1);
             }
 
-            try {
-                let storedFarms = JSON.parse(localStorage.getItem('agri_prod_custom_farms') || '[]');
-                storedFarms = storedFarms.filter(function(f) { return f.farm.toLowerCase() !== farmToDelete.toLowerCase(); });
-                localStorage.setItem('agri_prod_custom_farms', JSON.stringify(storedFarms));
-
-                let deletedFarms = JSON.parse(localStorage.getItem('agri_prod_deleted_farms') || '[]');
-                if (!deletedFarms.includes(farmToDelete)) {
-                    deletedFarms.push(farmToDelete);
-                }
-                localStorage.setItem('agri_prod_deleted_farms', JSON.stringify(deletedFarms));
-            } catch(e) {
-                console.error("Erro ao salvar exclusão", e);
-            }
             if(window.DoCampoData)window.DoCampoData.removeFarm(farmToDelete);
 
             selectedFarm = "";
@@ -1854,6 +1892,8 @@
             const pdfFarmP2 = document.getElementById('pdf-farm-p2');
             const pdfCpfP2 = document.getElementById('pdf-cpf-p2');
             const pdfAddressP2 = document.getElementById('pdf-address-p2');
+            const pdfProducerP3 = document.getElementById('pdf-producer-p3');
+            const pdfFarmP3 = document.getElementById('pdf-farm-p3');
 
             const prodNameText = farmData ? farmData.producer : '--';
             const farmNameText = farmData ? farmData.farm : '--';
@@ -1869,6 +1909,8 @@
             if (pdfFarmP2) pdfFarmP2.innerText = farmNameText;
             if (pdfCpfP2) pdfCpfP2.innerText = cpfText;
             if (pdfAddressP2) pdfAddressP2.innerText = addressText;
+            if (pdfProducerP3) pdfProducerP3.innerText = prodNameText;
+            if (pdfFarmP3) pdfFarmP3.innerText = farmNameText;
 
             const cropInput = document.getElementById('crop-name');
             const safraSelect = document.getElementById('safra-select');
@@ -1888,6 +1930,7 @@
 
             let totalArea = 0;
             let totalVolumeSacks = 0;
+            const registrosGraficos = [];
             const pdfTbody = document.getElementById('pdf-production-tbody');
             if (pdfTbody) pdfTbody.innerHTML = '';
 
@@ -1900,6 +1943,7 @@
                     totalVolumeSacks += sacks;
 
                     const prodPerHa = f.area > 0 ? (sacks / f.area) : 0;
+                    registrosGraficos.push({nome:f.name,total:Number(sacks.toFixed(2)),produtividade:Number(prodPerHa.toFixed(2))});
                     const obsText = entry.obs ? '<br><span style="font-size: 8px; color: #64748b;">Obs: ' + entry.obs + '</span>' : '';
 
                     if (pdfTbody) {
@@ -1935,18 +1979,7 @@
             if (pdfSummaryVolumeP2) pdfSummaryVolumeP2.innerText = volText;
             if (pdfSummaryAvgP2) pdfSummaryAvgP2.innerText = avgText;
 
-            const pdfChartProdImg = document.getElementById('pdf-chart-prod-img');
-            const pdfChartProdtyImg = document.getElementById('pdf-chart-prodty-img');
-
-            if (productionChartInstance && pdfChartProdImg) {
-                pdfChartProdImg.src = productionChartInstance.toBase64Image();
-            }
-            if (productivityChartInstance && pdfChartProdtyImg) {
-                pdfChartProdtyImg.src = productivityChartInstance.toBase64Image();
-            }
-            const screenLegend=document.getElementById('productionChartLegend')?.innerHTML||'';
-            const pdfLegend1=document.getElementById('pdf-chart-prod-legend'),pdfLegend2=document.getElementById('pdf-chart-prodty-legend');
-            if(pdfLegend1)pdfLegend1.innerHTML=screenLegend;if(pdfLegend2)pdfLegend2.innerHTML=screenLegend;
+            atualizarGraficosPdf(registrosGraficos);
 
             const signaturesContainer = document.getElementById('pdf-signatures-container');
             if (signaturesContainer) {
@@ -1985,6 +2018,7 @@
         }
 
         function confirmSavePDF() {
+            if(pdfGenerationActive){showAlert('O documento ainda está sendo gerado. Aguarde a conclusão.');return;}
             if (!selectedFarm) {
                 showAlert("Por favor, selecione uma fazenda antes de gerar o relatório em PDF.");
                 return;
@@ -2001,6 +2035,8 @@
             }
 
             updatePDFPreview();
+            pdfGenerationActive=true;
+            const saveButton=document.getElementById('pdf-save-button');if(saveButton)saveButton.disabled=true;
 
             const btnText = document.getElementById('btn-pdf-text');
             if (btnText) btnText.innerText = "Gerando PDF...";
@@ -2027,7 +2063,7 @@
             const opt = {
                 margin:       0,
                 filename:     filename,
-                image:        { type: 'jpeg', quality: 0.98 },
+                image:        { type: 'jpeg', quality: 0.92 },
                 html2canvas:  { 
                     scale: 2, 
                     useCORS: true, 
@@ -2053,18 +2089,21 @@
                         if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
                         if (wrapper) wrapper.classList.add('hidden');
                         if (btnText) btnText.innerText = "Visualizar relatório";
+                        pdfGenerationActive=false;if(saveButton)saveButton.disabled=false;
                     }).catch(function(err) {
                         console.error("Falha ao gerar ou salvar PDF", err);
                         if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
                         alert(err && err.message ? err.message : 'Não foi possível gerar e salvar o PDF. Tente novamente.');
                         if (wrapper) wrapper.classList.add('hidden');
                         if (btnText) btnText.innerText = "Visualizar relatório";
+                        pdfGenerationActive=false;if(saveButton)saveButton.disabled=false;
                     });
                 } else {
                     if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
                     alert('O gerador de PDF não foi carregado. Feche e abra o aplicativo e tente novamente.');
                     if (wrapper) wrapper.classList.add('hidden');
                     if (btnText) btnText.innerText = "Visualizar relatório";
+                    pdfGenerationActive=false;if(saveButton)saveButton.disabled=false;
                 }
             }, 300);
         }

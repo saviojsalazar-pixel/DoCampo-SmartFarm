@@ -1,0 +1,18 @@
+const assert=require('assert'),fs=require('fs'),vm=require('vm');
+const store=new Map(),localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,String(v))};
+const context={console,localStorage,navigator:{onLine:true},crypto:{getRandomValues(bytes){for(let i=0;i<bytes.length;i++)bytes[i]=(i*17+31)%256;return bytes}},CustomEvent:function(){},setTimeout(){},window:{dispatchEvent(){},addEventListener(){}}};context.window.window=context.window;
+vm.createContext(context);vm.runInContext(fs.readFileSync('www/unified-db.js','utf8'),context);
+const db=context.window.DoCampoDB;
+let visit=db.upsert('visits',{id:'visit-1',farmName:'Fazenda',checklist:[]});
+for(let i=0;i<30;i++)visit=db.upsert('visits',{...visit,checklist:[{talhao:'T '+i,obs:'x'.repeat(1000)}]});
+assert.strictEqual(db.pendingEvents().filter(e=>e.entityId==='visit-1').length,1,'Rascunhos repetidos devem ocupar um unico evento pendente.');
+assert.match(db.pendingEvents()[0].id,/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,'Evento deve usar UUID valido no Android antigo.');
+db.softDelete('visits','visit-1');
+const remote={id:'11111111-1111-4111-8111-111111111111',entity_type:'visits',entity_id:'visit-1',operation:'upsert',device_id:'outro',created_at:'2099-01-01T00:00:00.000Z',payload:{id:'visit-1',farmName:'Copia antiga',updatedAt:'2099-01-01T00:00:00.000Z'}};
+assert.strictEqual(db.applyRemote(remote),'tombstone');
+assert.ok(db.get('visits','visit-1').deletedAt,'Copia remota antiga nao pode desfazer exclusao.');
+db.upsert('visits',{id:'visit-shared',farmName:'Fazenda',checklist:[{talhao:'1',obs:'local'}]});
+const shared={id:'22222222-2222-4222-8222-222222222222',entity_type:'visits',entity_id:'visit-shared',operation:'upsert',device_id:'outro',created_at:'2099-01-02T00:00:00.000Z',payload:{id:'visit-shared',farmName:'Fazenda',updatedAt:'2099-01-02T00:00:00.000Z',checklist:[{talhao:'2',obs:'remoto'}]}};
+assert.strictEqual(db.applyRemote(shared),'merged','Talhoes distintos da mesma visita devem ser combinados automaticamente.');
+assert.deepStrictEqual(Array.from(db.get('visits','visit-shared').checklist,x=>x.talhao).sort(),['1','2']);
+console.log('storage-stability: ok');

@@ -1077,8 +1077,12 @@
         }
 
         function salvarAvaliacoes() {
-            try { localStorage.setItem('docampo_listaAvaliacoes', JSON.stringify(listaAvaliacoes)); } catch (e) {}
-            if (window.DoCampoDB) {
+            // A lista antiga permanece apenas como compatibilidade e sem copiar
+            // as fotos. A versao completa e autoritativa fica na visita do banco
+            // unificado, evitando duplicar Base64 e esgotar o localStorage.
+            const legado=listaAvaliacoes.map(item=>({...item,pontosGps:(item.pontosGps||[]).map(p=>{const copia={...p};delete copia.foto;return copia})}));
+            try { localStorage.setItem('docampo_listaAvaliacoes', JSON.stringify(legado)); } catch (e) { console.warn('Compatibilidade antiga do checklist nao foi gravada:',e); }
+            if (window.DoCampoDB) try {
                 let draftId = localStorage.getItem('docampo_current_visit_id');
                 const visit = window.DoCampoDB.upsert('visits', {
                     id: draftId || undefined,
@@ -1091,7 +1095,7 @@
                     formDraft: capturarRascunhoFormulario()
                 });
                 localStorage.setItem('docampo_current_visit_id', visit.id);
-            }
+            } catch(error) { exibirToast(error.message||'Nao foi possivel salvar o checklist neste aparelho.','bg-red-700'); throw error; }
             salvarAvaliacoesFirestore();
         }
 
@@ -1116,13 +1120,18 @@
         }
         function salvarRascunhoFormulario() {
             const draft=capturarRascunhoFormulario();
-            try { localStorage.setItem(CHAVE_RASCUNHO_FORMULARIO,JSON.stringify(draft)); }
-            catch(error){exibirToast('O aparelho está sem espaço para salvar o rascunho e as fotos.','bg-red-700');return;}
-            if(window.DoCampoDB&&(draft.farmName||listaAvaliacoes.length)){
+            let salvoNoBanco=false;
+            if(window.DoCampoDB&&(draft.farmName||listaAvaliacoes.length))try{
                 const id=localStorage.getItem('docampo_current_visit_id');
                 const visit=DoCampoDB.upsert('visits',{id:id||undefined,status:'em_andamento',producerName:draft.producerName,farmName:draft.farmName,visitDate:draft.visitDate,checklist:JSON.parse(JSON.stringify(listaAvaliacoes)),generalNotes:draft.observacoesGerais.trim(),formDraft:draft});
                 localStorage.setItem('docampo_current_visit_id',visit.id);
-            }
+                salvoNoBanco=true;
+            }catch(error){exibirToast(error.message||'O aparelho esta sem espaco para salvar o rascunho.','bg-red-700');return false;}
+            const copiaLegada=JSON.parse(JSON.stringify(draft));
+            if(salvoNoBanco)(copiaLegada.pontosGps||[]).forEach(p=>delete p.foto);
+            try { localStorage.setItem(CHAVE_RASCUNHO_FORMULARIO,JSON.stringify(copiaLegada)); }
+            catch(error){if(!salvoNoBanco){exibirToast('O aparelho esta sem espaco para salvar o rascunho e as fotos.','bg-red-700');return false;}}
+            return true;
         }
         function agendarSalvamentoRascunho(){clearTimeout(temporizadorRascunho);temporizadorRascunho=setTimeout(salvarRascunhoFormulario,650)}
         function restaurarRascunhoFormulario(draft) {
