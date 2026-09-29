@@ -34,12 +34,12 @@
     catch(error){
       compact(d);
       try{localStorage.setItem(DB_KEY,JSON.stringify(d))}
-      catch(second){const failure=new Error('O armazenamento deste aparelho esta cheio. Remova fotos antigas ou documentos e tente novamente.');failure.cause=second;throw failure}
+      catch(second){const failure=new Error('A base local do aplicativo atingiu o limite de gravação. Seus arquivos não serão apagados. Exporte um backup e use “Otimizar armazenamento”.');failure.code='LOCAL_DATABASE_QUOTA';failure.cause=second;throw failure}
     }
     emit();return d
   }
   function emit(){window.dispatchEvent(new CustomEvent('docampo:db-status',{detail:status()}))}
-  function eventFor(type,id,operation,payload,baseRevision){return{id:uuid(),entityType:type,entityId:id,operation,payload,deviceId:deviceId(),userName:user(),createdAt:now(),baseRevision:baseRevision||0,appVersion:'1.9.44'}}
+  function eventFor(type,id,operation,payload,baseRevision){return{id:uuid(),entityType:type,entityId:id,operation,payload,deviceId:deviceId(),userName:user(),createdAt:now(),baseRevision:baseRevision||0,appVersion:'1.9.45'}}
   function enqueueLatest(d,ev){
     const queued=new Set(d.queue||[]);
     const obsolete=(d.events||[]).filter(old=>queued.has(old.id)&&old.entityType===ev.entityType&&old.entityId===ev.entityId).map(old=>old.id);
@@ -58,6 +58,7 @@
   function patchDocumentLocal(id,patch){let d=read(),doc=d.entities.documents?.[id];if(!doc)return null;d.entities.documents[id]={...doc,...patch,updatedAt:doc.updatedAt};let queued=new Set(d.queue);d.events=d.events.map(ev=>queued.has(ev.id)&&ev.entityType==='documents'&&ev.entityId===id?{...ev,payload:{...ev.payload,...patch}}:ev);write(d);return d.entities.documents[id]}
   function patchDocumentCloud(id,patch){let d=read(),doc=d.entities.documents?.[id];if(!doc)return null;let queued=new Set(d.queue),hasQueued=false,record={...doc,...patch};d.events=d.events.map(ev=>{if(queued.has(ev.id)&&ev.entityType==='documents'&&ev.entityId===id){hasQueued=true;return{...ev,payload:{...ev.payload,...patch}}}return ev});if(!hasQueued){let oldRevision=doc.revision||0;record={...record,revision:oldRevision+1,updatedAt:now(),updatedBy:user(),deviceId:deviceId()};let ev=eventFor('documents',id,'upsert',record,oldRevision);d.events.push(ev);d.queue.push(ev.id)}d.entities.documents[id]=record;write(d);return record}
   function status(){let d=read();return{online:navigator.onLine,pending:d.queue.length,conflicts:d.conflicts.length,lastSyncAt:d.lastSyncAt,configured:!!window.DoCampoCloudConfig?.configured,deviceId:deviceId(),user:user()}}
+  function optimize(){let d=read(),before=JSON.stringify(d).length;compact(d);write(d);return{before,after:JSON.stringify(d).length,events:d.events.length,pending:d.queue.length}}
   function pendingEvents(){let d=read(),set=new Set(d.queue);return d.events.filter(e=>set.has(e.id))}
   function markSynced(ids,cursor){let d=read(),set=new Set(ids),stamp=now();d.queue=d.queue.filter(id=>!set.has(id));d.events=d.events.map(e=>set.has(e.id)?{...e,syncedAt:stamp}:e);d.lastSyncAt=stamp;if(cursor)d.lastRemoteCursor=cursor;compact(d);write(d)}
   function applyRemote(ev){
@@ -97,6 +98,6 @@
   }
   function resolveConflict(id,choice){let d=read(),c=d.conflicts.find(x=>x.id===id&&!x.resolvedAt);if(!c)return false;c.resolvedAt=now();c.resolution=choice;write(d);if(choice==='remote')upsert(c.entityType,{...c.remote,id:c.entityId});else upsert(c.entityType,{...c.local,id:c.entityId});return true}
   function migrateLegacy(){let d=read();if(d.migratedLegacy)return;let shared={};try{shared=JSON.parse(localStorage.getItem('docampo_shared_v1')||'{}')}catch(_){};(shared.farms||[]).forEach(f=>{let farm=upsert('farms',{name:f.farm,producerName:f.producer||'',cpf:f.cpf||'',address:f.address||'',verified:true},{enqueue:false});(f.fields||[]).forEach(field=>upsert('fields',{farmId:farm.id,name:field.name,area:Number(field.area)||0,plants:Number(field.plants)||0,verified:true},{enqueue:false}))});Object.entries(shared.products||{}).forEach(([category,items])=>(items||[]).forEach(p=>upsert('products',{...p,category,verified:p.verified===true},{enqueue:false})));d=read();d.migratedLegacy=true;write(d)}
-  window.DoCampoDB={read,list,get,upsert,softDelete,restore,hardDelete,archiveOldDocuments,addDocument,patchDocumentLocal,patchDocumentCloud,status,pendingEvents,markSynced,applyRemote,resolveConflict,setUser,user,deviceId,migrateLegacy};
+  window.DoCampoDB={read,list,get,upsert,softDelete,restore,hardDelete,archiveOldDocuments,addDocument,patchDocumentLocal,patchDocumentCloud,status,optimize,pendingEvents,markSynced,applyRemote,resolveConflict,setUser,user,deviceId,migrateLegacy};
   migrateLegacy();window.addEventListener('online',emit);window.addEventListener('offline',emit);setTimeout(emit,0);
 })();

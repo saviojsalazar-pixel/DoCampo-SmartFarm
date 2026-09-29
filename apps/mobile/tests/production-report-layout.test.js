@@ -6,6 +6,7 @@ assert(html.includes("atualizarGraficosPdf(registrosGraficos)"),'PDF deve usar g
 assert(!html.includes('productionChartInstance.toBase64Image()'),'PDF nao pode reutilizar a captura comprimida da tela.');
 assert(html.includes("passoArredondado"),'Eixo deve usar intervalos arredondados.');
 assert(html.includes("ctx.rotate(-Math.PI/3)"),'Valores devem ser posicionados para evitar sobreposicao.');
+assert(html.includes("ctx.rotate(-Math.PI/2)"),'Titulo do eixo Y deve ficar vertical e totalmente visivel.');
 assert(pdf.includes('querySelectorAll?.(\'img\')'),'Gerador deve aguardar imagens antes da captura.');
 assert(pdf.includes('Tempo excedido ao montar o documento.'),'Geracao travada precisa liberar nova tentativa.');
 console.log('production-report-layout: ok');

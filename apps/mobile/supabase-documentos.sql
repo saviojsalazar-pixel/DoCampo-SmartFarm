@@ -1,8 +1,8 @@
--- Do Campo SmartFarm - armazenamento privado de PDFs
+-- Do Campo SmartFarm - armazenamento privado de PDFs e fotos do checklist
 -- Executar uma única vez no SQL Editor do projeto Supabase.
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('docampo-documents', 'docampo-documents', false, 20971520, array['application/pdf'])
+values ('docampo-documents', 'docampo-documents', false, 20971520, array['application/pdf','image/jpeg'])
 on conflict (id) do update set
   public = excluded.public,
   file_size_limit = excluded.file_size_limit,

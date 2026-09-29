@@ -13,6 +13,8 @@
     <script src="vendor/pdfjs/pdf.min.js"></script>
     <script src="supabase-config.js"></script>
     <script src="unified-db.js"></script>
+    <script src="cloud-auth.js"></script>
+    <script src="photo-storage.js"></script>
     <script src="shared-data.js"></script>
     <script src="registry-loader.js"></script>
     <script src="sync-engine.js"></script>
@@ -802,8 +804,9 @@
             elemento.style.height = Math.max(elemento.scrollHeight, elemento.id === 'observacoesGerais' ? 190 : 150) + 'px';
         }
 
-        function carregarVisitaNoFormulario(visita) {
+        async function carregarVisitaNoFormulario(visita) {
             if (!visita) return;
+            if(window.DoCampoPhotos)await DoCampoPhotos.hydrateVisits([visita]);
             localStorage.setItem('docampo_current_visit_id', visita.id);
             listaAvaliacoes = JSON.parse(JSON.stringify(visita.checklist || []));
             localStorage.setItem('docampo_listaAvaliacoes', JSON.stringify(listaAvaliacoes));
@@ -914,15 +917,16 @@
                     fazendaSelect.value = visitaAtual.farmName;
                     fazendaSelect.dispatchEvent(new Event('change'));
                 }
-                carregarVisitaNoFormulario(visitaAtual);
+                await carregarVisitaNoFormulario(visitaAtual);
             }
             let rascunhoLocal=null;try{rascunhoLocal=JSON.parse(localStorage.getItem(CHAVE_RASCUNHO_FORMULARIO)||'null')}catch(_){}
             const rascunhoBanco=visitaAtual&&visitaAtual.formDraft;
             const rascunho=String(rascunhoBanco?.savedAt||'')>String(rascunhoLocal?.savedAt||'')?rascunhoBanco:rascunhoLocal;
             if(rascunho&&(rascunho.talhao||rascunho.observacoes||(rascunho.pontosGps||[]).length||(rascunho.pragas||[]).length||(rascunho.indicacoes||[]).length)){
-                restaurarRascunhoFormulario(rascunho);exibirToast('Rascunho do checklist recuperado.','bg-blue-700');
+                await restaurarRascunhoFormulario(rascunho);exibirToast('Rascunho do checklist recuperado.','bg-blue-700');
             }
             document.getElementById('btnContinuarVisitaCompartilhada')?.addEventListener('click', () => carregarVisitaNoFormulario(visitaCompartilhadaCandidata));
+            if(window.DoCampoPhotos&&window.DoCampoDB){DoCampoPhotos.migrateDatabasePhotos().then(()=>DoCampoPhotos.syncVisits(DoCampoDB.list('visits'))).catch(()=>{})}
             window.addEventListener('docampo:sync-complete', () => procurarVisitaCompartilhada(fazendaSelect.value));
             console.info('Modo de campo offline ativo: dados salvos neste aparelho.');
         }
@@ -1134,7 +1138,7 @@
             return true;
         }
         function agendarSalvamentoRascunho(){clearTimeout(temporizadorRascunho);temporizadorRascunho=setTimeout(salvarRascunhoFormulario,650)}
-        function restaurarRascunhoFormulario(draft) {
+        async function restaurarRascunhoFormulario(draft) {
             if(!draft||typeof draft!=='object')return;
             if(draft.farmName&&talhoesPorFazenda[draft.farmName]){fazendaSelect.value=draft.farmName;fazendaSelect.dispatchEvent(new Event('change'));}
             if(draft.talhao){talhaoSelect.disabled=false;talhaoSelect.value=draft.talhao;}
@@ -1144,7 +1148,9 @@
             marcarGrupoAvaliacao('pragas',draft.pragas||[]);marcarGrupoAvaliacao('doencas',draft.doencas||[]);marcarGrupoAvaliacao('mato',draft.mato||[]);marcarGrupoAvaliacao('indicacoes',draft.indicacoes||[]);
             document.querySelectorAll('input[name="situacaoColheita"]').forEach(x=>x.checked=x.value===(draft.situacaoColheita||''));
             document.getElementById('observacoes').value=draft.observacoes||'';document.getElementById('observacoesGerais').value=draft.observacoesGerais||'';
-            pontosGpsEmEdicao=Array.isArray(draft.pontosGps)?JSON.parse(JSON.stringify(draft.pontosGps)):[];renderizarPontosGps();
+            pontosGpsEmEdicao=Array.isArray(draft.pontosGps)?JSON.parse(JSON.stringify(draft.pontosGps)):[];
+            if(window.DoCampoPhotos)await DoCampoPhotos.hydratePoints(pontosGpsEmEdicao);
+            renderizarPontosGps();
             tarefasManuaisEmEdicao=Array.isArray(draft.manualTasks)?draft.manualTasks.map(tarefaManualNormalizada):[];renderizarTarefasManuais();
             statusTarefasAutomaticasEmEdicao=draft.automaticTaskStatus&&typeof draft.automaticTaskStatus==='object'?JSON.parse(JSON.stringify(draft.automaticTaskStatus)):{};renderizarTarefasAutomaticas();
             indiceEdicao=Number.isInteger(draft.indiceEdicao)?draft.indiceEdicao:-1;atualizarModoEdicao();
@@ -2021,19 +2027,36 @@
             agendarSalvamentoRascunho();
         }
 
-        function selecionarFotoPonto(index, origem) {
+        async function selecionarFotoPonto(index, origem) {
             indiceFotoPonto = index;
+            if(origem==='camera'){
+                const cap=window.Capacitor,plugin=cap?.registerPlugin?cap.registerPlugin('PhotoCapture'):cap?.Plugins?.PhotoCapture;
+                if(plugin&&cap?.isNativePlatform?.()){
+                    try{const result=await plugin.takePhoto();await salvarFotoProcessada(await comprimirDataUriChecklist(result.dataUrl));return}catch(error){if(!/cancel/i.test(String(error?.message||error)))exibirToast(error.message||'Não foi possível abrir a câmera.','bg-red-700');return}
+                }
+            }
             const input = document.getElementById(origem==='galeria'?'fotoPontoGaleriaInput':'fotoPontoCameraInput');
             if (input) { input.value = ''; input.click(); }
         }
         function comprimirFotoChecklist(arquivo) {
             return new Promise((resolve,reject)=>{const leitor=new FileReader();leitor.onerror=()=>reject(new Error('Não foi possível ler a foto.'));leitor.onload=()=>{const img=new Image();img.onerror=()=>reject(new Error('Formato de imagem não suportado.'));img.onload=()=>{const limite=1024,escala=Math.min(1,limite/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*escala));canvas.height=Math.max(1,Math.round(img.height*escala));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/jpeg',0.65))};img.src=leitor.result};leitor.readAsDataURL(arquivo)});
         }
-        async function processarFotoPonto(event) {
-            const arquivo=event.target.files&&event.target.files[0],ponto=pontosGpsEmEdicao[indiceFotoPonto];if(!arquivo||!ponto)return;
-            try{ponto.foto=await comprimirFotoChecklist(arquivo);ponto.fotoRegistradaEm=new Date().toISOString();renderizarPontosGps();agendarSalvamentoRascunho();exibirToast('Foto salva neste ponto.','bg-emerald-700')}catch(error){exibirToast(error.message||'Não foi possível adicionar a foto.','bg-red-700')}
+        function comprimirDataUriChecklist(dataUri) {
+            return new Promise((resolve,reject)=>{const img=new Image();img.onerror=()=>reject(new Error('Formato de imagem não suportado.'));img.onload=()=>{const limite=1024,escala=Math.min(1,limite/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*escala));canvas.height=Math.max(1,Math.round(img.height*escala));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/jpeg',0.65))};img.src=dataUri});
         }
-        function removerFotoPonto(index){if(!pontosGpsEmEdicao[index])return;delete pontosGpsEmEdicao[index].foto;delete pontosGpsEmEdicao[index].fotoRegistradaEm;renderizarPontosGps();agendarSalvamentoRascunho();exibirToast('Foto removida do ponto.','bg-gray-700')}
+        async function salvarFotoProcessada(dataUri){
+            const ponto=pontosGpsEmEdicao[indiceFotoPonto];if(!ponto||!dataUri)return;
+            if(window.DoCampoPhotos){const meta=await DoCampoPhotos.save(dataUri,ponto.photoId);Object.assign(ponto,meta);delete ponto.foto;DoCampoPhotos.transient(ponto,dataUri);DoCampoPhotos.upload(ponto).catch(()=>{})}
+            else ponto.foto=dataUri;
+            ponto.fotoRegistradaEm=new Date().toISOString();renderizarPontosGps();
+            if(!salvarRascunhoFormulario())throw new Error('A foto foi capturada, mas o checklist não pôde ser salvo.');
+            exibirToast('Foto salva neste ponto.','bg-emerald-700');
+        }
+        async function processarFotoPonto(event) {
+            const arquivo=event.target.files&&event.target.files[0];if(!arquivo||!pontosGpsEmEdicao[indiceFotoPonto])return;
+            try{await salvarFotoProcessada(await comprimirFotoChecklist(arquivo))}catch(error){exibirToast(error.message||'Não foi possível adicionar a foto.','bg-red-700')}
+        }
+        async function removerFotoPonto(index){const ponto=pontosGpsEmEdicao[index];if(!ponto||!confirm('Remover esta foto do ponto?'))return;if(window.DoCampoPhotos)await DoCampoPhotos.remove(ponto);delete ponto.foto;delete ponto.photoId;delete ponto.photoLocalPath;delete ponto.photoRemotePath;delete ponto.photoMime;delete ponto.fotoRegistradaEm;renderizarPontosGps();salvarRascunhoFormulario();exibirToast('Foto removida do ponto.','bg-gray-700')}
 
         function removerPontoGps(index) {
             pontosGpsEmEdicao.splice(index, 1);
@@ -2160,7 +2183,7 @@
             }
         }
 
-        function editarItem(index) {
+        async function editarItem(index) {
             const item = listaAvaliacoes[index];
             if (!item) return;
             indiceEdicao = index;
@@ -2184,6 +2207,7 @@
             document.querySelectorAll('input[name="situacaoColheita"]').forEach(opcao => { opcao.checked = opcao.value === (item.situacaoColheita || ''); });
             document.getElementById('observacoes').value = item.obs === '-' ? '' : (item.obs || '');
             pontosGpsEmEdicao = Array.isArray(item.pontosGps) ? JSON.parse(JSON.stringify(item.pontosGps)) : [];
+            if(window.DoCampoPhotos)await DoCampoPhotos.hydratePoints(pontosGpsEmEdicao);
             renderizarPontosGps();
             tarefasManuaisEmEdicao = Array.isArray(item.manualTasks) ? item.manualTasks.map(tarefaManualNormalizada) : [];
             renderizarTarefasManuais();
@@ -2381,6 +2405,7 @@
                 exibirToast("Adicione pelo menos um talhão antes de gerar o PDF!", "bg-amber-600");
                 return;
             }
+            if(window.DoCampoPhotos)for(const item of listaAvaliacoes)await DoCampoPhotos.hydratePoints(item.pontosGps);
 
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
@@ -2740,6 +2765,7 @@
                 exibirToast('Adicione pelo menos um talhão antes de gerar o PDF!', 'bg-amber-600');
                 return;
             }
+            if(window.DoCampoPhotos)for(const item of listaAvaliacoes)await DoCampoPhotos.hydratePoints(item.pontosGps);
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
             const logo = await carregarLogoChecklist();
@@ -2985,6 +3011,7 @@
         document.getElementById('monitoramentoForm')?.addEventListener('change',agendarSalvamentoRascunho);
         document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')salvarRascunhoFormulario()});
         window.addEventListener('pagehide',salvarRascunhoFormulario);
+        window.addEventListener('online',()=>{if(window.DoCampoPhotos&&window.DoCampoDB)DoCampoPhotos.syncVisits(DoCampoDB.list('visits')).catch(()=>{})});
         initFirebase();
     </script>
 </body>

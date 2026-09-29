@@ -70,7 +70,7 @@
         <div class="card future"><span class="icon">☂</span><span><h3>Meteorologia</h3><p>Chuva, sensores e condições de campo.</p><span class="tag">Em breve</span></span></div>
         <button type="button" class="card" id="openDataCenter" style="width:100%;text-align:left"><span class="icon">▦</span><span><h3>Dados salvos e sincronização</h3><p>Veja o que está armazenado e transfira os dados entre os celulares.</p><span class="tag">Disponível</span></span><span class="arrow">›</span></button>
       </div>
-      <footer><span class="status"><span class="dot"></span> Ferramentas disponíveis offline</span><br>Do Campo Agronegócios • Versão 1.9.44</footer>
+      <footer><span class="status"><span class="dot"></span> Ferramentas disponíveis offline</span><br>Do Campo Agronegócios • Versão 1.9.45</footer>
     </main>
   </div>
   <div id="dataModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="dataTitle">
@@ -101,6 +101,7 @@
         <button class="action-btn secondary" id="importBackup">Importar backup recebido</button>
         <input class="hidden-file" id="backupFile" type="file" accept="application/json,.json">
         <button class="action-btn cloud" id="cloudSync">Sincronizar online<small id="cloudHint">Entre na conta para enviar e receber registros.</small></button>
+        <button class="action-btn secondary" id="optimizeStorage" type="button">Otimizar armazenamento<small>Compacta a base e migra fotos antigas sem apagar visitas.</small></button>
       </div>
       <p class="data-note">O backup transfere fazendas, talhões, produtos, avaliações e histórico. A importação substitui e incorpora os dados presentes no arquivo.</p>
       <div id="maintenanceData" class="data-note"></div>
@@ -109,6 +110,7 @@
   <script src="supabase-config.js"></script>
   <script src="unified-db.js"></script>
   <script src="cloud-auth.js"></script>
+  <script src="photo-storage.js"></script>
   <script src="native-pdf.js"></script>
   <script src="sync-engine.js"></script>
   <script src="app-shell.js"></script>
@@ -126,7 +128,8 @@
     currentUser.onchange=()=>{DoCampoDB.setUser(currentUser.value);refreshStatus()};
     authLogin.onclick=async()=>{authLogin.disabled=true;authMessage.textContent='Conectando…';try{const a=await DoCampoAuth.signIn(authEmail.value,authPassword.value);authPassword.value='';authMessage.textContent='Conta conectada com segurança.';if(a.email=== 'glaucio.luciano.araujo@gmail.com'){currentUser.value='Dr. Glaucio Luciano Araujo';DoCampoDB.setUser(currentUser.value)}else if(a.email==='saviojsalazar@gmail.com'){currentUser.value='M.Sc. Sávio José Souza Salazar';DoCampoDB.setUser(currentUser.value)}refreshStatus()}catch(e){authMessage.textContent=e.message}finally{authLogin.disabled=false}};
     authLogout.onclick=()=>{DoCampoAuth.signOut();authMessage.textContent='Conta desconectada. Os dados locais permanecem no aparelho.';refreshStatus()};
-    cloudSync.onclick=async()=>{cloudSync.disabled=true;try{await DoCampoSync.sync();alert('Sincronização concluída.')}catch(e){alert(e.message)}finally{cloudSync.disabled=false;refreshStatus()}};
+    cloudSync.onclick=async()=>{cloudSync.disabled=true;try{await DoCampoSync.sync();if(window.DoCampoPhotos)await DoCampoPhotos.syncVisits(DoCampoDB.list('visits'));alert('Sincronização concluída.')}catch(e){alert(e.message)}finally{cloudSync.disabled=false;refreshStatus()}};
+    optimizeStorage.onclick=async()=>{optimizeStorage.disabled=true;try{const migrated=await DoCampoPhotos.migrateDatabasePhotos(),result=DoCampoDB.optimize(),space=await DoCampoPhotos.stats();const mb=n=>(n/1048576).toLocaleString('pt-BR',{maximumFractionDigits:1});maintenanceData.innerHTML='<strong>Otimização concluída.</strong><br>Visitas com fotos antigas migradas: '+migrated+'<br>Base textual: '+mb(result.before)+' MB → '+mb(result.after)+' MB'+(space.quota?'<br>Armazenamento do app/navegador: '+mb(space.used)+' MB de '+mb(space.quota)+' MB disponíveis':'');alert('Armazenamento otimizado sem apagar seus registros.')}catch(e){alert('Não foi possível otimizar: '+e.message)}finally{optimizeStorage.disabled=false}};
     window.addEventListener('docampo:db-status',refreshStatus);window.addEventListener('docampo:auth-change',refreshStatus);window.addEventListener('online',refreshStatus);window.addEventListener('offline',refreshStatus);window.addEventListener('docampo:sync-start',()=>{connectionStatus.textContent='Sincronizando dados dos dois aparelhos…'});window.addEventListener('docampo:sync-complete',refreshStatus);window.addEventListener('docampo:sync-error',refreshStatus);refreshStatus();
     function renderMaintenance(mode){const db=DoCampoDB.read(),docs=DoCampoDB.list('documents'),conflicts=db.conflicts.filter(c=>!c.resolvedAt),trash=db.trash||[];if(mode==='documents'){maintenanceData.innerHTML='<strong>Documentos registrados:</strong><br>'+(docs.length?docs.map(d=>'• '+d.name+' — '+new Date(d.generatedAt||d.createdAt).toLocaleString('pt-BR')).join('<br>'):'Nenhum documento registrado nesta versão.')}else{maintenanceData.innerHTML='<strong>Fila:</strong> '+db.queue.length+' aguardando envio<br><strong>Conflitos:</strong> '+conflicts.length+'<br><strong>Lixeira recuperável:</strong> '+trash.length+(conflicts.length?'<br><br>'+conflicts.map(c=>`Conflito em ${c.entityType}: <button onclick="DoCampoDB.resolveConflict('${c.id}','local');location.reload()">Manter deste celular</button> <button onclick="DoCampoDB.resolveConflict('${c.id}','remote');location.reload()">Usar versão recebida</button>`).join('<br>'):'')}}
   </script>

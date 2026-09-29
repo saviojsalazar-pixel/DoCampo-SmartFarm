@@ -13,7 +13,7 @@
     const statusConta = DoCampoAuth.status();
     if (!statusBanco.configured || !statusConta.authenticated) return;
     ultimaSincronizacaoAutomatica = Date.now();
-    try { await DoCampoSync.sync(); }
+    try { await DoCampoSync.sync(); if(window.DoCampoPhotos)await DoCampoPhotos.syncVisits(DoCampoDB.list('visits')); }
     catch (erro) { console.warn('Sincronização automática aguardando nova tentativa:', erro.message || erro); }
   }
 
@@ -80,7 +80,15 @@
   }
 
   async function exportBackup() {
-    const content = JSON.stringify(snapshot(), null, 2);
+    const backup=snapshot();backup.version=2;backup.media={};
+    if(window.DoCampoPhotos&&window.DoCampoDB){
+      await DoCampoPhotos.migrateDatabasePhotos().catch(()=>{});
+      for(const visit of DoCampoDB.list('visits',{deleted:true}).concat(DoCampoDB.list('visits'))){
+        const points=[...(visit.formDraft?.pontosGps||[])];for(const item of visit.checklist||[])points.push(...(item.pontosGps||[]));
+        for(const point of points)if(point.photoId&&!backup.media[point.photoId]){const data=await DoCampoPhotos.read(point).catch(()=>'');if(data)backup.media[point.photoId]=data}
+      }
+    }
+    const content = JSON.stringify(backup, null, 2);
     const filename = 'Backup_DoCampo_SmartFarm_' + new Date().toISOString().slice(0,10) + '.json';
     try {
       const cap=window.Capacitor,plugins=cap&&cap.Plugins;
@@ -140,10 +148,11 @@
 
   function importBackup(file) {
     const reader = new FileReader();
-    reader.onload = function () {
+    reader.onload = async function () {
       try {
         const backup = JSON.parse(reader.result);
         if (backup.format !== 'DoCampoSmartFarmBackup' || !backup.data) throw new Error('Formato inválido');
+        if(window.DoCampoPhotos&&backup.media)for(const [photoId,data] of Object.entries(backup.media))await DoCampoPhotos.save(data,photoId);
         localStorage.setItem('docampo_pre_import_backup_v1',JSON.stringify(snapshot()));
         const merged=mergeBackupData(backup.data);
         Object.entries(merged).forEach(([key, value]) => localStorage.setItem(key, typeof value==='string'?value:JSON.stringify(value)));
