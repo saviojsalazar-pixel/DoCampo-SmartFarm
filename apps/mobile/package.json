@@ -1,10 +1,11 @@
 {
   "name": "do-campo-smartfarm",
-  "version": "1.9.45",
+  "version": "1.9.46",
   "private": true,
   "scripts": {
     "android": "cap open android",
-    "sync": "cap sync android"
+    "sync": "cap sync android",
+    "test": "node tests/run-all.js"
   },
   "dependencies": {
     "@capacitor/android": "7.4.3",

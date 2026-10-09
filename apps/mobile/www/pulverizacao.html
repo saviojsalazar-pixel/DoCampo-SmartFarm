@@ -12,13 +12,14 @@
     <!-- html2pdf.js for Client-side PDF Generation -->
     <script src="vendor/pdf/html2pdf.bundle.min.js"></script>
     <script src="supabase-config.js"></script>
-    <script src="unified-db.js"></script>
+    <script src="unified-db.js"></script><script src="cloud-auth.js"></script><script src="photo-storage.js"></script>
     <script src="shared-data.js"></script>
     <script src="registry-loader.js"></script>
     <script src="checklist-filter.js"></script>
     <script src="sync-engine.js"></script>
     <script src="native-pdf.js"></script>
     <script src="document-code.js"></script>
+    <script src="form-drafts.js"></script>
     <script src="app-shell.js"></script>
 
     <script>
@@ -206,7 +207,7 @@
             <div class="flex flex-wrap items-center gap-3">
                 <div class="bg-slate-100 p-3 rounded-xl border border-slate-200 text-right min-w-[160px]">
                     <label for="rec-number-input" class="block text-xs font-semibold text-slate-500 uppercase cursor-pointer">Nº da Recomendação</label>
-                    <input type="text" id="rec-number-input" oninput="updateRecNumber(this.value)" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-sm font-bold font-mono text-emerald-800 text-right focus:ring-2 focus:ring-emerald-600 focus:outline-none mt-0.5" value="#DC-0001">
+                    <input type="text" id="rec-number-input" readonly class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-sm font-bold font-mono text-emerald-800 text-right mt-0.5" value="PUL-PRÉVIA">
                 </div>
                 <div class="bg-slate-100 p-3 rounded-xl border border-slate-200 text-right min-w-[150px]">
                     <p class="text-xs font-semibold text-slate-500 uppercase">Data da Prescrição</p>
@@ -838,7 +839,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                                     </div>
                                 </div>
                                 <div class="text-right">
-                                    <span id="pdf-rec-id" style="font-size: 10px; font-weight: 700; color: #15803d; display: block;">#DC-0000</span>
+                                    <span id="pdf-rec-id" style="font-size: 10px; font-weight: 700; color: #15803d; display: block;">PUL-PRÉVIA</span>
                                     <span id="pdf-date" style="font-size: 9.5px; color: #64748b;">--/--/----</span>
                                 </div>
                             </div>
@@ -975,7 +976,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                                     </div>
                                 </div>
                                 <div class="text-right">
-                                    <span id="pdf-rec-id-p2" style="font-size: 9.5px; font-weight: 700; color: #15803d; display: block;">#DC-0000</span>
+                                    <span id="pdf-rec-id-p2" style="font-size: 9.5px; font-weight: 700; color: #15803d; display: block;">PUL-PRÉVIA</span>
                                     <span style="font-size: 8.5px; color: #64748b;">Página 2 de 2</span>
                                 </div>
                             </div>
@@ -1144,348 +1145,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
     </div>
 
     <script>
-        const EMBEDDED_DATABASE = [
-            {
-                farm: "Fazenda Alcantilado-São Francisco",
-                producer: "Francisco Lacerda de Aguiar Neto",
-                cpf: "813.253.397-68",
-                address: "Avenida Governador Francisco, Bairro São Tiago, Guaçuí, Espírito Santo",
-                fields: [
-                    { name: "1.1 Fazenda", area: 3.7 },
-                    { name: "2.1 Joselito Piloto", area: 0.9 },
-                    { name: "3.1 Regiane Tavares", area: 1.6 },
-                    { name: "3.2 Luciana Lopes", area: 0.6 },
-                    { name: "3.3 Fazenda", area: 0.6 },
-                    { name: "3.4 João Martins", area: 0.7 },
-                    { name: "4.1 Jorge Gumeiro", area: 1.4 },
-                    { name: "4.2 Jorge Gumeiro", area: 0.4 },
-                    { name: "5.1 Jerusa Tavares", area: 0.4 },
-                    { name: "6.1 Angelica Flores", area: 0.2 },
-                    { name: "6.2 Fazenda", area: 1.3 },
-                    { name: "6.3 Jerusa Tavares", area: 1.1 },
-                    { name: "6.4 Viviane Flores", area: 0.8 },
-                    { name: "6.5 Sonia Tavares", area: 0.8 },
-                    { name: "6.6 Afonso Tavares", area: 1.7 },
-                    { name: "6.7 Joselito Piloto", area: 1.7 },
-                    { name: "7.1 José Flores", area: 0.8 },
-                    { name: "7.2 Fazenda", area: 1.1 },
-                    { name: "7.3 Fazenda", area: 1.6 },
-                    { name: "7.4 Maria Januária", area: 1.1 },
-                    { name: "7.5 Janaina Lourenço", area: 0.6 },
-                    { name: "7.6 Celi Raimundo", area: 2.3 },
-                    { name: "7.7 Izael da Silva", area: 0.6 },
-                    { name: "8.1 Fazenda", area: 0.5 },
-                    { name: "8.2 Alcemar Venancio", area: 0.8 },
-                    { name: "8.3 Fazenda", area: 0.8 },
-                    { name: "8.4 Fazenda", area: 0.6 },
-                    { name: "8.5 Angelica Flores", area: 0.6 },
-                    { name: "9.1 Edmilson Teixeira", area: 2.5 },
-                    { name: "9.2 Fazenda", area: 0.7 },
-                    { name: "10.1 Felipe Sabino", area: 0.9 },
-                    { name: "10.2 Fazenda", area: 1.3 },
-                    { name: "10.3 Fazenda", area: 0.5 },
-                    { name: "10.4 Fazenda", area: 0.7 },
-                    { name: "10.5 Fazenda", area: 1.2 },
-                    { name: "10.6 Fazenda", area: 0.6 },
-                    { name: "10.7 Fazenda", area: 1.2 },
-                    { name: "10.8 Fazenda", area: 1.1 },
-                    { name: "10.9 Fazenda", area: 0.4 },
-                    { name: "11.1 Moises Lourenço", area: 0.7 },
-                    { name: "11.2 Fazenda", area: 1.7 },
-                    { name: "11.3 Fazenda", area: 0.7 },
-                    { name: "11.4 Natalino Lourenço", area: 0.8 },
-                    { name: "11.5 João Lourenço", area: 0.6 },
-                    { name: "11.6 Fazenda", area: 2.3 },
-                    { name: "12.1 Moises Lourenço", area: 1.3 },
-                    { name: "12.2 Fazenda", area: 5.3 },
-                    { name: "14.1 Fazenda", area: 2.2 },
-                    { name: "14.2 Fazenda", area: 1.4 },
-                    { name: "15.1 Fazenda", area: 9.7 },
-                    { name: "15.2 Fazenda", area: 1.3 },
-                    { name: "15.3 Fazenda", area: 3.5 },
-                    { name: "16.1 Fazenda", area: 9.3 }
-                ]
-            },
-            {
-                farm: "Fazenda Cafarnaum",
-                producer: "Olavo de Sousa Costa",
-                cpf: "031.209.246-60",
-                address: "Praça Coronel Maximiano, 41, ap. 901, Centro, Carangola, Minas Gerais",
-                fields: [
-                    { name: "1. Boboleta", area: 1.7 },
-                    { name: "2. 2016", area: 10.0 },
-                    { name: "3. 2017", area: 10.0 },
-                    { name: "4. 2018", area: 12.6 },
-                    { name: "5. Recepa 2024", area: 10.7 }
-                ]
-            },
-            {
-                farm: "Fazenda Flávia Adriana Elvira",
-                producer: "Elvira Maria de Oliveira e Sousa",
-                cpf: "811.507.766-68",
-                address: "Córrego dos Vieiras, Dom Corrêa, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1.1 Realeza (esquerda)", area: 7.0 },
-                    { name: "1.2 Realeza (direita)", area: 5.0 },
-                    { name: "2.1 BR (direita)", area: 2.3 },
-                    { name: "2.2 BR (esquerda)", area: 1.6 },
-                    { name: "3.1 Recanto Recepa do Alto", area: 1.4 },
-                    { name: "3.2 Recanto Zé Carlos Velha", area: 2.8 },
-                    { name: "3.3 Recanto Recepa de Baixo", area: 1.1 },
-                    { name: "3.4 Recanto Zé Carlos Nova", area: 3.7 },
-                    { name: "3.5 Recanto Fiete", area: 1.9 },
-                    { name: "3.6 Recanto Leo Fortão", area: 1.8 },
-                    { name: "4.1 Alto Peão", area: 10.0 },
-                    { name: "5.1 Gameleira Velha", area: 0.9 },
-                    { name: "5.2 Gameleira Nova", area: 1.8 },
-                    { name: "5.3 Gameleira Plantio", area: 0.5 },
-                    { name: "6.1 Viturino Nascentes", area: 1.0 },
-                    { name: "6.2 Viturino Lav. das Pedras", area: 0.3 },
-                    { name: "6.3 Viturino Lav. Velha", area: 0.2 }
-                ]
-            },
-            {
-                farm: "Fazenda Hott",
-                producer: "Ronaldo Luiz Hott",
-                cpf: "570.632.906-06",
-                address: "Rua Ulisses Calheiros Araújo, 139, Bairro Bom Pastor, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1.1 Extrema", area: 1.7 },
-                    { name: "2.1 Diamante Broto", area: 0.6 },
-                    { name: "2.2 Diamante Recepa 25", area: 2.5 },
-                    { name: "2.3 Diamante Julio", area: 2.1 },
-                    { name: "3.1 Luan e Gabriel", area: 1.3 },
-                    { name: "3.2 Lagoinha + Ararinha", area: 1.6 },
-                    { name: "3.3 Terreiro", area: 1.7 },
-                    { name: "3.4 Pasto plantio 25", area: 2.2 },
-                    { name: "4.1 Eucalipto Nova", area: 4.2 },
-                    { name: "4.2 Eucalipto Velha", area: 2.0 },
-                    { name: "5.1 Abaixo do Mato", area: 3.0 },
-                    { name: "6.1 Gameleira Plantio 25", area: 1.1 },
-                    { name: "6.2 Gameleira do Alto", area: 1.2 },
-                    { name: "6.3 Gameleira Recepa 23", area: 0.6 },
-                    { name: "6.4 Gameleira de Baixo", area: 1.3 }
-                ]
-            },
-            {
-                farm: "Fazenda Mafort",
-                producer: "Otaviano Mendes Mafort",
-                cpf: "012.845.486-51",
-                address: "Córrego dos Hott, Zona Rural, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1.1 Alto da Pedra", area: 5.0 },
-                    { name: "1.2 Baixada do Alto", area: 1.7 },
-                    { name: "1.3 Otaviano Cachoeira 23", area: 3.3 },
-                    { name: "1.4 Gustavo Cachoeira 23", area: 0.7 },
-                    { name: "1.5 Davi Cachoeira 23", area: 0.7 },
-                    { name: "1.6 Cachoeira Recepa 23", area: 4.3 },
-                    { name: "1.7 Pasto", area: 3.8 },
-                    { name: "1.8 Agulheiro", area: 1.1 },
-                    { name: "1.9 Grota Gustavo Esq. 24", area: 0.8 },
-                    { name: "1.10 Grota Gustavo", area: 1.8 },
-                    { name: "1.11 Grota do Davi", area: 1.9 },
-                    { name: "1.12 Despolpador", area: 0.4 },
-                    { name: "1.13 Despolpador Davi", area: 0.3 },
-                    { name: "1.14 Lav 17 mil", area: 6.0 },
-                    { name: "1.15 Pasto dos Cabritos", area: 1.0 },
-                    { name: "1.16 Lav. do Barraco", area: 3.7 },
-                    { name: "1.17 Lav. do Eucalipto", area: 1.0 },
-                    { name: "1.18 Morro Redondo Recepa 24", area: 0.8 },
-                    { name: "1.19 Morro Redondo", area: 0.5 },
-                    { name: "1.20 Quintal", area: 0.6 },
-                    { name: "1.21 Lav. 11 mil", area: 5.5 },
-                    { name: "1.22 Lav. 5 mil", area: 2.5 },
-                    { name: "2.1 Hot Casa", area: 0.3 },
-                    { name: "2.2 785 do Hott Nova", area: 2.5 },
-                    { name: "2.3 Zé Carlos Hott", area: 2.5 },
-                    { name: "2.4 Hott Divisa do Orlando", area: 0.3 },
-                    { name: "3.1 Jaca Otaviano", area: 4.7 },
-                    { name: "3.2 Jaca Gustavo", area: 2.7 },
-                    { name: "4.1 Gameleira", area: 5.6 },
-                    { name: "5.1 Vila Margem Rio", area: 2.7 },
-                    { name: "5.2 Vila Ronaldo", area: 1.5 },
-                    { name: "5.3 Vila Terreiro", area: 0.8 },
-                    { name: "5.4 Vila Bananeiras", area: 3.5 },
-                    { name: "5.5 Vila Pé de Limão", area: 1.5 },
-                    { name: "5.6 Vila Canto da Mata", area: 0.2 },
-                    { name: "5.7 Vila Vestido", area: 0.7 },
-                    { name: "5.8 Vila Barra do Mato", area: 0.8 },
-                    { name: "5.9 Vila Barra da Pedra", area: 0.8 },
-                    { name: "5.11 Vila 3 Coqueiros", area: 1.5 },
-                    { name: "5.12 Vila Acima da Mata", area: 0.5 }
-                ]
-            },
-            {
-                farm: "Fazenda Riacho Fundo",
-                producer: "Mariana Raissa Moreira Martins",
-                cpf: "089.339.946-96",
-                address: "Rua Onofre Martins Chaves, 307, ap. 301, Bairro Centro, Matipó, Minas Gerais",
-                fields: [
-                    { name: "1.", area: 0.5 },
-                    { name: "2.", area: 1.1 },
-                    { name: "3.", area: 0.3 },
-                    { name: "4.", area: 0.3 },
-                    { name: "5.", area: 0.9 },
-                    { name: "6.", area: 2.7 },
-                    { name: "7.", area: 0.3 },
-                    { name: "8.", area: 0.5 },
-                    { name: "9.", area: 0.3 },
-                    { name: "10.", area: 0.6 },
-                    { name: "11.", area: 0.6 },
-                    { name: "12.", area: 0.3 },
-                    { name: "13.", area: 1.3 },
-                    { name: "14.", area: 1.3 },
-                    { name: "15.", area: 1.6 },
-                    { name: "16.", area: 0.9 },
-                    { name: "17.", area: 1.1 },
-                    { name: "18.", area: 1.6 },
-                    { name: "19.", area: 0.9 },
-                    { name: "20.", area: 0.6 },
-                    { name: "21.", area: 1.1 },
-                    { name: "22.", area: 0.9 }
-                ]
-            },
-            {
-                farm: "Fazenda Santa Apolinária",
-                producer: "Edna Huebra Alves",
-                cpf: "063.341.206-62",
-                address: "Fazenda Santa Apolinária, zona rural, Córrego Jequitibá, Reduto, Minas Gerais",
-                fields: [
-                    { name: "1. Brotos", area: 0.7 },
-                    { name: "2. Acima do Secador", area: 1.9 },
-                    { name: "3. Abaixo do Secador", area: 0.7 },
-                    { name: "4. Canto da Mata", area: 1.0 }
-                ]
-            },
-            {
-                farm: "Fazendas Café Realeza",
-                producer: "Luiz Eduardo Santos de Sousa",
-                cpf: "148.005.796-78",
-                address: "Córrego dos Dutra, São Pedro do Avaí, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1.1 São Pedro", area: 4.3 },
-                    { name: "1.2 São Pedro", area: 2.0 },
-                    { name: "2.1 Vila Cruzeiro", area: 3.4 },
-                    { name: "2.2 Vila Natal", area: 2.0 },
-                    { name: "2.3 Vila", area: 14.0 },
-                    { name: "2.4 Vila Pomar", area: 0.8 },
-                    { name: "2.5 Vila Galpão", area: 1.5 },
-                    { name: "2.6 Vila Eucalipto", area: 1.5 },
-                    { name: "2.7 Vila Curral", area: 1.5 },
-                    { name: "2.8 Vila Arara", area: 1.7 },
-                    { name: "3.1 Realeza 785", area: 0.8 },
-                    { name: "3.2 Realeza Lav. da Pedra", area: 0.7 },
-                    { name: "3.3 Realeza Arara", area: 1.0 },
-                    { name: "3.4 Realeza Velha 10", area: 10.0 },
-                    { name: "3.5 Realeza Nova", area: 28.0 },
-                    { name: "4.1 Taquara Velha", area: 13.5 },
-                    { name: "4.2 Taquara Esqueletada", area: 2.5 }
-                ]
-            },
-            {
-                farm: "Propriedade Cristina Sousa",
-                producer: "Maria Cristina de Sousa Amâncio",
-                cpf: "536.173.556-68",
-                address: "Rua Andresa Filgueiras Batista, 48, ap. 101, Bairro Pinheiro, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1.1 Serra (produção)", area: 7.0 },
-                    { name: "1.1 Serra (brotos)", area: 2.0 },
-                    { name: "2.1 Curral", area: 3.5 }
-                ]
-            },
-            {
-                farm: "Propriedade Marcélia",
-                producer: "Marcélia de Souza",
-                cpf: "033.426.596-70",
-                address: "Rua Manoel Barros da Costa, nº 61, ap. 202, Jardim Camburi, Vitória, Espírito Santo",
-                fields: [
-                    { name: "1. Arara", area: 1.5 },
-                    { name: "2. Esqueletada 25 (Q6-Q7)", area: 1.0 },
-                    { name: "3. Lavoura Velha", area: 4.0 }
-                ]
-            },
-            {
-                farm: "Propriedades Daniel",
-                producer: "Daniel Vinicius Ferreira Lopes",
-                cpf: "128.709.756-19",
-                address: "Córrego Soledade, Zona rural, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1.1 Manhuaçuzinho (produção)", area: 6.2 },
-                    { name: "1.2 Manhuaçuzinho (nova)", area: 3.0 },
-                    { name: "1.3 Manhuaçuzinho (nova)", area: 0.7 },
-                    { name: "2.1 Soledade", area: 1.4 },
-                    { name: "2.2 Soledade", area: 0.4 },
-                    { name: "2.3 Soledade", area: 0.7 },
-                    { name: "2.4 Soledade", area: 1.2 },
-                    { name: "2.5 Soledade", area: 0.9 },
-                    { name: "2.6 Soledade", area: 0.8 },
-                    { name: "2.7 Soledade", area: 0.3 },
-                    { name: "2.8 Soledade", area: 0.3 },
-                    { name: "3.1 Dom Corrêa", area: 5.2 },
-                    { name: "3.2 Dom Corrêa", area: 1.3 },
-                    { name: "3.3 Dom Corrêa", area: 0.9 }
-                ]
-            },
-            {
-                farm: "Propriedades Gabriel e Thalys",
-                producer: "Gabriel de Sá Rodrigues",
-                cpf: "111.892.556-42",
-                address: "Córrego do Lessa, Zona Rural, Manhumirim, Minas Gerais",
-                fields: [
-                    { name: "1.1 Antonio", area: 0.5 },
-                    { name: "1.2 Antonio", area: 0.6 },
-                    { name: "1.3 Antonio", area: 1.3 },
-                    { name: "1.4 Antonio", area: 0.9 },
-                    { name: "1.5 Antonio", area: 1.2 },
-                    { name: "1.6 Antonio", area: 0.2 },
-                    { name: "1.7 Antonio", area: 2.5 },
-                    { name: "1.8 Antonio", area: 3.1 },
-                    { name: "1.9 Antonio", area: 1.5 },
-                    { name: "1.10 Antonio", area: 3.8 },
-                    { name: "2.1 Estrada Limeira", area: 2.1 },
-                    { name: "3.1 Limeira", area: 8.5 },
-                    { name: "3.2 Limeira", area: 19.5 },
-                    { name: "4.1 Santinha", area: 2.5 },
-                    { name: "5.1 Ventania", area: 1.8 },
-                    { name: "5.2 Ventania", area: 0.9 },
-                    { name: "5.3 Ventania", area: 0.7 },
-                    { name: "5.4 Ventania", area: 0.9 },
-                    { name: "6.1 Flaviano", area: 1.9 },
-                    { name: "6.2 Flaviano", area: 3.1 }
-                ]
-            },
-            {
-                farm: "Sítio Boa Vista",
-                producer: "José Roberto de Sousa",
-                cpf: "347.845.786-68",
-                address: "Sítio Boa Vista, Dom Corrêa, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1. Porteira", area: 1.0 },
-                    { name: "2. Antena", area: 0.5 },
-                    { name: "3. Central", area: 1.0 },
-                    { name: "4. Encosta da Mata", area: 1.5 }
-                ]
-            },
-            {
-                farm: "Sítio Santa Catarina",
-                producer: "Célio da Silva Araujo",
-                cpf: "592.455.816-91",
-                address: "Córrego João Bento, Dom Corrêa, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1. Célio", area: 1.1 },
-                    { name: "2. Célio", area: 0.6 },
-                    { name: "3. Tirré", area: 0.3 },
-                    { name: "4. Glaucio", area: 0.7 },
-                    { name: "5. Célio", area: 0.8 },
-                    { name: "6. Glaucio", area: 0.5 },
-                    { name: "7. Célio", area: 0.7 },
-                    { name: "8. Mirella", area: 1.5 },
-                    { name: "9. Tirré", area: 0.5 },
-                    { name: "10. Célio", area: 0.1 },
-                    { name: "11. Glaucio", area: 0.1 }
-                ]
-            }
-        ];
+        const farmRegistryCache = [];
 
         const DEFAULT_SAFETY_TEXT = "Utilizar os EPIs recomendados durante a preparação da calda e aplicação. Os Equipamentos de Proteção Individual (EPI) recomendados devem ser vestidos na seguinte ordem: macacão, botas, avental, máscara, óculos, touca árabe e luvas. Não entre na área em que o produto foi aplicado antes da secagem completa da calda (no mínimo 24 horas após a aplicação). Caso necessite entrar antes desse período, utilize os equipamentos de proteção individual (EPIs) recomendados para o uso durante a aplicação. Respeitar o intervalo de reentrada e carência informados nas bulas dos produtos. O manuseio do produto deve ser realizado apenas por trabalhador capacitado. Caso ocorra contato acidental da pessoa com o produto, siga as orientações descritas em primeiros socorros na bula dos produtos e procure rapidamente um serviço médico de emergência.";
 
@@ -1499,108 +1159,10 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
 
         const DEFAULT_ENVIRONMENT_TEXT = "Não aplique o produto na presença de ventos fortes ou nas horas mais quentes.\nNão lave as embalagens ou equipamento aplicador em lagos, fontes, rios e demais corpos d'água. Evite a contaminação da água.\nA destinação inadequada de embalagens ou restos de produtos ocasiona contaminação do solo, da água e do ar, prejudicando o meio ambiente, a fauna, a flora e a saúde das pessoas.";
 
-        const PRODUCT_CATALOG = {
-            "Fungicidas": [
-                { name: "Boscalid-WG-Nortox", dose: 0.15, unit: "kg/ha", target: "Phoma/Ascochyta", active: "Boscalida" },
-                { name: "Opera-SE-Basf", dose: 1.5, unit: "L/ha", target: "Ferrugem/Cercosporiose", active: "Piraclostrobina; Epoxiconazol" },
-                { name: "Abacus-SC-Basf", dose: 0.45, unit: "L/ha", target: "Ferrugem/Cercosporiose", active: "Piraclostrobina; Epoxiconazol" },
-                { name: "Orkestra-SC-Basf", dose: 0.5, unit: "L/ha", target: "Ferrugem/Cercosporiose/Phoma", active: "Piraclostrobina; Fluxapiroxade" },
-                { name: "Comet-EC-Basf", dose: 0.8, unit: "L/ha", target: "Ferrugem/Cercosporiose/Phoma", active: "Piraclostrobina" },
-                { name: "Cantus-WG-Basf", dose: 0.15, unit: "kg/ha", target: "Phoma", active: "Boscalida" },
-                { name: "Melyra-SC-Basf", dose: 0.8, unit: "L/ha", target: "Cercosporiose/Ferrugem", active: "Mefentrifluconazole; Piraclostrobina" },
-                { name: "Sphere Max-SC-Bayer", dose: 0.5, unit: "L/ha", target: "Ferrugem/Phoma", active: "Trifloxistrobina; Ciproconazol" },
-                { name: "Nativo-SC-Bayer", dose: 1.0, unit: "L/ha", target: "Phoma", active: "Trifloxistrobina; Tebuconazol" },
-                { name: "Miravis Duo-SC-Syngenta", dose: 0.3, unit: "L/ha", target: "Phoma/Bactéria", active: "Difenoconazol; Pidiflumetofem" },
-                { name: "Priori Top-SC-Syngenta", dose: 0.4, unit: "L/ha", target: "Phoma", active: "Azoxistrobina; Difenoconazol" },
-                { name: "Priori Extra-SC-Syngenta", dose: 0.5, unit: "L/ha", target: "Ferrugem/Cercosporiose", active: "Azoxistrobina; Ciproconazol" },
-                { name: "Auto 100-SL-Syngenta", dose: 0.75, unit: "L/ha", target: "Ferrugem", active: "Ciproconazol" },
-                { name: "Cercobin-WG-Ihara", dose: 0.7, unit: "kg/ha", target: "Cercosporiose/Phoma", active: "Tiofanato-metílico" },
-                { name: "Fusão-EC-Ihara", dose: 1.2, unit: "L/ha", target: "Ferrugem/Phoma", active: "Metominostrobina; Tebuconazol" },
-                { name: "Aproach Power-EC-Corteva", dose: 1.0, unit: "L/ha", target: "Ferrugem/Cercosporiose/Phoma", active: "Picoxistrobina; Ciproconazol" },
-                { name: "Impact-SC-FMC", dose: 2.0, unit: "L/ha", target: "Ferrugem", active: "Flutriafol" },
-                { name: "Azimut-SC-Adama", dose: 0.75, unit: "L/ha", target: "Ferrugem/Cercosporiose/Phoma", active: "Azoxistrobina; Tebuconazol" },
-                { name: "Convicto-SC-Adama", dose: 1.0, unit: "L/ha", target: "Ferrugem/Cercosporiose", active: "Azoxistrobina; Epoxiconazol" },
-                { name: "Symboll-SC-Albaugh", dose: 2.0, unit: "L/ha", target: "Ferrugem", active: "Flutriafol" },
-                { name: "Audaz-SC-Oxiquímica", dose: 1.0, unit: "L/ha", target: "Phoma", active: "Fluxapiroxade; Oxicloreto de Cobre" }
-            ],
-            "Fungicidas Protetores": [
-                { name: "Recop-WP-Albaugh", dose: 3.0, unit: "kg/ha", target: "Ferrugem/Cercosporiose/Antracnose/Bactéria", active: "Oxicloreto de Cobre" },
-                { name: "Supera-SC-Oxiquímica", dose: 4.0, unit: "L/ha", target: "Cercosporiose", active: "Hidróxido de Cobre" },
-                { name: "Scooter-OD-Oxiquímica", dose: 2.0, unit: "L/ha", target: "Cercosporiose/Bactéria/Ácaro", active: "Mancozebe; Oxicloreto de cobre" },
-                { name: "Kocide-WG-Mitsui", dose: 2.0, unit: "kg/ha", target: "Ferrugem/Cercosporiose", active: "Hidróxido de Cobre" },
-                { name: "Manzate-WG-UPL", dose: 5.0, unit: "kg/ha", target: "Ferrugem", active: "Mancozebe" },
-                { name: "Tutor-WG-BASF", dose: 2.5, unit: "kg/ha", target: "Ferrugem/Cercosporiose", active: "Hidróxido de Cobre" }
-            ],
-            "Inseticida-Acaricida": [
-                { name: "Premio Star-SC-FMC", dose: 0.5, unit: "L/ha", target: "Broca/Bicho Mineiro", active: "Clorantraniliprole; Bifentrina" },
-                { name: "Altacor-WG-FMC", dose: 0.09, unit: "kg/ha", target: "Bicho mineiro", active: "Clorantraniliprole" },
-                { name: "Benevia-OD-FMC", dose: 1.5, unit: "L/ha", target: "Broca/Bicho Mineiro", active: "Clorantraniliprole" },
-                { name: "Oberon-SC-Bayer", dose: 0.5, unit: "L/ha", target: "Ácaro Vermelho/Ácaro Leprose", active: "Espiromesifeno" },
-                { name: "Decis 25-EC-Bayer", dose: 0.4, unit: "L/ha", target: "Bicho mineiro/Lagartas", active: "Deltametrina" },
-                { name: "Curbix-SC-Bayer", dose: 2.5, unit: "L/ha", target: "Broca do café", active: "Etiprole" },
-                { name: "Sivanto Prime-SL-Bayer", dose: 0.5, unit: "L/ha", target: "Bicho Mineiro/Cochonilha", active: "Flupiradifurona" },
-                { name: "Joiner-SC-Syngenta", dose: 0.2, unit: "L/ha", target: "Broca/Bicho Mineiro/Ácaro V./Ácaro L.", active: "Isocicloseram" },
-                { name: "Curyom-EC-Syngenta", dose: 0.8, unit: "L/ha", target: "Broca/Bicho Mineiro", active: "Profenofós; Lufenuron" },
-                { name: "Polo-SC-Syngenta", dose: 0.8, unit: "L/ha", target: "Ácaro Vermelho/Ácaro Leprose", active: "Diafentiuron" },
-                { name: "Voliam Targo-SC-Syngenta", dose: 0.6, unit: "L/ha", target: "Bicho Mineiro/Broca/Ácaro V.", active: "Clorantraniliprole; Abamectina" },
-                { name: "Sperto-WG-UPL", dose: 0.5, unit: "kg/ha", target: "Bicho mineiro/Broca/Cochonilha/Ácaro V.", active: "Acetamiprido; Bifentrina" },
-                { name: "Klorpan-EC-Sumitomo", dose: 1.5, unit: "L/ha", target: "Broca/Bicho Mineiro/Cochonilha", active: "Clorpirifós" },
-                { name: "Okay-SC-Ihara", dose: 0.8, unit: "L/ha", target: "Ácaro Vermelho/Ácaro Leprose", active: "Ciflumetofem" },
-                { name: "Clorpirifós-EC-Nortox", dose: 1.5, unit: "L/ha", target: "Broca/Bicho Mineiro/Cochonilha", active: "Clorpirifós" },
-                { name: "Afiado-SC-Albaugh", dose: 0.5, unit: "L/ha", target: "Broca/Bicho Mineiro/Ácaro V.", active: "Acetamiprido; Bifentrina" },
-                { name: "Bioolimpo-WP-Total Biotecnologia", dose: 0.2, unit: "kg/ha", target: "Euschistus heros", active: "Beauveria bassiana; Metarhizium anisopliae" },
-                { name: "Boveria-Turbo-SC-Vittia", dose: 1.0, unit: "L/ha", target: "Broca do café", active: "Beauveria bassiana BV13" },
-                { name: "Rimon Supra-EC-Adama", dose: 0.3, unit: "L/ha", target: "Bicho mineiro", active: "Novaluron" },
-                { name: "Fastac 100-EC-Basf", dose: 0.25, unit: "L/ha", target: "Bicho mineiro", active: "Alfa-Cipermetrina" }
-            ],
-            "Nutricional": [
-                { name: "Dacafe-SL-Stoller", dose: 2.0, unit: "L/ha", target: "Nutricional", active: "N, S, B, Fe, Zn" },
-                { name: "Kellus Copper-WP-ICL", dose: 1.0, unit: "kg/ha", target: "Nutricional", active: "Quelato de Cu; Hidróxido de K" },
-                { name: "Profol Exclusive-WP-ICL", dose: 2.0, unit: "kg/ha", target: "Nutricional", active: "N, K, S, Mg, B, Cu, Fe, Mn, Mo, Zn" },
-                { name: "Triplus-SL-ICL", dose: 0.5, unit: "L/ha", target: "Nutricional", active: "P, B, Co, Mo, Ni" },
-                { name: "Concorde-SL-ICL", dose: 1.0, unit: "L/ha", target: "Nutricional", active: "N, P, K, S, Cu, Mn, Mo, Zn, Co" },
-                { name: "Magtrac-SL-Yara", dose: 1.0, unit: "L/ha", target: "Nutricional", active: "N, Mg, Co" },
-                { name: "Bortrac-SL-Yara", dose: 0.5, unit: "L/ha", target: "Nutricional", active: "N, B" },
-                { name: "Zintrac-SC-Yara", dose: 0.5, unit: "L/ha", target: "Nutricional", active: "N, Zn" },
-                { name: "CP perenes-WP-Agrocp", dose: 3.0, unit: "kg/ha", target: "Nutricional", active: "B, K, Mn, Zn, Mg, Cu, Mo" },
-                { name: "Promove-SL-AgroCp", dose: 0.5, unit: "L/ha", target: "Nutricional", active: "K, S, Mg, Mn, B, Mo, Zn" },
-                { name: "Boromag-WP-Multiprime", dose: 2.0, unit: "kg/ha", target: "Nutricional", active: "P, Mg, S, B" },
-                { name: "SL turbo-WP-Multiprime", dose: 2.0, unit: "kg/ha", target: "Nutricional", active: "K, Mg, S, B, Mn, Zn, Mo" },
-                { name: "Top zinc-SC-Giro", dose: 0.5, unit: "L/ha", target: "Nutricional", active: "N, Zn" },
-                { name: "Mais Café-SL-Giro", dose: 2.0, unit: "L/ha", target: "Nutricional", active: "B, N, S, Mn, Zn" },
-                { name: "Cobre Red-SC-Giro", dose: 1.0, unit: "L/ha", target: "Nutricional", active: "Cu" },
-                { name: "Bor Folha-SL-Giro", dose: 0.5, unit: "L/ha", target: "Nutricional", active: "N, B" },
-                { name: "Borum max-SL-CAF", dose: 1.0, unit: "L/ha", target: "Nutricional", active: "N, B" },
-                { name: "Aminozinc-SC-CAF", dose: 2.0, unit: "L/ha", target: "Nutricional", active: "N, S, Zn" },
-                { name: "Folha A-SL-Biogrow", dose: 2.0, unit: "L/ha", target: "Nutricional", active: "N, Co, Mg, Fe, Mn, Zn, S" },
-                { name: "Folha B-SL-Biogrow", dose: 2.0, unit: "L/ha", target: "Nutricional", active: "N, Co, Cu, B, Mo, S" },
-                { name: "Aux Café-SL-Biogrow", dose: 1.0, unit: "L/ha", target: "Nutricional", active: "N, Co, Mg, Fe, Mn, Zn, Mo, S" },
-                { name: "Speed-WP-Nitro", dose: 2.0, unit: "kg/ha", target: "Nutricional", active: "Mn, Zn, K, Mg, B" },
-                { name: "Revita-SL-Nitro", dose: 1.0, unit: "L/ha", target: "Nutricional", active: "N, P, K, S, Co" },
-                { name: "Agrumax-WP-Biolchim", dose: 2.0, unit: "kg/ha", target: "Nutricional", active: "N, S, B, Cu, Fe, Mn, Zn" },
-                { name: "Fylloton-SL-Biolchim", dose: 2.0, unit: "L/ha", target: "Nutricional", active: "N, Co" },
-                { name: "Nutrioxi-WP-Oxiquímica", dose: 2.5, unit: "kg/ha", target: "Nutricional", active: "B, S, Mg, Fe, Mo, Zn" },
-                { name: "Flow-SL-Aryse", dose: 1.0, unit: "L/ha", target: "Nutricional", active: "N, B" },
-                { name: "MS2-WP-Ubifol", dose: 1.0, unit: "kg/ha", target: "Nutricional", active: "N, Mg, S, B, Cu, Mn, Mo, Zn" },
-                { name: "Café das Montanhas-WP-Multisais", dose: 2.5, unit: "kg/ha", target: "Nutricional", active: "K, Zn, S, B, Mn, Mg" },
-                { name: "Evo Mag-SL-Giro", dose: 1.0, unit: "L/ha", target: "Nutricional", active: "Óxido de Mg" },
-                { name: "Corona Frutmax-WP-Timac", dose: 2.0, unit: "kg/ha", target: "Nutricional", active: "N, P, K, S, B, Cu, Mn, Zn" },
-                { name: "SeTT-SL-Stoller", dose: 0.7, unit: "L/ha", target: "Nutricional", active: "N, Ca, Bo" },
-                { name: "Mover-SL-Stoller", dose: 0.45, unit: "L/ha", target: "Nutricional", active: "N, Cu, Mo, Zn, B" },
-                { name: "Master Mins-SL-Stoller", dose: 0.25, unit: "L/ha", target: "Nutricional", active: "N, P, K, Mg, B, Cu, Mn, Mo, Zn" },
-                { name: "Multicafe Solo A-SL-BioGrow", dose: 2.0, unit: "L/ha", target: "Nutricional", active: "N, Co, Mg, Fe, Mn, Zn, Cu, Mo, S" },
-                { name: "Osmokontrol-SL-BioGrow", dose: 0.5, unit: "L/ha", target: "Nutricional", active: "Co, N" },
-                { name: "Mancozin-SL-Yara", dose: 1.0, unit: "L/ha", target: "Nutricional", active: "N, Cu, Mn, Zn" },
-                { name: "BioFerro-Wp-Multiprime", dose: 1.0, unit: "kg/ha", target: "Nutricional", active: "N, Fe" },
-                { name: "Citobloom-SL-Biogrow", dose: 0.3, unit: "L/ha", target: "Nutricional", active: "K, Co, N" },
-                { name: "SMBoro-SL-Ajinomoto", dose: 1.0, unit: "L/ha", target: "Nutricional", active: "N, B" }
-            ],
-            "Hormonal": [
-                { name: "Stimulate-SL-Stoller", dose: 0.5, unit: "L/ha", target: "Hormônio sintético", active: "Cinetina, Ácido giberélico e Indolbutírico" }
-            ]
-        };
+        const productCatalogCache = {};
 
         let selectedFarm = "";
+        let pdfGenerationActive = false;
         let selectedFields = new Set();
         let checklistFilterEnabled = false;
         let productRowCounter = 0;
@@ -1768,167 +1330,53 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
         }
 
         async function loadStoredData() {
-            // A fonte principal e o cadastro central unificado. Ele combina o
-            // cadastro original completo com alteracoes locais/sincronizadas e
-            // preserva CPF, endereco e areas quando uma copia antiga estiver
-            // incompleta.
-            if (window.DoCampoRegistry) {
-                try {
-                    const central = await window.DoCampoRegistry.all();
-                    EMBEDDED_DATABASE.splice(0, EMBEDDED_DATABASE.length);
-                    (central.farms || []).forEach(function(farm) {
-                        EMBEDDED_DATABASE.push({
-                            farm: farm.farm,
-                            proprietor: farm.producer || farm.proprietor || '',
-                            producer: farm.producer || farm.proprietor || '',
-                            cpf: farm.cpf || '',
-                            address: farm.address || '',
-                            fields: (farm.fields || []).map(function(field) {
-                                return { name: field.name, area: Number(field.area) || 0 };
-                            })
-                        });
-                    });
-                    Object.keys(PRODUCT_CATALOG).forEach(function(cat) { delete PRODUCT_CATALOG[cat]; });
-                    Object.keys(central.products || {}).forEach(function(cat) {
-                        PRODUCT_CATALOG[cat] = (central.products[cat] || []).map(function(product) { return Object.assign({}, product); });
-                    });
-                    return;
-                } catch (centralError) {
-                    console.warn('Nao foi possivel carregar o cadastro central; usando a copia offline disponivel.', centralError);
-                }
-            }
-            if (window.DoCampoData) {
-                window.DoCampoData.read().farms.forEach(function(shared) {
-                    if (!shared || !shared.farm) return;
-                    const idx = EMBEDDED_DATABASE.findIndex(function(f) { return f.farm.toLowerCase() === shared.farm.toLowerCase(); });
-                    const normalized = {
-                        farm: shared.farm,
-                        proprietor: shared.producer || '',
-                        cpf: shared.cpf || '',
-                        address: shared.address || '',
-                        fields: (shared.fields || []).map(function(field) { return { name: field.name, area: Number(field.area) || 0 }; })
-                    };
-                    if (idx >= 0) EMBEDDED_DATABASE[idx] = Object.assign({}, EMBEDDED_DATABASE[idx], normalized);
-                    else EMBEDDED_DATABASE.unshift(normalized);
+            const central = await window.DoCampoRegistry.all();
+            farmRegistryCache.splice(0, farmRegistryCache.length);
+            (central.farms || []).forEach(function(farm) {
+                farmRegistryCache.push({
+                    id: farm.id, farm: farm.farm, proprietor: farm.producer || farm.proprietor || "",
+                    producer: farm.producer || farm.proprietor || "", cpf: farm.cpf || "",
+                    address: farm.address || "", fields: (farm.fields || []).map(function(field) {
+                        return { id: field.id, name: field.name, area: Number(field.area) || 0, plants: Number(field.plants) || 0 };
+                    })
                 });
-                const sharedProducts = window.DoCampoData.read().products;
-                Object.keys(sharedProducts).forEach(function(cat) {
-                    if (!PRODUCT_CATALOG[cat]) PRODUCT_CATALOG[cat] = [];
-                    sharedProducts[cat].forEach(function(product) {
-                        if (!PRODUCT_CATALOG[cat].some(function(item) { return item.name.toLowerCase() === product.name.toLowerCase(); })) PRODUCT_CATALOG[cat].push(product);
-                    });
-                });
-            }
-            try {
-                const deletedFarms = JSON.parse(localStorage.getItem('agri_deleted_farms') || '[]');
-                const storedFarms = JSON.parse(localStorage.getItem('agri_custom_farms') || '[]');
-                
-                // Remove deleted default farms
-                for (let i = EMBEDDED_DATABASE.length - 1; i >= 0; i--) {
-                    if (deletedFarms.includes(EMBEDDED_DATABASE[i].farm)) {
-                        EMBEDDED_DATABASE.splice(i, 1);
-                    }
-                }
-
-                // Apply custom or modified farms
-                storedFarms.forEach(function(stored) {
-                    const idx = EMBEDDED_DATABASE.findIndex(function(f) { 
-                        return f.farm.toLowerCase() === stored.farm.toLowerCase(); 
-                    });
-                    if (idx !== -1) {
-                        EMBEDDED_DATABASE[idx] = stored;
-                    } else if (!deletedFarms.includes(stored.farm)) {
-                        EMBEDDED_DATABASE.unshift(stored);
-                    }
-                });
-            } catch(e) {
-                console.error("Erro ao carregar fazendas salvas", e);
-            }
-
-            try {
-                const deletedProducts = JSON.parse(localStorage.getItem('agri_deleted_products') || '{}');
-                const storedProducts = JSON.parse(localStorage.getItem('agri_custom_products') || '{}');
-
-                // Filter out deleted default products
-                Object.keys(PRODUCT_CATALOG).forEach(function(cat) {
-                    if (deletedProducts[cat]) {
-                        PRODUCT_CATALOG[cat] = PRODUCT_CATALOG[cat].filter(function(p) {
-                            return !deletedProducts[cat].includes(p.name.toLowerCase());
-                        });
-                    }
-                });
-
-                // Apply custom or modified products
-                Object.keys(storedProducts).forEach(function(cat) {
-                    if (!PRODUCT_CATALOG[cat]) PRODUCT_CATALOG[cat] = [];
-                    storedProducts[cat].forEach(function(p) {
-                        const idx = PRODUCT_CATALOG[cat].findIndex(function(item) { 
-                            return item.name.toLowerCase() === p.name.toLowerCase(); 
-                        });
-                        if (idx !== -1) {
-                            PRODUCT_CATALOG[cat][idx] = p;
-                        } else {
-                            const isDeleted = deletedProducts[cat] && deletedProducts[cat].includes(p.name.toLowerCase());
-                            if (!isDeleted) {
-                                PRODUCT_CATALOG[cat].push(p);
-                            }
-                        }
-                    });
-                });
-            } catch(e) {
-                console.error("Erro ao carregar produtos salvos", e);
-            }
+            });
+            Object.keys(productCatalogCache).forEach(function(category) { delete productCatalogCache[category]; });
+            Object.entries(central.products || {}).forEach(function(entry) {
+                productCatalogCache[entry[0]] = (entry[1] || []).map(function(product) { return Object.assign({}, product); });
+            });
         }
 
-        function saveStoredFarm(farmObj) {
-            try {
-                let stored = JSON.parse(localStorage.getItem('agri_custom_farms') || '[]');
-                const idx = stored.findIndex(function(f) { return f.farm.toLowerCase() === farmObj.farm.toLowerCase(); });
-                if (idx !== -1) {
-                    stored[idx] = farmObj;
-                } else {
-                    stored.unshift(farmObj);
+        function saveStoredFarm(farmObj, previousName) {
+            if (!window.DoCampoData || !window.DoCampoDB) throw new Error('Banco central indisponível.');
+            return window.DoCampoDB.transaction(function () {
+                if (previousName && window.DoCampoData.key(previousName) !== window.DoCampoData.key(farmObj.farm)) {
+                    window.DoCampoData.removeFarm(previousName);
                 }
-                localStorage.setItem('agri_custom_farms', JSON.stringify(stored));
-                if (window.DoCampoData) window.DoCampoData.mergeFarm(farmObj);
-            } catch(e) {
-                console.error("Erro ao salvar propriedade no localStorage", e);
-            }
+                return window.DoCampoData.mergeFarm(farmObj);
+            });
         }
 
-        function saveStoredProduct(cat, prodObj) {
-            try {
-                let stored = JSON.parse(localStorage.getItem('agri_custom_products') || '{}');
-                if (!stored[cat]) stored[cat] = [];
-                const idx = stored[cat].findIndex(function(p) { return p.name.toLowerCase() === prodObj.name.toLowerCase(); });
-                if (idx !== -1) {
-                    stored[cat][idx] = prodObj;
-                } else {
-                    stored[cat].push(prodObj);
+        function saveStoredProduct(cat, prodObj, previous) {
+            if (!window.DoCampoData || !window.DoCampoDB) throw new Error('Banco central indisponível.');
+            return window.DoCampoDB.transaction(function () {
+                if (previous && (window.DoCampoData.key(previous.cat) !== window.DoCampoData.key(cat) || window.DoCampoData.key(previous.name) !== window.DoCampoData.key(prodObj.name))) {
+                    window.DoCampoData.removeProduct(previous.cat, previous.name);
                 }
-                localStorage.setItem('agri_custom_products', JSON.stringify(stored));
-                if (window.DoCampoData) window.DoCampoData.mergeProduct(cat, prodObj);
-            } catch(e) {
-                console.error("Erro ao salvar produto no localStorage", e);
-            }
-        }
-
-        function getNextSequenceNumber() {
-            let seq = parseInt(localStorage.getItem('agri_rec_seq_counter') || '1', 10);
-            if (isNaN(seq) || seq < 1) seq = 1;
-            return seq;
+                return window.DoCampoData.mergeProduct(cat, prodObj);
+            });
         }
 
         function loadSequenceNumber() {
-            let seq = getNextSequenceNumber();
-            let formatted = '#DC-' + String(seq).padStart(4, '0');
+            const responsavel = AGRONOMISTS_LIST[selectedAgronomistIndex]?.name || (window.DoCampoDB ? DoCampoDB.user() : '');
+            const formatted = window.DoCampoDocumentCode ? DoCampoDocumentCode.previa('PUL', responsavel) : 'PUL-PRÉVIA';
             const input = document.getElementById('rec-number-input');
             if (input) input.value = formatted;
             updateRecNumber(formatted);
         }
 
         function updateRecNumber(val) {
-            const formatted = val ? val.trim() : '#DC-0000';
+            const formatted = val ? val.trim() : 'PUL-PRÉVIA';
             const pdfRecIdEl = document.getElementById('pdf-rec-id');
             const pdfRecIdElP2 = document.getElementById('pdf-rec-id-p2');
             if (pdfRecIdEl) pdfRecIdEl.innerText = formatted;
@@ -2032,6 +1480,103 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                     }
                 }
             });
+            loadSequenceNumber();
+        }
+
+        function capturePulverizationDraft() {
+            const products = Array.from(document.querySelectorAll('#products-tbody tr')).map(function(row) {
+                const id = row.id;
+                return {
+                    category: document.getElementById(id + '-cat')?.value || '',
+                    product: document.getElementById(id + '-prod-select')?.value || '',
+                    dose: document.getElementById(id + '-dose')?.value || '',
+                    unit: document.getElementById(id + '-unit')?.value || ''
+                };
+            }).filter(item => item.category || item.product || Number(item.dose));
+            if (!selectedFarm && !products.length) return null;
+            const controls = {};
+            document.querySelectorAll('input[id],select[id],textarea[id]').forEach(function(element) {
+                if (/^(row-|predilution-|pdf-|new-|farm-select$|producer-|manage-)/.test(element.id) || element.type === 'file') return;
+                controls[element.id] = /checkbox|radio/.test(element.type) ? { checked: element.checked } : { value: element.value };
+            });
+            return {
+                selectedFarm,
+                selectedFields: Array.from(selectedFields),
+                selectedAgronomistIndex,
+                checklistFilterEnabled,
+                controls,
+                products,
+                productStockMap: { ...productStockMap },
+                predilution: getPredilutionData()
+            };
+        }
+
+        async function restorePulverizationDraft() {
+            const draft = window.DoCampoDrafts?.load('pulverizacao');
+            if (!draft || !draft.selectedFarm || !farmRegistryCache.some(farm => farm.farm === draft.selectedFarm)) return;
+            Object.entries(draft.controls || {}).forEach(function(entry) {
+                const element = document.getElementById(entry[0]);
+                if (!element) return;
+                if ('checked' in entry[1]) element.checked = !!entry[1].checked;
+                else if ('value' in entry[1]) element.value = entry[1].value;
+            });
+            checklistFilterEnabled = !!draft.checklistFilterEnabled;
+            const farmSelect = document.getElementById('farm-select');
+            farmSelect.value = draft.selectedFarm;
+            onFarmChange();
+            const wantedFields = new Set(draft.selectedFields || []);
+            document.querySelectorAll('#fields-container input[type="checkbox"]').forEach(function(box) {
+                if (!wantedFields.has(box.value)) return;
+                box.checked = true;
+                box.dispatchEvent(new Event('change'));
+            });
+            const tbody = document.getElementById('products-tbody');
+            if (tbody) tbody.innerHTML = '';
+            productRowCounter = 0;
+            const products = Array.isArray(draft.products) && draft.products.length ? draft.products : [{}, {}, {}, {}, {}];
+            products.forEach(function(item) {
+                addProductRow(item.category || '');
+                const row = document.getElementById('products-tbody')?.lastElementChild;
+                if (!row) return;
+                const id = row.id;
+                if (item.category) {
+                    document.getElementById(id + '-cat').value = item.category;
+                    onCategoryChange(id);
+                }
+                if (item.product) {
+                    const select = document.getElementById(id + '-prod-select');
+                    if (select) { select.value = item.product; onProductSelect(id); }
+                }
+                if (item.dose !== undefined) document.getElementById(id + '-dose').value = item.dose;
+                if (item.unit) document.getElementById(id + '-unit').value = item.unit;
+            });
+            productStockMap = { ...(draft.productStockMap || {}) };
+            if (Number.isInteger(draft.selectedAgronomistIndex)) selectAgronomist(draft.selectedAgronomistIndex);
+            setCropMode();
+            toggleMinimumPreparation();
+            calculateTotals();
+            const predList = document.getElementById('predilution-list');
+            if (predList) predList.innerHTML = '';
+            predilutionCounter = 0;
+            const predRows = Array.isArray(draft.predilution) ? draft.predilution : [];
+            const predEnabled = document.getElementById('predilution-enabled');
+            if (predEnabled) predEnabled.checked = predRows.length > 0;
+            document.getElementById('predilution-panel')?.classList.toggle('hidden', !predRows.length);
+            predRows.forEach(function(saved) {
+                addPredilutionRow();
+                const row = document.getElementById('predilution-list')?.lastElementChild;
+                if (!row) return;
+                const id = row.id;
+                const index = currentRecommendationProducts.findIndex(item => item.name === saved.product);
+                if (index >= 0) document.getElementById(id + '-product').value = String(index);
+                document.getElementById(id + '-water').value = saved.waterL;
+                document.getElementById(id + '-aliquot').value = saved.aliquotMl;
+                recalculatePredilution(id);
+                const qty = document.getElementById(id + '-product-qty');
+                if (qty) { qty.value = saved.productQty; qty.dataset.manual = 'true'; }
+                updatePredilutionText(id);
+            });
+            calculateTotals();
         }
 
         window.onload = async function() {
@@ -2053,6 +1598,8 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             }
 
             calculateTotals();
+            await restorePulverizationDraft();
+            window.DoCampoDrafts?.bind('pulverizacao', capturePulverizationDraft);
             const cadastro=new URLSearchParams(location.search).get('cadastro');
             if(cadastro==='produtos')setTimeout(openManageProductsModal,80);
             if(cadastro==='propriedades')setTimeout(openManageFarmsModal,80);
@@ -2061,22 +1608,22 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
         function openManageFarmsModal(){
             let modal=document.getElementById('manage-farms-modal');
             if(!modal){modal=document.createElement('div');modal.id='manage-farms-modal';modal.className='fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print';document.body.appendChild(modal)}
-            const farms=[...EMBEDDED_DATABASE].sort((a,b)=>a.farm.localeCompare(b.farm,'pt-BR'));
+            const farms=[...farmRegistryCache].sort((a,b)=>a.farm.localeCompare(b.farm,'pt-BR'));
             modal.innerHTML='<div class="bg-white rounded-2xl max-w-3xl w-full p-5 shadow-xl max-h-[88vh] flex flex-col"><div class="flex items-center justify-between border-b pb-3"><div><h3 class="font-bold text-lg">Produtores, fazendas e talhões</h3><p class="text-xs text-slate-500">'+farms.length+' propriedade(s) cadastrada(s)</p></div><button onclick="closeManageFarmsModal()" class="text-2xl px-2">×</button></div><button onclick="newFarmFromManager()" class="my-3 bg-emerald-700 text-white font-bold rounded-xl px-4 py-3">+ Cadastrar nova propriedade</button><div class="overflow-y-auto space-y-2">'+farms.map((f,i)=>'<div class="border rounded-xl p-3 bg-slate-50"><div class="flex justify-between gap-2"><div><p class="font-bold text-sm">'+escapeManager(f.farm)+'</p><p class="text-xs text-slate-600">'+escapeManager(f.proprietor||f.producer||'Produtor não informado')+' • '+(f.fields||[]).length+' talhão(ões)</p><p class="text-[11px] text-slate-500 mt-1">'+(f.fields||[]).map(x=>escapeManager(x.name)+' ('+(Number(x.area)||0)+' ha)').join(' • ')+'</p></div><div class="flex"><button onclick="editFarmFromManager('+i+')" class="text-amber-700 p-2" title="Editar">✎</button><button onclick="deleteFarmFromManager('+i+')" class="text-rose-700 p-2" title="Excluir">🗑</button></div></div></div>').join('')+'</div></div>';
             modal.classList.remove('hidden');
         }
         function escapeManager(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
         function closeManageFarmsModal(){const m=document.getElementById('manage-farms-modal');if(m)m.classList.add('hidden')}
         function newFarmFromManager(){closeManageFarmsModal();const p=document.getElementById('new-farm-panel');if(p&&p.classList.contains('hidden'))toggleNewFarmPanel();p.scrollIntoView({behavior:'smooth',block:'start'})}
-        function editFarmFromManager(index){const farms=[...EMBEDDED_DATABASE].sort((a,b)=>a.farm.localeCompare(b.farm,'pt-BR')),farm=farms[index];if(!farm)return;selectedFarm=farm.farm;const s=document.getElementById('farm-select');s.value=farm.farm;onFarmChange();closeManageFarmsModal();editCurrentFarm()}
-        function deleteFarmFromManager(index){const farms=[...EMBEDDED_DATABASE].sort((a,b)=>a.farm.localeCompare(b.farm,'pt-BR')),farm=farms[index];if(!farm)return;selectedFarm=farm.farm;const s=document.getElementById('farm-select');s.value=farm.farm;onFarmChange();closeManageFarmsModal();confirmDeleteFarm()}
+        function editFarmFromManager(index){const farms=[...farmRegistryCache].sort((a,b)=>a.farm.localeCompare(b.farm,'pt-BR')),farm=farms[index];if(!farm)return;selectedFarm=farm.farm;const s=document.getElementById('farm-select');s.value=farm.farm;onFarmChange();closeManageFarmsModal();editCurrentFarm()}
+        function deleteFarmFromManager(index){const farms=[...farmRegistryCache].sort((a,b)=>a.farm.localeCompare(b.farm,'pt-BR')),farm=farms[index];if(!farm)return;selectedFarm=farm.farm;const s=document.getElementById('farm-select');s.value=farm.farm;onFarmChange();closeManageFarmsModal();confirmDeleteFarm()}
 
         function populateFarmDropdown() {
             const select = document.getElementById('farm-select');
             if (!select) return;
             select.innerHTML = '<option value="">-- Selecione a Fazenda --</option>';
             
-            const sortedFarms = [...EMBEDDED_DATABASE].sort(function(a, b) {
+            const sortedFarms = [...farmRegistryCache].sort(function(a, b) {
                 return a.farm.localeCompare(b.farm, 'pt-BR', { sensitivity: 'base' });
             });
 
@@ -2155,35 +1702,27 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 return;
             }
 
-            if (!PRODUCT_CATALOG[cat]) {
-                PRODUCT_CATALOG[cat] = [];
-            }
-
-            if(editingProductOriginal&&(editingProductOriginal.cat!==cat||editingProductOriginal.name.toLowerCase()!==name.toLowerCase())){
-                const old=editingProductOriginal;PRODUCT_CATALOG[old.cat]=(PRODUCT_CATALOG[old.cat]||[]).filter(p=>p.name.toLowerCase()!==old.name.toLowerCase());
-                if(window.DoCampoData)window.DoCampoData.removeProduct(old.cat,old.name);
-            }
-
-            const existingIdx = PRODUCT_CATALOG[cat].findIndex(function(p) { return p.name.toLowerCase() === name.toLowerCase(); });
             const newProdObj = { name: name, dose: dose, unit: unit, target: target, active: active };
+            const previousProduct = editingProductOriginal ? { ...editingProductOriginal } : null;
+            try {
+                saveStoredProduct(cat, newProdObj, previousProduct);
+            } catch (error) {
+                console.error('Erro ao salvar produto', error);
+                showAlert('O produto não foi salvo. ' + (error.message || 'Tente novamente.'), 'Falha no salvamento');
+                return;
+            }
+
+            if (previousProduct && (window.DoCampoData.key(previousProduct.cat) !== window.DoCampoData.key(cat) || window.DoCampoData.key(previousProduct.name) !== window.DoCampoData.key(name))) {
+                productCatalogCache[previousProduct.cat] = (productCatalogCache[previousProduct.cat] || []).filter(function(p) { return p.name.toLowerCase() !== previousProduct.name.toLowerCase(); });
+            }
+            if (!productCatalogCache[cat]) productCatalogCache[cat] = [];
+            const existingIdx = productCatalogCache[cat].findIndex(function(p) { return p.name.toLowerCase() === name.toLowerCase(); });
 
             if (existingIdx !== -1) {
-                PRODUCT_CATALOG[cat][existingIdx] = newProdObj;
+                productCatalogCache[cat][existingIdx] = newProdObj;
             } else {
-                PRODUCT_CATALOG[cat].push(newProdObj);
+                productCatalogCache[cat].push(newProdObj);
             }
-
-            // Save to localStorage
-            saveStoredProduct(cat, newProdObj);
-
-            // Remove from deleted list if present
-            try {
-                let deletedProds = JSON.parse(localStorage.getItem('agri_deleted_products') || '{}');
-                if (deletedProds[cat]) {
-                    deletedProds[cat] = deletedProds[cat].filter(function(n) { return n !== name.toLowerCase(); });
-                    localStorage.setItem('agri_deleted_products', JSON.stringify(deletedProds));
-                }
-            } catch(e) {}
 
             const rows = document.querySelectorAll('#products-tbody tr');
             rows.forEach(function(tr) {
@@ -2241,10 +1780,10 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             let html = '';
             let totalCount = 0;
 
-            Object.keys(PRODUCT_CATALOG).forEach(function(cat) {
+            Object.keys(productCatalogCache).forEach(function(cat) {
                 if (filterCat !== 'ALL' && filterCat !== cat) return;
 
-                const prods = PRODUCT_CATALOG[cat];
+                const prods = productCatalogCache[cat];
                 if (!prods || prods.length === 0) return;
 
                 html += '<div class="space-y-1.5 pt-2">' +
@@ -2288,7 +1827,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
         }
 
         function editProduct(cat, prodName) {
-            const product=(PRODUCT_CATALOG[cat]||[]).find(p=>p.name.toLowerCase()===prodName.toLowerCase());
+            const product=(productCatalogCache[cat]||[]).find(p=>p.name.toLowerCase()===prodName.toLowerCase());
             if(!product)return;
             closeManageProductsModal();
             const panel=document.getElementById('new-product-panel');if(panel&&panel.classList.contains('hidden'))toggleNewProductPanel();
@@ -2303,30 +1842,19 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
         }
 
         function deleteProduct(cat, prodName) {
-            if (PRODUCT_CATALOG[cat]) {
-                PRODUCT_CATALOG[cat] = PRODUCT_CATALOG[cat].filter(function(p) {
+            if (productCatalogCache[cat]) {
+                try {
+                    if (!window.DoCampoData || !window.DoCampoData.removeProduct(cat, prodName)) {
+                        throw new Error('Produto não encontrado no banco central.');
+                    }
+                } catch (error) {
+                    console.error('Erro ao excluir produto', error);
+                    showAlert('O produto não foi excluído. ' + (error.message || 'Tente novamente.'), 'Falha na exclusão');
+                    return;
+                }
+                productCatalogCache[cat] = productCatalogCache[cat].filter(function(p) {
                     return p.name.toLowerCase() !== prodName.toLowerCase();
                 });
-
-                // Save deletion to localStorage
-                try {
-                    let customProds = JSON.parse(localStorage.getItem('agri_custom_products') || '{}');
-                    if (customProds[cat]) {
-                        customProds[cat] = customProds[cat].filter(function(p) {
-                            return p.name.toLowerCase() !== prodName.toLowerCase();
-                        });
-                        localStorage.setItem('agri_custom_products', JSON.stringify(customProds));
-                    }
-
-                    let deletedProds = JSON.parse(localStorage.getItem('agri_deleted_products') || '{}');
-                    if (!deletedProds[cat]) deletedProds[cat] = [];
-                    if (!deletedProds[cat].includes(prodName.toLowerCase())) {
-                        deletedProds[cat].push(prodName.toLowerCase());
-                    }
-                    localStorage.setItem('agri_deleted_products', JSON.stringify(deletedProds));
-                } catch(e) {
-                    console.error("Erro ao salvar exclusão de produto", e);
-                }
 
                 // Refresh product row dropdowns
                 const rows = document.querySelectorAll('#products-tbody tr');
@@ -2343,7 +1871,6 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 });
 
                 renderManageProductsList();
-                if(window.DoCampoData)window.DoCampoData.removeProduct(cat,prodName);
                 calculateTotals();
                 showAlert('Insumo "' + prodName + '" excluído com sucesso!', 'Insumo Excluído', true);
             }
@@ -2429,28 +1956,26 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 fields: fields
             };
 
-            if(editingFarmOriginal&&editingFarmOriginal.toLowerCase()!==farmName.toLowerCase()){
-                const oldName=editingFarmOriginal,oldIndex=EMBEDDED_DATABASE.findIndex(f=>f.farm.toLowerCase()===oldName.toLowerCase());
-                if(oldIndex!==-1)EMBEDDED_DATABASE.splice(oldIndex,1);
-                if(window.DoCampoData)window.DoCampoData.removeFarm(oldName);
-            }
-
-            const existingIndex = EMBEDDED_DATABASE.findIndex(function(f) { return f.farm.toLowerCase() === farmName.toLowerCase(); });
-            if (existingIndex !== -1) {
-                EMBEDDED_DATABASE[existingIndex] = farmObj;
-            } else {
-                EMBEDDED_DATABASE.unshift(farmObj);
-            }
-
-            // Save to localStorage
-            saveStoredFarm(farmObj);
-
-            // Remove from deleted list if present
+            const previousFarmName = editingFarmOriginal || '';
             try {
-                let deletedFarms = JSON.parse(localStorage.getItem('agri_deleted_farms') || '[]');
-                deletedFarms = deletedFarms.filter(function(n) { return n.toLowerCase() !== farmName.toLowerCase(); });
-                localStorage.setItem('agri_deleted_farms', JSON.stringify(deletedFarms));
-            } catch(e) {}
+                saveStoredFarm(farmObj, previousFarmName);
+            } catch (error) {
+                console.error('Erro ao salvar propriedade', error);
+                showAlert('A propriedade não foi salva. ' + (error.message || 'Tente novamente.'), 'Falha no salvamento');
+                return;
+            }
+
+            if(editingFarmOriginal&&editingFarmOriginal.toLowerCase()!==farmName.toLowerCase()){
+                const oldName=editingFarmOriginal,oldIndex=farmRegistryCache.findIndex(f=>f.farm.toLowerCase()===oldName.toLowerCase());
+                if(oldIndex!==-1)farmRegistryCache.splice(oldIndex,1);
+            }
+
+            const existingIndex = farmRegistryCache.findIndex(function(f) { return f.farm.toLowerCase() === farmName.toLowerCase(); });
+            if (existingIndex !== -1) {
+                farmRegistryCache[existingIndex] = farmObj;
+            } else {
+                farmRegistryCache.unshift(farmObj);
+            }
 
             populateFarmDropdown();
 
@@ -2483,13 +2008,13 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 return;
             }
 
-            showConfirm('Deseja realmente excluir a propriedade "' + selectedFarm + '" e TODOS os seus talhões? Esta ação é permanente.', function() {
+            showConfirm('Mover a propriedade "' + selectedFarm + '" e todos os seus talhões para a lixeira? Ela poderá ser restaurada.', function() {
                 deleteCurrentFarm();
             }, 'Excluir Propriedade Toda');
         }
 
         function editCurrentFarm(){
-            const farm=EMBEDDED_DATABASE.find(f=>f.farm===selectedFarm);if(!farm)return;
+            const farm=farmRegistryCache.find(f=>f.farm===selectedFarm);if(!farm)return;
             const panel=document.getElementById('new-farm-panel');if(panel&&panel.classList.contains('hidden'))toggleNewFarmPanel();
             document.getElementById('new-farm-name').value=farm.farm||'';
             document.getElementById('new-producer-name').value=farm.proprietor||farm.producer||'';
@@ -2506,28 +2031,21 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
 
             const farmToDelete = selectedFarm;
 
-            // Remove from EMBEDDED_DATABASE
-            const farmIdx = EMBEDDED_DATABASE.findIndex(function(f) { return f.farm === farmToDelete; });
-            if (farmIdx !== -1) {
-                EMBEDDED_DATABASE.splice(farmIdx, 1);
-            }
-
-            // Save deletion in localStorage
             try {
-                let storedFarms = JSON.parse(localStorage.getItem('agri_custom_farms') || '[]');
-                storedFarms = storedFarms.filter(function(f) { return f.farm.toLowerCase() !== farmToDelete.toLowerCase(); });
-                localStorage.setItem('agri_custom_farms', JSON.stringify(storedFarms));
-
-                let deletedFarms = JSON.parse(localStorage.getItem('agri_deleted_farms') || '[]');
-                if (!deletedFarms.includes(farmToDelete)) {
-                    deletedFarms.push(farmToDelete);
+                if (!window.DoCampoData || !window.DoCampoData.removeFarm(farmToDelete)) {
+                    throw new Error('Propriedade não encontrada no banco central.');
                 }
-                localStorage.setItem('agri_deleted_farms', JSON.stringify(deletedFarms));
-            } catch(e) {
-                console.error("Erro ao salvar exclusão de propriedade", e);
+            } catch (error) {
+                console.error('Erro ao excluir propriedade', error);
+                showAlert('A propriedade não foi excluída. ' + (error.message || 'Tente novamente.'), 'Falha na exclusão');
+                return;
             }
-            if(window.DoCampoData)window.DoCampoData.removeFarm(farmToDelete);
 
+            // Remove from farmRegistryCache
+            const farmIdx = farmRegistryCache.findIndex(function(f) { return f.farm === farmToDelete; });
+            if (farmIdx !== -1) {
+                farmRegistryCache.splice(farmIdx, 1);
+            }
             // Reset UI selection
             selectedFarm = "";
             selectedFields.clear();
@@ -2553,13 +2071,21 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
         }
 
         function deleteField(fieldName) {
-            const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+            const farmData = farmRegistryCache.find(function(f) { return f.farm === selectedFarm; });
             if (!farmData) return;
 
-            farmData.fields = farmData.fields.filter(function(f) { return f.name !== fieldName; });
+            const updatedFarm = Object.assign({}, farmData, {
+                fields: farmData.fields.filter(function(f) { return f.name !== fieldName; })
+            });
+            try {
+                saveStoredFarm(updatedFarm);
+            } catch (error) {
+                console.error('Erro ao excluir talhão', error);
+                showAlert('O talhão não foi excluído. ' + (error.message || 'Tente novamente.'), 'Falha na exclusão');
+                return;
+            }
+            farmData.fields = updatedFarm.fields;
             selectedFields.delete(fieldName);
-
-            saveStoredFarm(farmData);
 
             renderFields(farmData.fields);
             calculateTotals();
@@ -2596,7 +2122,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
         function toggleChecklistFilter() {
             if (!selectedFarm) { showAlert('Selecione uma fazenda antes de usar as indicações do checklist.'); return; }
             checklistFilterEnabled = !checklistFilterEnabled;
-            const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+            const farmData = farmRegistryCache.find(function(f) { return f.farm === selectedFarm; });
             const visible = checklistFieldsFor(farmData);
             const visibleNames = new Set(visible.map(function(f) { return f.name; }));
             if (checklistFilterEnabled) selectedFields.forEach(function(name) { if (!visibleNames.has(name)) selectedFields.delete(name); });
@@ -2637,7 +2163,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 return;
             }
 
-            const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+            const farmData = farmRegistryCache.find(function(f) { return f.farm === selectedFarm; });
             if (farmData) {
                 if (producerInput) producerInput.value = farmData.producer;
                 if (producerCpfInput) producerCpfInput.value = farmData.cpf || "--";
@@ -2829,8 +2355,8 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                     '</select>';
 
                 const prodSelect = document.getElementById(rowId + '-prod-select');
-                if (prodSelect && PRODUCT_CATALOG[category]) {
-                    const sortedProducts = [...PRODUCT_CATALOG[category]].sort(function(a, b) { 
+                if (prodSelect && productCatalogCache[category]) {
+                    const sortedProducts = [...productCatalogCache[category]].sort(function(a, b) { 
                         return a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' });
                     });
                     sortedProducts.forEach(function(p) {
@@ -2865,8 +2391,8 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 const unitEl = document.getElementById(rowId + '-unit');
                 if (doseEl) doseEl.value = parseFloat((sprayVolHa * 0.0025).toFixed(4));
                 if (unitEl) unitEl.value = "L/ha";
-            } else if (PRODUCT_CATALOG[category]) {
-                const prodData = PRODUCT_CATALOG[category].find(function(p) { return p.name === selectedProdName; });
+            } else if (productCatalogCache[category]) {
+                const prodData = productCatalogCache[category].find(function(p) { return p.name === selectedProdName; });
                 if (prodData) {
                     const doseEl = document.getElementById(rowId + '-dose');
                     const unitEl = document.getElementById(rowId + '-unit');
@@ -2885,9 +2411,9 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             const factor = type === 'oil' ? 0.0025 : 0.0005;
             const calculatedDose = parseFloat((sprayVolHa * factor).toFixed(4));
 
-            if (!PRODUCT_CATALOG[category]) PRODUCT_CATALOG[category] = [];
-            if (!PRODUCT_CATALOG[category].some(function(item) { return item.name === prodName; })) {
-                PRODUCT_CATALOG[category].push({
+            if (!productCatalogCache[category]) productCatalogCache[category] = [];
+            if (!productCatalogCache[category].some(function(item) { return item.name === prodName; })) {
+                productCatalogCache[category].push({
                     name: prodName,
                     dose: calculatedDose,
                     unit: "L/ha",
@@ -2934,7 +2460,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
         function calculateTotals() {
             let totalArea = 0;
             if (selectedFarm) {
-                const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+                const farmData = farmRegistryCache.find(function(f) { return f.farm === selectedFarm; });
                 if (farmData) {
                     farmData.fields.forEach(function(f) {
                         if (selectedFields.has(f.name)) totalArea += f.area;
@@ -2993,8 +2519,8 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
 
                 if (selectEl) {
                     prodName = selectEl.value;
-                    if (cat && PRODUCT_CATALOG[cat]) {
-                        const itemData = PRODUCT_CATALOG[cat].find(function(p) { return p.name === prodName; });
+                    if (cat && productCatalogCache[cat]) {
+                        const itemData = productCatalogCache[cat].find(function(p) { return p.name === prodName; });
                         if (itemData) {
                             if (itemData.active) activeIng = itemData.active;
                             if (itemData.target) targetInfo = itemData.target;
@@ -3085,7 +2611,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
         }
 
         function updatePDFPreview() {
-            const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+            const farmData = farmRegistryCache.find(function(f) { return f.farm === selectedFarm; });
             const pdfProducerEl = document.getElementById('pdf-producer');
             const pdfFarmEl = document.getElementById('pdf-farm');
             const pdfCpfEl = document.getElementById('pdf-cpf');
@@ -3178,8 +2704,8 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
 
                 if (selectEl) {
                     prodName = selectEl.value;
-                    if (cat && PRODUCT_CATALOG[cat]) {
-                        const pData = PRODUCT_CATALOG[cat].find(function(p) { return p.name === prodName; });
+                    if (cat && productCatalogCache[cat]) {
+                        const pData = productCatalogCache[cat].find(function(p) { return p.name === prodName; });
                         if (pData) {
                             if (pData.active) activeIng = pData.active;
                             if (pData.target) targetInfo = pData.target;
@@ -3335,6 +2861,10 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
         }
 
         async function downloadPDF() {
+            if (pdfGenerationActive) {
+                showAlert('Já existe um PDF sendo gerado. Aguarde a conclusão.');
+                return;
+            }
             if (!selectedFarm) {
                 showAlert("Por favor, selecione uma fazenda antes de gerar o relatório PDF.");
                 return;
@@ -3356,7 +2886,9 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
 
             updatePDFPreview();
             applyPdfFontLevel();
-            saveToHistory();
+            pdfGenerationActive = true;
+            const generateButton = document.getElementById('btn-pdf-generate');
+            if (generateButton) generateButton.disabled = true;
 
             const btnText = document.getElementById('btn-pdf-text');
             if (btnText) btnText.innerText = "Gerando PDF...";
@@ -3377,10 +2909,12 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             cloneContainer.appendChild(clonedContent);
             document.body.appendChild(cloneContainer);
 
-            const docFarmForName = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+            const docFarmForName = farmRegistryCache.find(function(f) { return f.farm === selectedFarm; });
             const docProducerName = docFarmForName ? (docFarmForName.producer || docFarmForName.proprietor || '') : '';
             const docResponsibleName = (document.getElementById('agronomist-name') || {}).value || (window.DoCampoDB ? DoCampoDB.user() : '');
             const documentCode = window.DoCampoDocumentCode ? DoCampoDocumentCode.reservar('PUL', docResponsibleName) : ('PUL-' + Date.now());
+            const recInputForSave=document.getElementById('rec-number-input');if(recInputForSave)recInputForSave.value=documentCode;
+            const clonedRecId=clonedContent.querySelector('#pdf-rec-id');if(clonedRecId)clonedRecId.textContent=documentCode;
             const documentDate = new Date().toISOString().slice(0,10);
             const filename = (window.DoCampoDocumentCode ? DoCampoDocumentCode.arquivo(`Receituario_Pulverizacao_${docProducerName || selectedFarm}_${documentDate}_${documentCode}`) : ('Recomendacao_Pulverizacao_' + selectedFarm.replace(/[^a-zA-Z0-9]/g, '_'))) + '.pdf';
 
@@ -3402,36 +2936,35 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 pagebreak:    { mode: ['css', 'legacy'] }
             };
 
-            setTimeout(function() {
-                if (window.DoCampoPDF && window.DoCampoPDF.gerarDataUri) {
-                    window.DoCampoPDF.gerarDataUri(clonedContent, opt).then(async function(pdfData) {
-                        const docFarm = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
-                        await window.DoCampoPDF.salvarECompartilhar(pdfData, filename, 'Receituário de Pulverização', {
-                                typeLabel: 'Receituário de Pulverização',
-                                producer: docFarm ? (docFarm.producer || docFarm.proprietor || '') : '',
-                                farm: selectedFarm,
-                                fields: Array.from(selectedFields),
-                                documentCode: documentCode,
-                                fontLevel: pdfFontLevel,
-                                responsible: (document.getElementById('agronomist-name') || {}).value || (window.DoCampoDB ? DoCampoDB.user() : '')
-                        });
-                        if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
-                        if (wrapper) wrapper.classList.add('hidden');
-                        if (btnText) btnText.innerText = "Gerar Relatório PDF";
-                    }).catch(function(err) {
-                        console.error("Falha ao gerar ou salvar PDF", err);
-                        if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
-                        showAlert(err && err.message ? err.message : 'Não foi possível gerar e salvar o PDF. Tente novamente.');
-                        if (wrapper) wrapper.classList.add('hidden');
-                        if (btnText) btnText.innerText = "Gerar Relatório PDF";
-                    });
-                } else {
-                    if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
-                    showAlert('O gerador de PDF não foi carregado. Feche e abra o aplicativo e tente novamente.');
-                    if (wrapper) wrapper.classList.add('hidden');
-                    if (btnText) btnText.innerText = "Gerar Relatório PDF";
+            try {
+                if (!window.DoCampoPDF || !window.DoCampoPDF.gerarDataUri) {
+                    throw new Error('O gerador de PDF não foi carregado. Feche e abra o aplicativo e tente novamente.');
                 }
-            }, 300);
+                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                const pdfData = await window.DoCampoPDF.gerarDataUri(clonedContent, opt);
+                const docFarm = farmRegistryCache.find(function(f) { return f.farm === selectedFarm; });
+                const savedResult = await window.DoCampoPDF.salvarECompartilhar(pdfData, filename, 'Receituário de Pulverização', {
+                    typeLabel: 'Receituário de Pulverização',
+                    producer: docFarm ? (docFarm.producer || docFarm.proprietor || '') : '',
+                    farm: selectedFarm,
+                    fields: Array.from(selectedFields),
+                    documentCode: documentCode,
+                    fontLevel: pdfFontLevel,
+                    responsible: (document.getElementById('agronomist-name') || {}).value || (window.DoCampoDB ? DoCampoDB.user() : '')
+                });
+                saveToHistory(documentCode, savedResult?.document?.id || '');
+                window.DoCampoDrafts?.clear('pulverizacao');
+                if (window.DoCampoDB) await DoCampoDB.flush();
+            } catch (err) {
+                console.error('Falha ao gerar ou salvar PDF', err);
+                showAlert(err && err.message ? err.message : 'Não foi possível gerar e salvar o PDF. Tente novamente.');
+            } finally {
+                if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
+                if (wrapper) wrapper.classList.add('hidden');
+                if (btnText) btnText.innerText = 'Gerar Relatório PDF';
+                pdfGenerationActive = false;
+                if (generateButton) generateButton.disabled = false;
+            }
         }
 
         function closePDFModal() {
@@ -3454,16 +2987,14 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
             }).filter(function(item) { return item.name && item.dose > 0; });
         }
 
-        function saveToHistory() {
-            const history = JSON.parse(localStorage.getItem('agri_recommendations_history') || '[]');
-            
-            const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+        function saveToHistory(documentCode, documentId) {
+            const farmData = farmRegistryCache.find(function(f) { return f.farm === selectedFarm; });
             const recInput = document.getElementById('rec-number-input');
-            const recIdVal = recInput ? recInput.value.trim() : '#DC-0000';
+            const recIdVal = recInput ? recInput.value.trim() : 'PUL-PRÉVIA';
             const areaDisplayEl = document.getElementById('selected-area-display');
 
             const entry = {
-                id: recIdVal,
+                id: documentCode || recIdVal,
                 date: new Date().toLocaleString('pt-BR'),
                 farm: selectedFarm,
                 producer: farmData ? farmData.producer : '',
@@ -3480,10 +3011,10 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 predilution: getPredilutionData()
             };
 
-            history.unshift(entry);
-            localStorage.setItem('agri_recommendations_history', JSON.stringify(history.slice(0, 20)));
             if (window.DoCampoDB) window.DoCampoDB.upsert('recommendations', {
-                code: recIdVal,
+                id: documentId ? 'recommendation-' + documentId : DoCampoDB.stableId('pul', documentCode || recIdVal),
+                code: documentCode || recIdVal,
+                documentId: documentId || '',
                 recommendationType: 'pulverizacao',
                 status: 'emitida',
                 immutable: true,
@@ -3491,15 +3022,12 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
                 snapshot: JSON.parse(JSON.stringify(entry))
             });
 
-            let currentSeq = getNextSequenceNumber();
-            let expectedCode = '#DC-' + String(currentSeq).padStart(4, '0');
-            if (recIdVal.toUpperCase() === expectedCode.toUpperCase()) {
-                localStorage.setItem('agri_rec_seq_counter', currentSeq + 1);
-            }
         }
 
         function openHistoryModal() {
-            const history = JSON.parse(localStorage.getItem('agri_recommendations_history') || '[]');
+            const history = window.DoCampoDB ? DoCampoDB.list('recommendations')
+                .filter(item => item.recommendationType === 'pulverizacao')
+                .map(item => item.snapshot || item) : [];
             const container = document.getElementById('history-list');
 
             if (container) {
@@ -3582,6 +3110,7 @@ A destinação inadequada de embalagens ou restos de produtos ocasiona contamina
 
             loadSequenceNumber();
             calculateTotals();
+            window.DoCampoDrafts?.clear('pulverizacao');
         }
     </script>
 </body>

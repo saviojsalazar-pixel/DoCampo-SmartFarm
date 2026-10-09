@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const KEY = 'docampo_document_counters_v1';
+  const KEY = 'docampo_document_counters_v2';
 
   function tagResponsavel(nome) {
     const texto = String(nome || (window.DoCampoDB && DoCampoDB.user()) || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -18,7 +18,8 @@
 
   function maiorExistente(prefixo, tag) {
     if (!window.DoCampoDB) return 0;
-    const re = new RegExp('^' + prefixo + '-' + tag + '-(\\d+)$', 'i');
+    const deviceTag = tagAparelho();
+    const re = new RegExp('^' + prefixo + '-' + tag + '-' + deviceTag + '-(\\d+)$', 'i');
     const documentos = Object.values((DoCampoDB.read().entities || {}).documents || {});
     return documentos.reduce((maior, doc) => {
       const codigo = doc.documentCode || (doc.snapshot && doc.snapshot.documentCode) || '';
@@ -27,10 +28,16 @@
     }, 0);
   }
 
+  function tagAparelho() {
+    const device = window.DoCampoDB ? DoCampoDB.deviceId() : 'LOCAL';
+    return String(device).replace(/[^a-z0-9]/gi, '').slice(-4).toUpperCase().padStart(4, '0');
+  }
+
   function reservar(prefixo, responsavel) {
     prefixo = String(prefixo || 'DOC').replace(/[^A-Z0-9]/gi, '').toUpperCase();
     const tag = tagResponsavel(responsavel);
-    const chave = prefixo + '-' + tag;
+    const deviceTag = tagAparelho();
+    const chave = prefixo + '-' + tag + '-' + deviceTag;
     const mapa = counters();
     const proximo = Math.max(Number(mapa[chave]) || 0, maiorExistente(prefixo, tag)) + 1;
     mapa[chave] = proximo;
@@ -48,5 +55,5 @@
       .replace(/[^a-zA-Z0-9_.-]+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
   }
 
-  window.DoCampoDocumentCode = { reservar, previa, tagResponsavel, arquivo };
+  window.DoCampoDocumentCode = { reservar, previa, tagResponsavel, tagAparelho, arquivo };
 })();

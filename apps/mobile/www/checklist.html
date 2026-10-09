@@ -686,102 +686,10 @@
         let auth = null;
         let currentUser = null;
 
-        // Mapeamento automático de Produtores por Fazenda com base no PDF Dados_fazendas.pdf
-        const produtoresPorFazenda = {
-            "Fazenda Santa Apolinária": "Edna Huebra Alves",
-            "Fazenda Flávia Adriana Elvira": "Elvira Maria de Oliveira e Sousa",
-            "Fazenda Alcantilado-São Francisco": "Francisco Lacerda de Aguiar Neto",
-            "Fazenda Mafort": "Otaviano Mendes Mafort",
-            "Propriedade Marcélia": "Marcélia de Souza",
-            "Sítio Boa Vista": "José Roberto de Sousa",
-            "Fazenda Hott": "Ronaldo Luiz Hott",
-            "Propriedade Cristina Sousa": "Maria Cristina de Sousa Amancio",
-            "Sítio Santa Catarina": "Célio da Silva Araujo",
-            "Propriedades Daniel": "Daniel Vinicius Ferreira Lopes",
-            "Fazenda Cafarnaum": "Olavo de Sousa Costa",
-            "Fazendas Café Realeza": "Luiz Eduardo Santos de Sousa",
-            "Fazenda Riacho Fundo": "Mariana Raissa Moreira Martins",
-            "Propriedades Gabriel e Thalys": "Gabriel de Sá Rodrigues"
-        };
+        // Espelhos somente de leitura da base central, usados para preencher os seletores.
+        const produtoresPorFazenda = {};
 
-        const talhoesPorFazenda = {
-            "Fazenda Santa Apolinária": [
-                "1. Brotos", "2. Acima do Secador", "3. Abaixo do Secador", "4. Canto da Mata"
-            ],
-            "Fazenda Flávia Adriana Elvira": [
-                "1.1 Realeza (esquerda)", "1.2 Realeza (direita)", "2.1 BR (direita)", "2.2 BR (esquerda)", 
-                "3.1 Recanto Recepa do Alto", "3.2 Recanto Zé Carlos Velha", "3.3 Recanto Recepa de Baixo", 
-                "3.4 Recanto Zé Carlos Nova", "3.5 Recanto Fiete", "3.6 Recanto Leo Fortão", "4.1 Alto Peão", 
-                "5.1 Gameleira Velha", "5.2 Gameleira Nova", "5.3 Gameleira Plantio", "6.1 Viturino Nascentes", 
-                "6.2 Viturino Lav. das Pedras", "6.3 Viturino Lav. Velha"
-            ],
-            "Fazenda Alcantilado-São Francisco": [
-                "1.1 Fazenda", "2.1 Joselito Piloto", "3.1 Regiane Tavares", "3.2 Luciana Lopes", "3.3 Fazenda", 
-                "3.4 João Martins", "4.1 Jorge Gumeiro", "4.2 Jorge Gumeiro", "5.1 Jerusa Tavares", "6.1 Angelica Flores", 
-                "6.2 Fazenda", "6.3 Jerusa Tavares", "6.4 Viviane Flores", "6.5 Sonia Tavares", "6.6 Afonso Tavares", 
-                "6.7 Joselito Piloto", "7.1 José Flores", "7.2 Fazenda", "7.3 Fazenda", "7.4 Maria Januaraia", 
-                "7.5 Janaina Lourenço", "7.6 Celi Raimundo", "7.7 Izael da Silva", "8.1 Fazenda", "8.2 Alcemar Venâncio", 
-                "8.3 Fazenda", "8.4 Fazenda", "8.5 Angelica Flores", "9.1 Edmilson Teixeira", "9.2 Fazenda", 
-                "10.1 Felipe Sabino", "10.2 Fazenda", "10.3 Fazenda", "10.4 Fazenda", "10.5 Fazenda", "10.6 Fazenda", 
-                "10.7 Fazenda", "10.8 Fazenda", "10.9 Fazenda", "11.1 Moises Lourenço", "11.2 Fazenda", "11.3 Fazenda", 
-                "11.4 Natalino Lourenço", "11.5 João Lourenço", "11.6 Fazenda", "12.1 Moises Lourenço", "12.2 Fazenda", 
-                "14.1 Fazenda", "14.2 Fazenda", "15.1 Fazenda", "15.2 Fazenda", "15.3 Fazenda", "16.1 Fazenda"
-            ],
-            "Fazenda Mafort": [
-                "1.1 Alto da Pedra", "1.2 Baixada do Alto", "1.3 Otaviano Cachoeira 23", "1.4 Gustavo Cachoeira 23", 
-                "1.5 Davi Cachoeira 23", "1.6 Cachoeira Recepa 23", "1.7 Pasto", "1.8 Agulheiro", "1.9 Grota Gustavo Esq. 24", 
-                "1.10 Grota Gustavo", "1.11 Grota do Davi", "1.12 Despolpador", "1.13 Despolpador Davi", "1.14 Lav 17 mil", 
-                "1.15 Pasto dos Cabritos", "1.16 Lav. do Barraco", "1.17 Lav. do Eucalipto", "1.18 Morro Redondo Recepa 24", 
-                "1.19 Morro Redondo", "1.20 Quintal", "1.21 Lav. 11 mil", "1.22 Lav. 5 mil", "2.1 Hot Casa", 
-                "2.2 785 do Hott Nova", "2.3 Zé Carlos Hott", "2.4 Hott Divisa do Orlando", "3.1 Jaca Otaviano", 
-                "3.2 Jaca Gustavo", "4.1 Gameleira", "5.1 Vila Margem Rio", "5.2 Vila Ronaldo", "5.3 Vila Terreiro", 
-                "5.4 Vila Bananeiras", "5.5 Vila Pé de Limão", "5.6 Vila Canto da Mata", "5.7 Vila Vestido", 
-                "5.8 Vila Barra do Mato", "5.9 Vila Barra da Pedra", "5.11 Vila 3 Coqueiros", "5.12 Vila Acima da Mata"
-            ],
-            "Propriedade Marcélia": [
-                "1. Arara", "2. Esqueletada 25 (Q6-Q7)", "3. Lavoura Velha"
-            ],
-            "Sítio Boa Vista": [
-                "1. Porteira", "2. Antena", "3. Central", "4. Encosta da Mata"
-            ],
-            "Fazenda Hott": [
-                "1.1 Extrema", "2.1 Diamante Broto", "2.2 Diamante Recepa 25", "2.3 Diamante Julio", 
-                "3.1 Luan e Gabriel", "3.2 Lagoinha + Ararinha", "3.3 Terreiro", "3.4 Pasto plantio 25", 
-                "4.1 Eucalipto Nova", "4.2 Eucalipto Velha", "5.1 Abaixo do Mato", "6.1 Gameleira Plantio 25", 
-                "6.2 Gameleira do Alto", "6.3 Gameleira Recepa 23", "6.4 Gameleira de Baixo"
-            ],
-            "Propriedade Cristina Sousa": [
-                "1.1 Serra (produção)", "1.1 Serra (brotos)", "2.1 Curral"
-            ],
-            "Sítio Santa Catarina": [
-                "1. Célio", "2. Célio", "3. Tirré", "4. Glaucio", "5. Célio", "6. Glaucio", 
-                "7. Célio", "8. Mirella", "9. Tirré", "10. Célio", "11. Glaucio"
-            ],
-            "Propriedades Daniel": [
-                "1.1 Manhuaçuzinho (produção)", "1.2 Manhuaçuzinho (nova)", "1.3 Manhuaçuzinho (nova)", 
-                "2.1 Soledade", "2.2 Soledade", "2.3 Soledade", "2.4 Soledade", "2.5 Soledade", "2.6 Soledade", 
-                "2.7 Soledade", "2.8 Soledade", "3.1 Dom Corrêa", "3.2 Dom Correa", "3.3 Dom Corrêa"
-            ],
-            "Fazenda Cafarnaum": [
-                "1. Boboleta", "2. 2016", "3. 2017", "4. 2018", "5. Recepa 2024"
-            ],
-            "Fazendas Café Realeza": [
-                "1.1 São Pedro", "1.2 São Pedro", "2.1 Vila Cruzeiro", "2.2 Vila Natal", "2.3 Vila", 
-                "2.4 Vila Pomar", "2.5 Vila Galpão", "2.6 Vila Eucalipto", "2.7 Vila Curral", "2.8 Vila Arara", 
-                "3.1 Realeza 785", "3.2 Realeza Lav. da Pedra", "3.3 Realeza Arara", "3.4 Realeza Velha 10", 
-                "3.5 Realeza Nova", "4.1 Taquara Velha", "4.2 Taquara Esqueletada"
-            ],
-            "Fazenda Riacho Fundo": [
-                "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", 
-                "15", "16", "17", "18", "19", "20", "21", "22"
-            ],
-            "Propriedades Gabriel e Thalys": [
-                "1.1 Antonio", "1.2 Antonio", "1.3 Antonio", "1.4 Antonio", "1.5 Antonio", "1.6 Antonio", 
-                "1.7 Antonio", "1.8 Antonio", "1.9 Antonio", "1.10 Antonio", "2.1 Estrada Limeira", 
-                "3.1 Limeira", "3.2 Limeira", "4.1 Santinha", "5.1 Ventania", "5.2 Ventania", "5.3 Ventania", 
-                "5.4 Ventania", "6.1 Flaviano", "6.2 Flaviano"
-            ]
-        };
+        const talhoesPorFazenda = {};
 
         let tempTalhoesNovos = [];
         let acoesCustomizadas = [];
@@ -792,11 +700,30 @@
         let listaAvaliacoes = [];
         let pontosGpsEmEdicao = [];
         let indiceFotoPonto = -1;
+        let photoCaptureActive = false;
         let temporizadorRascunho = null;
-        const CHAVE_RASCUNHO_FORMULARIO = 'docampo_checklist_form_draft_v2';
+        const CHAVE_VISITA_ATUAL = 'docampo_current_visit_id_v2';
         let tarefasManuaisEmEdicao = [];
         let statusTarefasAutomaticasEmEdicao = {};
         let visitaCompartilhadaCandidata = null;
+        let checklistPdfActive = false;
+
+        function resolverIdVisita(farmName, visitDate) {
+            if (!window.DoCampoDB) return undefined;
+            const farm = String(farmName || '').trim();
+            const date = String(visitDate || '').trim() || new Date().toISOString().slice(0, 10);
+            const abertas = DoCampoDB.list('visits').filter(visita =>
+                visita.status === 'em_andamento' && visita.farmName === farm && visita.visitDate === date
+            ).sort((a, b) => String(a.id).localeCompare(String(b.id)));
+            if (abertas.length) return abertas[0].id;
+            const base = DoCampoDB.stableId('visit', farm + '|' + date);
+            const existente = DoCampoDB.get('visits', base);
+            if (!existente || existente.status !== 'concluida') return base;
+            const concluidas = DoCampoDB.list('visits').filter(visita =>
+                visita.status === 'concluida' && visita.farmName === farm && visita.visitDate === date
+            ).length;
+            return base + '-' + String(concluidas + 1);
+        }
 
         function autoExpandirTexto(elemento) {
             if (!elemento) return;
@@ -807,13 +734,11 @@
         async function carregarVisitaNoFormulario(visita) {
             if (!visita) return;
             if(window.DoCampoPhotos)await DoCampoPhotos.hydrateVisits([visita]);
-            localStorage.setItem('docampo_current_visit_id', visita.id);
+            localStorage.setItem(CHAVE_VISITA_ATUAL, visita.id);
             listaAvaliacoes = JSON.parse(JSON.stringify(visita.checklist || []));
-            localStorage.setItem('docampo_listaAvaliacoes', JSON.stringify(listaAvaliacoes));
             if (visita.visitDate) document.getElementById('dataAvaliacao').value = visita.visitDate;
             if (visita.producerName) {
                 document.getElementById('nomeProprietario').value = visita.producerName;
-                localStorage.setItem('docampo_nomeProprietario', visita.producerName);
             }
             const gerais = document.getElementById('observacoesGerais');
             if (gerais) { gerais.value = visita.generalNotes || ''; autoExpandirTexto(gerais); }
@@ -826,7 +751,7 @@
         function procurarVisitaCompartilhada(fazenda) {
             const painel = document.getElementById('visitaCompartilhadaPainel');
             if (!painel || !window.DoCampoDB || !fazenda) { painel?.classList.add('hidden'); return; }
-            const atualId = localStorage.getItem('docampo_current_visit_id');
+            const atualId = localStorage.getItem(CHAVE_VISITA_ATUAL);
             const candidatas = DoCampoDB.list('visits')
                 .filter(v => v.status === 'em_andamento' && v.farmName === fazenda && v.id !== atualId && Array.isArray(v.checklist) && v.checklist.length)
                 .sort((a,b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
@@ -837,70 +762,33 @@
             painel.classList.remove('hidden');
         }
 
-        async function carregarTudoDoLocalStorage() {
+        async function carregarCadastrosDoBancoCentral() {
             try {
-                let cadastroCentralCarregado = false;
-                if (window.DoCampoRegistry) {
-                    const central = await window.DoCampoRegistry.all();
-                    if (Array.isArray(central.farms) && central.farms.length) {
-                        Object.keys(talhoesPorFazenda).forEach(k => delete talhoesPorFazenda[k]);
-                        Object.keys(produtoresPorFazenda).forEach(k => delete produtoresPorFazenda[k]);
-                        central.farms.forEach(f => {
-                            if (!f || !f.farm) return;
-                            talhoesPorFazenda[f.farm] = (f.fields || []).map(t => t.name).filter(Boolean);
-                            produtoresPorFazenda[f.farm] = f.producer || f.proprietor || '';
-                        });
-                        cadastroCentralCarregado = true;
-                    }
-                }
-                const localFazendas = localStorage.getItem('docampo_talhoesPorFazenda');
-                if (!cadastroCentralCarregado && localFazendas) {
-                    const parsed = JSON.parse(localFazendas);
-                    Object.assign(talhoesPorFazenda, parsed);
-                }
-                const localProdutores = localStorage.getItem('docampo_produtoresPorFazenda');
-                if (!cadastroCentralCarregado && localProdutores) {
-                    const parsed = JSON.parse(localProdutores);
-                    Object.assign(produtoresPorFazenda, parsed);
-                }
-                const localPragas = localStorage.getItem('docampo_pragasCustomizadas');
-                if (localPragas) pragasCustomizadas = JSON.parse(localPragas);
-
-                const localDoencas = localStorage.getItem('docampo_doencasCustomizadas');
-                if (localDoencas) doencasCustomizadas = JSON.parse(localDoencas);
-
-                const localMato = localStorage.getItem('docampo_matoCustomizados');
-                if (localMato) matoCustomizados = JSON.parse(localMato);
-
-                const localAcoes = localStorage.getItem('docampo_acoesCustomizadas');
-                if (localAcoes) acoesCustomizadas = JSON.parse(localAcoes);
-
-                const localAvaliacoes = localStorage.getItem('docampo_listaAvaliacoes');
-                if (localAvaliacoes) listaAvaliacoes = JSON.parse(localAvaliacoes);
-
-                const localProprietario = localStorage.getItem('docampo_nomeProprietario');
-                if (localProprietario && document.getElementById('nomeProprietario')) {
-                    document.getElementById('nomeProprietario').value = localProprietario;
-                }
-                if (!cadastroCentralCarregado && window.DoCampoData) {
-                    window.DoCampoData.read().farms.forEach(f => {
-                        if (!f || !f.farm) return;
-                        talhoesPorFazenda[f.farm] = (f.fields || []).map(t => t.name).filter(Boolean);
-                        if (f.producer) produtoresPorFazenda[f.farm] = f.producer;
-                    });
-                }
+                const central = await window.DoCampoRegistry.all();
+                Object.keys(talhoesPorFazenda).forEach(k => delete talhoesPorFazenda[k]);
+                Object.keys(produtoresPorFazenda).forEach(k => delete produtoresPorFazenda[k]);
+                (central.farms || []).forEach(f => {
+                    if (!f || !f.farm) return;
+                    talhoesPorFazenda[f.farm] = (f.fields || []).map(t => t.name).filter(Boolean);
+                    produtoresPorFazenda[f.farm] = f.producer || f.proprietor || '';
+                });
+                const settings = window.DoCampoDB?.get('settings', 'checklist-customizations');
+                pragasCustomizadas = Array.isArray(settings?.pragas) ? settings.pragas : [];
+                doencasCustomizadas = Array.isArray(settings?.doencas) ? settings.doencas : [];
+                matoCustomizados = Array.isArray(settings?.matos) ? settings.matos : [];
+                acoesCustomizadas = Array.isArray(settings?.acoes) ? settings.acoes : [];
             } catch (e) {
-                console.error("Erro ao carregar do localStorage:", e);
+                console.error("Erro ao carregar o banco central:", e);
+                throw e;
             }
         }
 
         async function initFirebase() {
-            await carregarTudoDoLocalStorage();
+            await carregarCadastrosDoBancoCentral();
             if (localStorage.getItem('docampo_start_new_visit') === '1') {
                 localStorage.removeItem('docampo_start_new_visit');
-                localStorage.removeItem('docampo_current_visit_id');
+                localStorage.removeItem(CHAVE_VISITA_ATUAL);
                 listaAvaliacoes = [];
-                localStorage.setItem('docampo_listaAvaliacoes', '[]');
             }
             carregarFazendas();
             carregarSelectGerenciarFazendas();
@@ -910,7 +798,7 @@
             renderizarMatoCustomizados();
             renderizarAcoesCustomizadas();
             renderizarTabela();
-            const visitaAtualId = localStorage.getItem('docampo_current_visit_id');
+            const visitaAtualId = localStorage.getItem(CHAVE_VISITA_ATUAL);
             const visitaAtual = visitaAtualId && window.DoCampoDB ? DoCampoDB.get('visits', visitaAtualId) : null;
             if (visitaAtual && visitaAtual.status === 'em_andamento') {
                 if (visitaAtual.farmName && talhoesPorFazenda[visitaAtual.farmName]) {
@@ -919,9 +807,7 @@
                 }
                 await carregarVisitaNoFormulario(visitaAtual);
             }
-            let rascunhoLocal=null;try{rascunhoLocal=JSON.parse(localStorage.getItem(CHAVE_RASCUNHO_FORMULARIO)||'null')}catch(_){}
-            const rascunhoBanco=visitaAtual&&visitaAtual.formDraft;
-            const rascunho=String(rascunhoBanco?.savedAt||'')>String(rascunhoLocal?.savedAt||'')?rascunhoBanco:rascunhoLocal;
+            const rascunho=visitaAtual&&visitaAtual.formDraft;
             if(rascunho&&(rascunho.talhao||rascunho.observacoes||(rascunho.pontosGps||[]).length||(rascunho.pragas||[]).length||(rascunho.indicacoes||[]).length)){
                 await restaurarRascunhoFormulario(rascunho);exibirToast('Rascunho do checklist recuperado.','bg-blue-700');
             }
@@ -931,176 +817,55 @@
             console.info('Modo de campo offline ativo: dados salvos neste aparelho.');
         }
 
-        function iniciarEscutaFirestore() {
-            if (!currentUser || !db) return;
-
-            // Escuta de Propriedades e Talhões
-            const propRef = doc(db, 'artifacts', appId, 'public', 'data', 'propriedades_config', 'lista');
-            onSnapshot(propRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.data();
-                    if (data && data.json) {
-                        try {
-                            const carregadas = JSON.parse(data.json);
-                            Object.assign(talhoesPorFazenda, carregadas);
-                            try { localStorage.setItem('docampo_talhoesPorFazenda', JSON.stringify(talhoesPorFazenda)); } catch(e){}
-                            
-                            carregarFazendas();
-                            carregarSelectGerenciarFazendas();
-                            atualizarDatalistFazendas();
-                        } catch (e) {
-                            console.error("Erro ao processar talhões salvos:", e);
-                        }
-                    }
-                    if (data && data.produtoresJson) {
-                        try {
-                            const prodCarregados = JSON.parse(data.produtoresJson);
-                            Object.assign(produtoresPorFazenda, prodCarregados);
-                            try { localStorage.setItem('docampo_produtoresPorFazenda', JSON.stringify(produtoresPorFazenda)); } catch(e){}
-                        } catch (e) {
-                            console.error("Erro ao processar produtores salvos:", e);
-                        }
-                    }
-                } else {
-                    salvarPropriedadesFirestore();
-                }
-            }, (err) => console.error("Erro Firestore propriedades:", err));
-
-            // Escuta de Ações de Manejo Customizadas
-            const acoesRef = doc(db, 'artifacts', appId, 'public', 'data', 'acoes_config', 'lista');
-            onSnapshot(acoesRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.data();
-                    if (data && Array.isArray(data.acoes)) {
-                        acoesCustomizadas = Array.from(new Set([...acoesCustomizadas, ...data.acoes]));
-                        try { localStorage.setItem('docampo_acoesCustomizadas', JSON.stringify(acoesCustomizadas)); } catch(e){}
-                        renderizarAcoesCustomizadas();
-                    }
-                } else {
-                    salvarAcoesFirestore();
-                }
-            }, (err) => console.error("Erro Firestore ações:", err));
-
-            // Escuta de Pragas Customizadas
-            const pragasRef = doc(db, 'artifacts', appId, 'public', 'data', 'pragas_config', 'lista');
-            onSnapshot(pragasRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.data();
-                    if (data && Array.isArray(data.pragas)) {
-                        pragasCustomizadas = Array.from(new Set([...pragasCustomizadas, ...data.pragas]));
-                        try { localStorage.setItem('docampo_pragasCustomizadas', JSON.stringify(pragasCustomizadas)); } catch(e){}
-                        renderizarPragasCustomizadas();
-                    }
-                } else {
-                    salvarPragasFirestore();
-                }
-            }, (err) => console.error("Erro Firestore pragas:", err));
-
-            // Escuta de Doenças Customizadas
-            const doencasRef = doc(db, 'artifacts', appId, 'public', 'data', 'doencas_config', 'lista');
-            onSnapshot(doencasRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.data();
-                    if (data && Array.isArray(data.doencas)) {
-                        doencasCustomizadas = Array.from(new Set([...doencasCustomizadas, ...data.doencas]));
-                        try { localStorage.setItem('docampo_doencasCustomizadas', JSON.stringify(doencasCustomizadas)); } catch(e){}
-                        renderizarDoencasCustomizadas();
-                    }
-                } else {
-                    salvarDoencasFirestore();
-                }
-            }, (err) => console.error("Erro Firestore doenças:", err));
-
-            // Escuta de Situação do Mato Customizada
-            const matoRef = doc(db, 'artifacts', appId, 'public', 'data', 'mato_config', 'lista');
-            onSnapshot(matoRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.data();
-                    if (data && Array.isArray(data.matos)) {
-                        matoCustomizados = Array.from(new Set([...matoCustomizados, ...data.matos]));
-                        try { localStorage.setItem('docampo_matoCustomizados', JSON.stringify(matoCustomizados)); } catch(e){}
-                        renderizarMatoCustomizados();
-                    }
-                } else {
-                    salvarMatoFirestore();
-                }
-            }, (err) => console.error("Erro Firestore mato:", err));
-
-            // Escuta de Avaliações
-            const avalRef = doc(db, 'artifacts', appId, 'public', 'data', 'avaliacoes_config', 'lista');
-            onSnapshot(avalRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.data();
-                    if (data && Array.isArray(data.lista)) {
-                        listaAvaliacoes = data.lista;
-                        try { localStorage.setItem('docampo_listaAvaliacoes', JSON.stringify(listaAvaliacoes)); } catch(e){}
-                        renderizarTabela();
-                    }
-                }
-            }, (err) => console.error("Erro Firestore avaliações:", err));
+        function localizarFazendaCentral(nome) {
+            if (!window.DoCampoData) throw new Error('Banco central indisponível.');
+            const chave = window.DoCampoData.key(nome);
+            return (window.DoCampoData.read().farms || []).find(f => window.DoCampoData.key(f.farm) === chave) || null;
         }
 
-        function salvarPropriedades() {
-            try { 
-                localStorage.setItem('docampo_talhoesPorFazenda', JSON.stringify(talhoesPorFazenda)); 
-                localStorage.setItem('docampo_produtoresPorFazenda', JSON.stringify(produtoresPorFazenda)); 
-            } catch (e) {}
-            if (window.DoCampoData) {
-                const sharedAtual = window.DoCampoData.read();
-                Object.keys(talhoesPorFazenda).forEach(nome => window.DoCampoData.mergeFarm({
-                    farm: nome,
-                    producer: produtoresPorFazenda[nome] || '',
-                    fields: (talhoesPorFazenda[nome] || []).map(t => {
-                        const fazendaExistente=(sharedAtual.farms||[]).find(f=>window.DoCampoData.key(f.farm)===window.DoCampoData.key(nome));
-                        const campoExistente=(fazendaExistente?.fields||[]).find(f=>window.DoCampoData.fieldKey(f.name)===window.DoCampoData.fieldKey(t));
-                        return {...(campoExistente||{}),name:t};
-                    })
-                }));
-            }
-            salvarPropriedadesFirestore();
+        async function recarregarCadastrosCentrais() {
+            await window.DoCampoDB.flush();
+            await carregarCadastrosDoBancoCentral();
+            carregarFazendas();
+            carregarSelectGerenciarFazendas();
+            atualizarDatalistFazendas();
         }
 
-        function salvarPragas() {
-            try { localStorage.setItem('docampo_pragasCustomizadas', JSON.stringify(pragasCustomizadas)); } catch (e) {}
-            salvarPragasFirestore();
+        function salvarConfiguracoesChecklist() {
+            if (!window.DoCampoDB) throw new Error('Banco central indisponível.');
+            DoCampoDB.upsert('settings', {
+                id: 'checklist-customizations',
+                pragas: [...pragasCustomizadas],
+                doencas: [...doencasCustomizadas],
+                matos: [...matoCustomizados],
+                acoes: [...acoesCustomizadas],
+                verified: true
+            });
         }
 
-        function salvarDoencas() {
-            try { localStorage.setItem('docampo_doencasCustomizadas', JSON.stringify(doencasCustomizadas)); } catch (e) {}
-            salvarDoencasFirestore();
-        }
-
-        function salvarMato() {
-            try { localStorage.setItem('docampo_matoCustomizados', JSON.stringify(matoCustomizados)); } catch (e) {}
-            salvarMatoFirestore();
-        }
-
-        function salvarAcoes() {
-            try { localStorage.setItem('docampo_acoesCustomizadas', JSON.stringify(acoesCustomizadas)); } catch (e) {}
-            salvarAcoesFirestore();
-        }
+        function salvarPragas() { salvarConfiguracoesChecklist(); }
+        function salvarDoencas() { salvarConfiguracoesChecklist(); }
+        function salvarMato() { salvarConfiguracoesChecklist(); }
+        function salvarAcoes() { salvarConfiguracoesChecklist(); }
 
         function salvarAvaliacoes() {
-            // A lista antiga permanece apenas como compatibilidade e sem copiar
-            // as fotos. A versao completa e autoritativa fica na visita do banco
-            // unificado, evitando duplicar Base64 e esgotar o localStorage.
-            const legado=listaAvaliacoes.map(item=>({...item,pontosGps:(item.pontosGps||[]).map(p=>{const copia={...p};delete copia.foto;return copia})}));
-            try { localStorage.setItem('docampo_listaAvaliacoes', JSON.stringify(legado)); } catch (e) { console.warn('Compatibilidade antiga do checklist nao foi gravada:',e); }
             if (window.DoCampoDB) try {
-                let draftId = localStorage.getItem('docampo_current_visit_id');
+                let draftId = localStorage.getItem(CHAVE_VISITA_ATUAL);
+                const farmName = document.getElementById('fazenda')?.value || '';
+                const visitDate = document.getElementById('dataAvaliacao')?.value || '';
+                if (!draftId) draftId = resolverIdVisita(farmName, visitDate);
                 const visit = window.DoCampoDB.upsert('visits', {
-                    id: draftId || undefined,
+                    id: draftId,
                     status: 'em_andamento',
                     producerName: document.getElementById('nomeProprietario')?.value || '',
-                    farmName: document.getElementById('fazenda')?.value || '',
-                    visitDate: document.getElementById('dataAvaliacao')?.value || '',
+                    farmName,
+                    visitDate,
                     checklist: JSON.parse(JSON.stringify(listaAvaliacoes)),
                     generalNotes: document.getElementById('observacoesGerais')?.value.trim() || '',
                     formDraft: capturarRascunhoFormulario()
                 });
-                localStorage.setItem('docampo_current_visit_id', visit.id);
+                localStorage.setItem(CHAVE_VISITA_ATUAL, visit.id);
             } catch(error) { exibirToast(error.message||'Nao foi possivel salvar o checklist neste aparelho.','bg-red-700'); throw error; }
-            salvarAvaliacoesFirestore();
         }
 
         function capturarRascunhoFormulario() {
@@ -1124,17 +889,11 @@
         }
         function salvarRascunhoFormulario() {
             const draft=capturarRascunhoFormulario();
-            let salvoNoBanco=false;
             if(window.DoCampoDB&&(draft.farmName||listaAvaliacoes.length))try{
-                const id=localStorage.getItem('docampo_current_visit_id');
-                const visit=DoCampoDB.upsert('visits',{id:id||undefined,status:'em_andamento',producerName:draft.producerName,farmName:draft.farmName,visitDate:draft.visitDate,checklist:JSON.parse(JSON.stringify(listaAvaliacoes)),generalNotes:draft.observacoesGerais.trim(),formDraft:draft});
-                localStorage.setItem('docampo_current_visit_id',visit.id);
-                salvoNoBanco=true;
-            }catch(error){exibirToast(error.message||'O aparelho esta sem espaco para salvar o rascunho.','bg-red-700');return false;}
-            const copiaLegada=JSON.parse(JSON.stringify(draft));
-            if(salvoNoBanco)(copiaLegada.pontosGps||[]).forEach(p=>delete p.foto);
-            try { localStorage.setItem(CHAVE_RASCUNHO_FORMULARIO,JSON.stringify(copiaLegada)); }
-            catch(error){if(!salvoNoBanco){exibirToast('O aparelho esta sem espaco para salvar o rascunho e as fotos.','bg-red-700');return false;}}
+                const id=localStorage.getItem(CHAVE_VISITA_ATUAL);
+                const visit=DoCampoDB.upsert('visits',{id:id||resolverIdVisita(draft.farmName,draft.visitDate),status:'em_andamento',producerName:draft.producerName,farmName:draft.farmName,visitDate:draft.visitDate,checklist:JSON.parse(JSON.stringify(listaAvaliacoes)),generalNotes:draft.observacoesGerais.trim(),formDraft:draft});
+                localStorage.setItem(CHAVE_VISITA_ATUAL,visit.id);
+            }catch(error){exibirToast(error.message||'Não foi possível salvar o rascunho no banco local.','bg-red-700');return false;}
             return true;
         }
         function agendarSalvamentoRascunho(){clearTimeout(temporizadorRascunho);temporizadorRascunho=setTimeout(salvarRascunhoFormulario,650)}
@@ -1154,85 +913,6 @@
             tarefasManuaisEmEdicao=Array.isArray(draft.manualTasks)?draft.manualTasks.map(tarefaManualNormalizada):[];renderizarTarefasManuais();
             statusTarefasAutomaticasEmEdicao=draft.automaticTaskStatus&&typeof draft.automaticTaskStatus==='object'?JSON.parse(JSON.stringify(draft.automaticTaskStatus)):{};renderizarTarefasAutomaticas();
             indiceEdicao=Number.isInteger(draft.indiceEdicao)?draft.indiceEdicao:-1;atualizarModoEdicao();
-        }
-
-        async function salvarPropriedadesFirestore() {
-            if (!currentUser || !db) return;
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'propriedades_config', 'lista');
-                await setDoc(docRef, {
-                    json: JSON.stringify(talhoesPorFazenda),
-                    produtoresJson: JSON.stringify(produtoresPorFazenda),
-                    atualizadoEm: new Date().toISOString()
-                });
-            } catch (err) {
-                console.error("Erro ao salvar propriedades no banco:", err);
-            }
-        }
-
-        async function salvarAcoesFirestore() {
-            if (!currentUser || !db) return;
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'acoes_config', 'lista');
-                await setDoc(docRef, {
-                    acoes: acoesCustomizadas,
-                    atualizadoEm: new Date().toISOString()
-                });
-            } catch (err) {
-                console.error("Erro ao salvar ações no banco:", err);
-            }
-        }
-
-        async function salvarPragasFirestore() {
-            if (!currentUser || !db) return;
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pragas_config', 'lista');
-                await setDoc(docRef, {
-                    pragas: pragasCustomizadas,
-                    atualizadoEm: new Date().toISOString()
-                });
-            } catch (err) {
-                console.error("Erro ao salvar pragas no banco:", err);
-            }
-        }
-
-        async function salvarDoencasFirestore() {
-            if (!currentUser || !db) return;
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'doencas_config', 'lista');
-                await setDoc(docRef, {
-                    doencas: doencasCustomizadas,
-                    atualizadoEm: new Date().toISOString()
-                });
-            } catch (err) {
-                console.error("Erro ao salvar doenças no banco:", err);
-            }
-        }
-
-        async function salvarMatoFirestore() {
-            if (!currentUser || !db) return;
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'mato_config', 'lista');
-                await setDoc(docRef, {
-                    matos: matoCustomizados,
-                    atualizadoEm: new Date().toISOString()
-                });
-            } catch (err) {
-                console.error("Erro ao salvar situação do mato no banco:", err);
-            }
-        }
-
-        async function salvarAvaliacoesFirestore() {
-            if (!currentUser || !db) return;
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'avaliacoes_config', 'lista');
-                await setDoc(docRef, {
-                    lista: listaAvaliacoes,
-                    atualizadoEm: new Date().toISOString()
-                });
-            } catch (err) {
-                console.error("Erro ao salvar avaliações no banco:", err);
-            }
         }
 
         function togglePainelNovaFazenda() {
@@ -1351,9 +1031,18 @@
             document.getElementById('confirmModalTitle').innerText = titulo;
             document.getElementById('confirmModalMessage').innerText = mensagem;
             confirmCallbackAction = callback;
-            document.getElementById('confirmModalBtn').onclick = () => {
-                if (confirmCallbackAction) confirmCallbackAction();
-                fecharConfirmModal();
+            document.getElementById('confirmModalBtn').onclick = async () => {
+                const botao = document.getElementById('confirmModalBtn');
+                const acao = confirmCallbackAction;
+                botao.disabled = true;
+                try {
+                    if (acao) await acao();
+                    fecharConfirmModal();
+                } catch (error) {
+                    exibirToast(error.message || 'Não foi possível concluir a alteração.', 'bg-red-700');
+                } finally {
+                    botao.disabled = false;
+                }
             };
             document.getElementById('confirmModal').classList.remove('hidden');
         }
@@ -1365,14 +1054,10 @@
 
             abrirConfirmModal(
                 'Confirmar Exclusão da Propriedade',
-                `Tem certeza que deseja excluir a propriedade "${fazendaSel}" e todos os seus ${talhoesPorFazenda[fazendaSel].length} talhões? Esta ação não poderá ser desfeita.`,
-                () => {
-                    delete talhoesPorFazenda[fazendaSel];
-                    delete produtoresPorFazenda[fazendaSel];
-                    salvarPropriedades();
-                    carregarFazendas();
-                    carregarSelectGerenciarFazendas();
-                    atualizarDatalistFazendas();
+                `Mover a propriedade "${fazendaSel}" e seus ${talhoesPorFazenda[fazendaSel].length} talhões para a lixeira?`,
+                async () => {
+                    if (!window.DoCampoData.removeFarm(fazendaSel)) throw new Error('A propriedade não foi encontrada no banco central.');
+                    await recarregarCadastrosCentrais();
                     exibirToast(`Propriedade "${fazendaSel}" excluída com sucesso.`, "bg-red-600");
                 }
             );
@@ -1384,11 +1069,15 @@
             abrirConfirmModal(
                 'Confirmar Exclusão do Talhão',
                 `Tem certeza que deseja excluir o talhão "${talhao}" da propriedade "${fazenda}"?`,
-                () => {
-                    talhoesPorFazenda[fazenda] = talhoesPorFazenda[fazenda].filter(t => t !== talhao);
-                    salvarPropriedades();
+                async () => {
+                    const cadastro = localizarFazendaCentral(fazenda);
+                    if (!cadastro) throw new Error('A propriedade não foi encontrada no banco central.');
+                    const campos = (cadastro.fields || []).filter(campo => window.DoCampoData.fieldKey(campo.name) !== window.DoCampoData.fieldKey(talhao));
+                    if (campos.length === (cadastro.fields || []).length) throw new Error('O talhão não foi encontrado no banco central.');
+                    window.DoCampoData.mergeFarm({ ...cadastro, fields: campos });
+                    await recarregarCadastrosCentrais();
+                    document.getElementById('gerenciarFazendaSelect').value = fazenda;
                     carregarGerenciadorTalhoes();
-                    carregarFazendas();
                     exibirToast(`Talhão "${talhao}" excluído com sucesso.`, "bg-red-600");
                 }
             );
@@ -1451,7 +1140,7 @@
             togglePainelNovaFazenda();
         }
 
-        function salvarNovaFazendaETalhoes() {
+        async function salvarNovaFazendaETalhoes() {
             const inputFazenda = document.getElementById('novoNomeFazenda');
             const inputProdutor = document.getElementById('novoNomeProdutor');
             const inputTalhao = document.getElementById('novoNomeTalhao');
@@ -1474,25 +1163,27 @@
                 return;
             }
 
-            if (!talhoesPorFazenda[nomeFazenda]) {
-                talhoesPorFazenda[nomeFazenda] = [];
+            try {
+                const cadastroAtual = localizarFazendaCentral(nomeFazenda);
+                const produtorFinal = nomeProdutor || cadastroAtual?.producer || cadastroAtual?.proprietor || '';
+                if (!produtorFinal) throw new Error('Informe o nome do produtor responsável pela propriedade.');
+                const campos = [...(cadastroAtual?.fields || [])];
+                const chaves = new Set(campos.map(campo => window.DoCampoData.fieldKey(campo.name)));
+                tempTalhoesNovos.forEach(nome => {
+                    const chave = window.DoCampoData.fieldKey(nome);
+                    if (!chaves.has(chave)) {
+                        campos.push({ name: nome });
+                        chaves.add(chave);
+                    }
+                });
+                window.DoCampoData.mergeFarm({ ...(cadastroAtual || {}), farm: nomeFazenda, producer: produtorFinal, fields: campos });
+                await recarregarCadastrosCentrais();
+                fazendaSelect.value = nomeFazenda;
+                fazendaSelect.dispatchEvent(new Event('change'));
+            } catch (error) {
+                exibirToast(error.message || 'Não foi possível salvar a propriedade.', 'bg-red-700');
+                return;
             }
-
-            if (nomeProdutor) {
-                produtoresPorFazenda[nomeFazenda] = nomeProdutor;
-            }
-
-            tempTalhoesNovos.forEach(t => {
-                if (!talhoesPorFazenda[nomeFazenda].includes(t)) {
-                    talhoesPorFazenda[nomeFazenda].push(t);
-                }
-            });
-
-            salvarPropriedades();
-
-            carregarFazendas();
-            fazendaSelect.value = nomeFazenda;
-            fazendaSelect.dispatchEvent(new Event('change'));
 
             inputFazenda.value = '';
             inputProdutor.value = '';
@@ -1844,16 +1535,14 @@
                 'Iniciar Nova Visita',
                 'Deseja apagar as informações da visita anterior e iniciar um novo relatório do zero? Esta ação irá limpar a lista de avaliações salvas.',
                 () => {
-                    try { localStorage.removeItem('docampo_current_visit_id'); localStorage.removeItem(CHAVE_RASCUNHO_FORMULARIO); } catch(e){}
+                    try { localStorage.removeItem(CHAVE_VISITA_ATUAL); } catch(e){}
                     listaAvaliacoes = [];
-                    localStorage.setItem('docampo_listaAvaliacoes', '[]');
                     renderizarTabela();
                     limparCamposFormulario();
                     
                     // Reset do proprietário e seleções
                     const propInput = document.getElementById('nomeProprietario');
                     if (propInput) propInput.value = '';
-                    try { localStorage.removeItem('docampo_nomeProprietario'); } catch(e){}
 
                     if (fazendaSelect) {
                         fazendaSelect.value = '';
@@ -1931,7 +1620,6 @@
         const propInputEl = document.getElementById('nomeProprietario');
         if (propInputEl) {
             propInputEl.addEventListener('input', function() {
-                try { localStorage.setItem('docampo_nomeProprietario', this.value); } catch(e){}
             });
         }
 
@@ -1968,14 +1656,12 @@
                 const produtorSugerido = produtoresPorFazenda[this.value] || '';
                 if (propInputEl) {
                     propInputEl.value = produtorSugerido;
-                    try { localStorage.setItem('docampo_nomeProprietario', produtorSugerido); } catch(e){}
                 }
                 procurarVisitaCompartilhada(this.value);
             } else {
                 talhaoSelect.disabled = true;
                 if (propInputEl) {
                     propInputEl.value = '';
-                    try { localStorage.removeItem('docampo_nomeProprietario'); } catch(e){}
                 }
                 document.getElementById('visitaCompartilhadaPainel')?.classList.add('hidden');
             }
@@ -2028,12 +1714,21 @@
         }
 
         async function selecionarFotoPonto(index, origem) {
+            if (photoCaptureActive) {
+                exibirToast('A câmera ou galeria já está aberta. Conclua essa foto primeiro.', 'bg-amber-600');
+                return;
+            }
             indiceFotoPonto = index;
-            if(origem==='camera'){
-                const cap=window.Capacitor,plugin=cap?.registerPlugin?cap.registerPlugin('PhotoCapture'):cap?.Plugins?.PhotoCapture;
-                if(plugin&&cap?.isNativePlatform?.()){
-                    try{const result=await plugin.takePhoto();await salvarFotoProcessada(await comprimirDataUriChecklist(result.dataUrl));return}catch(error){if(!/cancel/i.test(String(error?.message||error)))exibirToast(error.message||'Não foi possível abrir a câmera.','bg-red-700');return}
-                }
+            const cap=window.Capacitor,plugin=cap?.registerPlugin?cap.registerPlugin('PhotoCapture'):cap?.Plugins?.PhotoCapture;
+            if(plugin&&cap?.isNativePlatform?.()){
+                photoCaptureActive = true;
+                try{
+                    const result=origem==='galeria'?await plugin.pickPhoto():await plugin.takePhoto();
+                    await salvarFotoNativa(result);
+                }catch(error){
+                    if(!/cancel/i.test(String(error?.message||error)))exibirToast(error.message||'Não foi possível obter a foto.','bg-red-700');
+                }finally{photoCaptureActive=false}
+                return;
             }
             const input = document.getElementById(origem==='galeria'?'fotoPontoGaleriaInput':'fotoPontoCameraInput');
             if (input) { input.value = ''; input.click(); }
@@ -2041,28 +1736,74 @@
         function comprimirFotoChecklist(arquivo) {
             return new Promise((resolve,reject)=>{const leitor=new FileReader();leitor.onerror=()=>reject(new Error('Não foi possível ler a foto.'));leitor.onload=()=>{const img=new Image();img.onerror=()=>reject(new Error('Formato de imagem não suportado.'));img.onload=()=>{const limite=1024,escala=Math.min(1,limite/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*escala));canvas.height=Math.max(1,Math.round(img.height*escala));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/jpeg',0.65))};img.src=leitor.result};leitor.readAsDataURL(arquivo)});
         }
-        function comprimirDataUriChecklist(dataUri) {
-            return new Promise((resolve,reject)=>{const img=new Image();img.onerror=()=>reject(new Error('Formato de imagem não suportado.'));img.onload=()=>{const limite=1024,escala=Math.min(1,limite/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*escala));canvas.height=Math.max(1,Math.round(img.height*escala));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/jpeg',0.65))};img.src=dataUri});
+        async function salvarFotoNativa(result){
+            const ponto=pontosGpsEmEdicao[indiceFotoPonto];if(!ponto||!result)return;
+            const anterior=ponto.photoId?{...ponto}:null;
+            const previewAnterior=ponto.foto||'';
+            const meta=window.DoCampoPhotos.adoptNative(result);
+            const preview=meta.previewUrl||'';
+            delete meta.previewUrl;
+            Object.assign(ponto,meta);
+            delete ponto.foto;
+            if(preview)DoCampoPhotos.transient(ponto,preview);
+            renderizarPontosGps();
+            try{
+                if(!salvarRascunhoFormulario())throw new Error('A foto foi salva, mas o checklist não pôde ser registrado.');
+                if(window.DoCampoDB)await DoCampoDB.flush();
+            }catch(error){
+                if(window.DoCampoPhotos)await DoCampoPhotos.remove({...ponto}).catch(()=>{});
+                Object.keys(ponto).forEach(chave=>delete ponto[chave]);Object.assign(ponto,anterior||{});
+                if(previewAnterior)DoCampoPhotos.transient(ponto,previewAnterior);renderizarPontosGps();throw error;
+            }
+            if(anterior&&window.DoCampoPhotos)await DoCampoPhotos.remove(anterior);
+            exibirToast('Foto salva no aparelho e aguardando sincronização.','bg-emerald-700');
         }
         async function salvarFotoProcessada(dataUri){
             const ponto=pontosGpsEmEdicao[indiceFotoPonto];if(!ponto||!dataUri)return;
-            if(window.DoCampoPhotos){const meta=await DoCampoPhotos.save(dataUri,ponto.photoId);Object.assign(ponto,meta);delete ponto.foto;DoCampoPhotos.transient(ponto,dataUri);DoCampoPhotos.upload(ponto).catch(()=>{})}
+            const anterior=ponto.photoId?{...ponto}:null;
+            const previewAnterior=ponto.foto||'';
+            if(window.DoCampoPhotos){const meta=await DoCampoPhotos.save(dataUri);Object.assign(ponto,meta);delete ponto.foto;DoCampoPhotos.transient(ponto,dataUri)}
             else ponto.foto=dataUri;
             ponto.fotoRegistradaEm=new Date().toISOString();renderizarPontosGps();
-            if(!salvarRascunhoFormulario())throw new Error('A foto foi capturada, mas o checklist não pôde ser salvo.');
-            exibirToast('Foto salva neste ponto.','bg-emerald-700');
+            try{
+                if(!salvarRascunhoFormulario())throw new Error('A foto foi capturada, mas o checklist não pôde ser salvo.');
+                if(window.DoCampoDB)await DoCampoDB.flush();
+            }catch(error){
+                if(window.DoCampoPhotos)await DoCampoPhotos.remove({...ponto}).catch(()=>{});
+                Object.keys(ponto).forEach(chave=>delete ponto[chave]);Object.assign(ponto,anterior||{});
+                if(previewAnterior&&window.DoCampoPhotos)DoCampoPhotos.transient(ponto,previewAnterior);renderizarPontosGps();throw error;
+            }
+            if(anterior&&window.DoCampoPhotos)await DoCampoPhotos.remove(anterior);
+            exibirToast('Foto salva no aparelho e aguardando sincronização.','bg-emerald-700');
         }
         async function processarFotoPonto(event) {
             const arquivo=event.target.files&&event.target.files[0];if(!arquivo||!pontosGpsEmEdicao[indiceFotoPonto])return;
             try{await salvarFotoProcessada(await comprimirFotoChecklist(arquivo))}catch(error){exibirToast(error.message||'Não foi possível adicionar a foto.','bg-red-700')}
         }
-        async function removerFotoPonto(index){const ponto=pontosGpsEmEdicao[index];if(!ponto||!confirm('Remover esta foto do ponto?'))return;if(window.DoCampoPhotos)await DoCampoPhotos.remove(ponto);delete ponto.foto;delete ponto.photoId;delete ponto.photoLocalPath;delete ponto.photoRemotePath;delete ponto.photoMime;delete ponto.fotoRegistradaEm;renderizarPontosGps();salvarRascunhoFormulario();exibirToast('Foto removida do ponto.','bg-gray-700')}
-
-        function removerPontoGps(index) {
-            pontosGpsEmEdicao.splice(index, 1);
+        async function removerFotoPonto(index){
+            const ponto=pontosGpsEmEdicao[index];if(!ponto||!confirm('Remover esta foto do ponto?'))return;
+            const anterior={...ponto};
+            const previewAnterior=ponto.foto||'';
+            const campos=['foto','previewUrl','photoId','photoLocalPath','photoRemotePath','photoMime','photoBytes','photoWidth','photoHeight','photoSyncStatus','photoSyncError','photoUploadedAt','fotoRegistradaEm'];
+            campos.forEach(chave=>delete ponto[chave]);
             renderizarPontosGps();
-            exibirToast('Localização removida.', 'bg-gray-700');
-            agendarSalvamentoRascunho();
+            try{
+                if(!salvarRascunhoFormulario())throw new Error('O checklist não pôde ser atualizado.');
+                if(window.DoCampoDB)await DoCampoDB.flush();
+                if(window.DoCampoPhotos)await DoCampoPhotos.remove(anterior);
+                exibirToast('Foto removida do ponto.','bg-gray-700');
+            }catch(error){Object.assign(ponto,anterior);if(previewAnterior)DoCampoPhotos?.transient(ponto,previewAnterior);renderizarPontosGps();exibirToast(error.message||'A foto não foi removida.','bg-red-700')}
+        }
+
+        async function removerPontoGps(index) {
+            const removido=pontosGpsEmEdicao[index];if(!removido)return;
+            pontosGpsEmEdicao.splice(index, 1);renderizarPontosGps();
+            try{
+                if(!salvarRascunhoFormulario())throw new Error('O checklist não pôde ser atualizado.');
+                if(window.DoCampoDB)await DoCampoDB.flush();
+                if(removido.photoId&&window.DoCampoPhotos)await DoCampoPhotos.remove(removido);
+                exibirToast('Localização removida.', 'bg-gray-700');
+            }catch(error){pontosGpsEmEdicao.splice(index,0,removido);renderizarPontosGps();exibirToast(error.message||'A localização não foi removida.','bg-red-700')}
         }
 
         function obterPosicaoNavegador() {
@@ -2155,7 +1896,6 @@
             talhaoSelect.value = '';
             talhaoSelect.disabled = false;
             atualizarModoEdicao();
-            try{localStorage.removeItem(CHAVE_RASCUNHO_FORMULARIO)}catch(_){}
             salvarRascunhoFormulario();
         });
 
@@ -2306,7 +2046,7 @@
                 exibirToast('Adicione pelo menos um talhão antes de sincronizar.', 'bg-amber-600');
                 return;
             }
-            if (!localStorage.getItem('docampo_current_visit_id')) salvarAvaliacoes();
+            if (!localStorage.getItem(CHAVE_VISITA_ATUAL)) salvarAvaliacoes();
             if (!navigator.onLine) {
                 exibirToast('Checklist salvo no aparelho e aguardando internet.', 'bg-amber-600');
                 return;
@@ -2400,330 +2140,6 @@
             }
         }
 
-        async function gerarPDFLegado(somentePrevia = false) {
-            if (listaAvaliacoes.length === 0) {
-                exibirToast("Adicione pelo menos um talhão antes de gerar o PDF!", "bg-amber-600");
-                return;
-            }
-            if(window.DoCampoPhotos)for(const item of listaAvaliacoes)await DoCampoPhotos.hydratePoints(item.pontosGps);
-
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-            const logoChecklist = await carregarLogoChecklist();
-            const fontFactor = CHECKLIST_FONT_FACTORS[checklistPdfFontLevel] || 1;
-
-            const fazendaNome = fazendaSelect.value;
-            const nomeProprietarioVal = document.getElementById('nomeProprietario').value.trim();
-            const dataHoje = document.getElementById('dataAvaliacao').value.split('-').reverse().join('/');
-            const incluirTodos = document.getElementById('incluirNaoAvaliados').checked;
-
-            const todosTalhoesFazenda = talhoesPorFazenda[fazendaNome] || [];
-            let dadosTabela = [];
-            const incluirColheita = listaAvaliacoes.some(av => String(av.situacaoColheita || '').trim());
-            const localizacoesPorTalhao = {};
-            listaAvaliacoes.forEach(av => {
-                if (Array.isArray(av.pontosGps) && av.pontosGps.length) localizacoesPorTalhao[av.talhao] = av.pontosGps;
-            });
-            const observacaoPdf = (av) => {
-                let texto = av.obs || '-';
-                (Array.isArray(av.pontosGps) ? av.pontosGps : []).forEach((ponto, index) => {
-                    const identificacao = String(ponto.descricao || '').trim();
-                    texto += `\nLocalização ${index + 1}${identificacao ? ` - ${identificacao}` : ''}: abrir no mapa`;
-                    texto += `\n${Number(ponto.latitude).toFixed(6)}, ${Number(ponto.longitude).toFixed(6)}`;
-                });
-                return texto;
-            };
-            const linhaTabela = (av) => incluirColheita
-                ? [av.talhao, av.pragas, av.doencas, av.mato, av.situacaoColheita || '-', av.indicacoes, observacaoPdf(av)]
-                : [av.talhao, av.pragas, av.doencas, av.mato, av.indicacoes, observacaoPdf(av)];
-
-            if (incluirTodos) {
-                todosTalhoesFazenda.forEach(t => {
-                    const av = listaAvaliacoes.find(i => i.talhao === t);
-                    if (av) {
-                        dadosTabela.push(linhaTabela(av));
-                    } else {
-                        dadosTabela.push(incluirColheita
-                            ? [t, "-", "-", "-", "-", "Sem Ações / Não Avaliado", "-"]
-                            : [t, "-", "-", "-", "Sem Ações / Não Avaliado", "-"]);
-                    }
-                });
-            } else {
-                dadosTabela = listaAvaliacoes.map(linhaTabela);
-            }
-
-            const totalTalhoesFazenda = todosTalhoesFazenda.length;
-            const totalAvaliados = listaAvaliacoes.length;
-
-            // Header compacto
-            if (logoChecklist) doc.addImage(logoChecklist, 'PNG', 14, 5, 12, 12, undefined, 'FAST');
-
-            doc.setTextColor(27, 94, 32);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(14);
-            doc.text("DO CAMPO AGRONEGÓCIOS", 29, 12);
-
-            doc.setTextColor(80, 80, 80);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(8.5);
-            doc.text("FICHA DE AVALIAÇÃO DE TALHÕES & RELATÓRIO TÉCNICO", 29, 16.5);
-
-            doc.setTextColor(27, 94, 32);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(10);
-            doc.text("#DC-RELATORIO", 283, 11.5, { align: 'right' });
-            
-            doc.setTextColor(100, 100, 100);
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(8.5);
-            doc.text(`Data: ${dataHoje}`, 283, 16.5, { align: 'right' });
-
-            doc.setDrawColor(27, 94, 32);
-            doc.setLineWidth(0.5);
-            doc.line(14, 20, 283, 20);
-
-            // Quadrado de Resumo de Dados (Otimizado)
-            doc.setFillColor(248, 250, 248);
-            doc.setDrawColor(220, 230, 220);
-            doc.roundedRect(14, 22, 269, 10, 1.5, 1.5, 'FD');
-
-            doc.setTextColor(40, 40, 40);
-            doc.setFontSize(8 * fontFactor);
-            
-            doc.setFont('helvetica', 'bold');
-            doc.text("PROPRIEDADE / FAZENDA:", 17, 26);
-            doc.setFont('helvetica', 'normal');
-            doc.text(fazendaNome, 64, 26);
-
-            doc.setFont('helvetica', 'bold');
-            doc.text("PROPRIETÁRIO / PRODUTOR:", 17, 29.5);
-            doc.setFont('helvetica', 'normal');
-            doc.text(nomeProprietarioVal || "Não informado", 64, 29.5);
-
-            doc.setFont('helvetica', 'bold');
-            doc.text("CULTURA:", 165, 26);
-            doc.setFont('helvetica', 'normal');
-            doc.text("Café", 181, 26);
-
-            doc.setFont('helvetica', 'bold');
-            doc.text("TALHÕES AVALIADOS:", 210, 26);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`${totalAvaliados} de ${totalTalhoesFazenda}`, 245, 26);
-
-            doc.autoTable({
-                startY: 34,
-                head: [incluirColheita
-                    ? ['Talhão', 'Monitoramento de Pragas', 'Doenças Identificadas', 'Situação do Mato', 'Situação da Colheita', 'Indicações de Manejo', 'Observações']
-                    : ['Talhão', 'Monitoramento de Pragas', 'Doenças Identificadas', 'Situação do Mato', 'Indicações de Manejo', 'Observações']],
-                body: dadosTabela,
-                theme: 'grid',
-                headStyles: {
-                    fillColor: [27, 94, 32],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 8.5 * fontFactor,
-                    cellPadding: 2,
-                    halign: 'left'
-                },
-                bodyStyles: {
-                    fontSize: 8 * fontFactor,
-                    textColor: [40, 40, 40],
-                    cellPadding: 1.8
-                },
-                columnStyles: incluirColheita ? {
-                    0: { cellWidth: 32, fontStyle: 'bold' },
-                    1: { cellWidth: 37 },
-                    2: { cellWidth: 37 },
-                    3: { cellWidth: 31 },
-                    4: { cellWidth: 34 },
-                    5: { cellWidth: 56 },
-                    6: { cellWidth: 42, fontStyle: 'italic' }
-                } : {
-                    0: { cellWidth: 42, fontStyle: 'bold' },
-                    1: { cellWidth: 42 },
-                    2: { cellWidth: 42 },
-                    3: { cellWidth: 35 },
-                    4: { cellWidth: 62 },
-                    5: { cellWidth: 46, fontStyle: 'italic' }
-                },
-                alternateRowStyles: {
-                    fillColor: [248, 250, 248]
-                },
-                didParseCell: function(data) {
-                    if (data.section === 'body') {
-                        const val = data.cell.raw;
-                        if (val === 'Sem Ações / Não Avaliado') {
-                            data.cell.styles.textColor = [150, 150, 150];
-                        }
-                    }
-                },
-                didDrawCell: function(data) {
-                    const colunaObservacao = incluirColheita ? 6 : 5;
-                    if (data.section !== 'body' || data.column.index !== colunaObservacao) return;
-                    const talhao = Array.isArray(data.row.raw) ? data.row.raw[0] : '';
-                    const pontos = localizacoesPorTalhao[talhao] || [];
-                    if (!pontos.length) return;
-                    const linhas = Array.isArray(data.cell.text) ? data.cell.text : [];
-                    pontos.forEach((ponto, index) => {
-                        const marcador = `Localização ${index + 1}`;
-                        const linha = linhas.findIndex(texto => String(texto).includes(marcador));
-                        if (linha < 0) return;
-                        const alturaLinha = 3.5;
-                        const y = data.cell.y + 1.3 + linha * alturaLinha;
-                        doc.link(data.cell.x + 1, y, data.cell.width - 2, alturaLinha, { url: urlMapaGps(ponto) });
-                    });
-                },
-                margin: { left: 14, right: 14, top: 21, bottom: 15 }
-            });
-
-            const finalY = doc.lastAutoTable.finalY + 5;
-            const pageHeight = doc.internal.pageSize.getHeight();
-
-            if (finalY + 18 < pageHeight - 14) {
-                desenharAssinaturas(doc, finalY, nomeProprietarioVal);
-            } else {
-                doc.addPage();
-                desenharAssinaturas(doc, 24, nomeProprietarioVal);
-            }
-
-            const pageCount = doc.internal.getNumberOfPages();
-            for (let i = 1; i <= pageCount; i++) {
-                doc.setPage(i);
-
-                if (i > 1) {
-                    if (logoChecklist) doc.addImage(logoChecklist, 'PNG', 14, 5, 9, 9, undefined, 'FAST');
-
-                    doc.setTextColor(27, 94, 32);
-                    doc.setFontSize(10);
-                    doc.text("DO CAMPO AGRONEGÓCIOS - RELATÓRIO TÉCNICO", 26, 12);
-                    
-                    doc.setDrawColor(27, 94, 32);
-                    doc.setLineWidth(0.4);
-                    doc.line(14, 17, 283, 17);
-                }
-
-                doc.setDrawColor(27, 94, 32);
-                doc.setLineWidth(0.5);
-                doc.line(14, pageHeight - 13, 283, pageHeight - 13);
-
-                doc.setFontSize(8.5);
-                doc.setTextColor(27, 94, 32);
-                doc.setFont('helvetica', 'bold');
-                doc.text("DO CAMPO AGRONEGÓCIOS", 148.5, pageHeight - 9, { align: 'center' });
-
-                doc.setFontSize(7.5);
-                doc.setTextColor(100, 100, 100);
-                doc.setFont('helvetica', 'normal');
-                doc.text("Rua Do Campo, SN, Reduto - Minas Gerais  |  CNPJ: 52.124.298/0001-45  |  Telefone: (33) 98468-9806", 148.5, pageHeight - 5, { align: 'center' });
-
-                doc.setFontSize(7.5);
-                doc.setTextColor(80, 80, 80);
-                doc.setFont('helvetica', 'bold');
-                doc.text(`Página ${i} de ${pageCount}`, 283, pageHeight - 5, { align: 'right' });
-            }
-
-            const dataFormatada = document.getElementById('dataAvaliacao').value;
-            const nomeFazendaLimpo = fazendaNome.replace(/[^a-zA-Z0-9]/g, '_');
-            const nomeArquivo = `Relatorio_Campo_${nomeFazendaLimpo}_${dataFormatada}.pdf`;
-            const pdfData = doc.output('datauristring');
-
-            if (somentePrevia) {
-                sincronizarSeletoresFonteChecklist();
-                try {
-                    await renderizarPaginasPreviaChecklist(doc.output('arraybuffer'));
-                } catch (erroPrevia) {
-                    console.error('Falha ao renderizar prévia do checklist:', erroPrevia);
-                    const pages = document.getElementById('checklistPdfPreviewPages');
-                    const modal = document.getElementById('checklistPdfPreviewModal');
-                    if (modal) modal.classList.remove('hidden');
-                    if (pages) pages.innerHTML = '<div class="min-h-[320px] flex items-center justify-center text-red-700 text-sm font-bold px-5 text-center">Não foi possível montar a prévia. O PDF ainda pode ser gerado normalmente.</div>';
-                }
-                return;
-            }
-
-            if (window.DoCampoPDF) {
-                await window.DoCampoPDF.salvarECompartilhar(pdfData, nomeArquivo, 'Checklist de Lavoura', {
-                    typeLabel: 'Checklist de Lavoura',
-                    producer: nomeProprietarioVal,
-                    farm: fazendaNome,
-                    fields: listaAvaliacoes.map(av => av.talhao),
-                    fontLevel: checklistPdfFontLevel,
-                    responsible: window.DoCampoDB ? DoCampoDB.user() : ''
-                });
-            } else {
-                doc.save(nomeArquivo);
-            }
-
-            fecharPreviaChecklist();
-            exibirToast("PDF gerado com sucesso!", "bg-green-700");
-        }
-
-        function desenharAssinaturas(doc, startY, nomeProprietario) {
-            doc.setDrawColor(180, 180, 180);
-            const tituloProdutor = nomeProprietario ? nomeProprietario : "Produtor Rural / Gerente";
-
-            if (agronomosSelecionados.length === 2) {
-                const ag1 = agronomos["01"];
-                const ag2 = agronomos["02"];
-
-                doc.line(18, startY + 6, 93, startY + 6);
-                doc.setFontSize(8);
-                doc.setTextColor(40, 40, 40);
-                doc.setFont('helvetica', 'bold');
-                doc.text(ag1.nome, 55.5, startY + 9.5, { align: 'center' });
-                doc.setFontSize(7);
-                doc.setFont('helvetica', 'normal');
-                doc.setTextColor(100, 100, 100);
-                doc.text(ag1.detalhe, 55.5, startY + 13, { align: 'center' });
-                doc.text("Responsável Técnico / Agrônomo", 55.5, startY + 16.5, { align: 'center' });
-
-                doc.line(111, startY + 6, 186, startY + 6);
-                doc.setFontSize(8);
-                doc.setTextColor(40, 40, 40);
-                doc.setFont('helvetica', 'bold');
-                doc.text(ag2.nome, 148.5, startY + 9.5, { align: 'center' });
-                doc.setFontSize(7);
-                doc.setFont('helvetica', 'normal');
-                doc.setTextColor(100, 100, 100);
-                doc.text(ag2.detalhe, 148.5, startY + 13, { align: 'center' });
-                doc.text("Responsável Técnico / Agrônomo", 148.5, startY + 16.5, { align: 'center' });
-
-                doc.line(204, startY + 6, 279, startY + 6);
-                doc.setFontSize(8);
-                doc.setTextColor(40, 40, 40);
-                doc.setFont('helvetica', 'bold');
-                doc.text(tituloProdutor, 241.5, startY + 9.5, { align: 'center' });
-                doc.setFontSize(7);
-                doc.setFont('helvetica', 'normal');
-                doc.setTextColor(100, 100, 100);
-                doc.text("Produtor Rural / Proprietário", 241.5, startY + 13, { align: 'center' });
-            } else {
-                const idSel = agronomosSelecionados[0] || "01";
-                const agronomo = agronomos[idSel];
-
-                doc.line(30, startY + 6, 120, startY + 6);
-                doc.setFontSize(8);
-                doc.setTextColor(40, 40, 40);
-                doc.setFont('helvetica', 'bold');
-                doc.text(agronomo.nome, 75, startY + 9.5, { align: 'center' });
-                
-                doc.setFontSize(7);
-                doc.setFont('helvetica', 'normal');
-                doc.setTextColor(100, 100, 100);
-                doc.text(agronomo.detalhe, 75, startY + 13, { align: 'center' });
-                doc.text("Responsável Técnico / Agrônomo", 75, startY + 16.5, { align: 'center' });
-
-                doc.line(177, startY + 6, 267, startY + 6);
-                doc.setFontSize(8);
-                doc.setTextColor(40, 40, 40);
-                doc.setFont('helvetica', 'bold');
-                doc.text(tituloProdutor, 222, startY + 9.5, { align: 'center' });
-                doc.setFontSize(7);
-                doc.setFont('helvetica', 'normal');
-                doc.setTextColor(100, 100, 100);
-                doc.text("Produtor Rural / Proprietário", 222, startY + 13, { align: 'center' });
-            }
-        }
 
         function textoTarefaChecklist(indicacao) {
             const mapa = {
@@ -2765,6 +2181,14 @@
                 exibirToast('Adicione pelo menos um talhão antes de gerar o PDF!', 'bg-amber-600');
                 return;
             }
+            if (checklistPdfActive) {
+                exibirToast('O PDF ainda está sendo preparado. Aguarde a conclusão.', 'bg-amber-600');
+                return;
+            }
+            checklistPdfActive = true;
+            const botoesPdf = Array.from(document.querySelectorAll('button[onclick^="gerarPDF"]'));
+            botoesPdf.forEach(botao => { botao.disabled = true; botao.classList.add('opacity-60'); });
+            try {
             if(window.DoCampoPhotos)for(const item of listaAvaliacoes)await DoCampoPhotos.hydratePoints(item.pontosGps);
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -2810,14 +2234,15 @@
                 });
             }
 
-            avaliacoes.forEach((av, indice) => {
+            for (let indice = 0; indice < avaliacoes.length; indice++) {
+                const av = avaliacoes[indice];
                 if (av.naoAvaliado) {
                     garantir(13);
                     doc.setFillColor(248,250,248); doc.setDrawColor(210,220,214); doc.roundedRect(margem,y,largura,10,2,2,'FD');
                     doc.setTextColor(80); doc.setFont('helvetica','normal'); doc.setFontSize(8.2*fator);
                     doc.text(`☐  TALHÃO ${av.talhao} — não avaliado`,19,y+6.5);
                     y += 13;
-                    return;
+                    continue;
                 }
                 const tarefas = tarefasChecklist(av);
                 const obs = av.obs && av.obs !== '-' ? av.obs : '';
@@ -2872,15 +2297,16 @@
                     y+=1; doc.setTextColor(8,79,55); doc.setFont('helvetica','bold'); doc.text('OBSERVAÇÃO DO TALHÃO',19,y); y+=5;
                     doc.setTextColor(35); doc.setFont('helvetica','normal'); doc.setFontSize(8.7*fator); doc.text(obsLinhas,19,y); y += obsLinhas.length*4+2;
                 }
-                pontos.forEach((p,pi) => {
+                for (let pi = 0; pi < pontos.length; pi++) {
+                    const p = pontos[pi];
                     if(y+8+(p.foto?43:0)>limiteY){novaPagina();doc.setTextColor(8,79,55);doc.setFont('helvetica','bold');doc.setFontSize(9*fator);doc.text(`TALHÃO ${av.talhao} — LOCALIZAÇÃO (CONTINUAÇÃO)`,19,y);y+=8;}
                     const rotulo = `Localização ${pi+1}${p.descricao ? ' — '+p.descricao : ''}: abrir no mapa`;
                     const url = urlMapaGps(p); doc.setTextColor(25,100,180); doc.setFont('helvetica','bold'); doc.setFontSize(7.7*fator); doc.textWithLink(rotulo,19,y,{url});
                     doc.setTextColor(100); doc.setFont('helvetica','normal'); doc.text(`${Number(p.latitude).toFixed(6)}, ${Number(p.longitude).toFixed(6)}`,19,y+3.5); y+=8;
-                    if(p.foto){try{doc.addImage(p.foto,'JPEG',19,y,60,40,undefined,'FAST');doc.setTextColor(100);doc.setFontSize(7*fator);doc.text(`Foto do ponto ${pi+1}`,82,y+5);y+=43}catch(error){console.error('Não foi possível inserir foto no PDF',error)}}
-                });
+                    if(p.foto||p.photoId){try{const fotoPdf=p.photoId&&window.DoCampoPhotos?await DoCampoPhotos.read(p):p.foto;if(fotoPdf){doc.addImage(fotoPdf,'JPEG',19,y,60,40,undefined,'FAST');doc.setTextColor(100);doc.setFontSize(7*fator);doc.text(`Foto do ponto ${pi+1}`,82,y+5);y+=43}}catch(error){console.error('Não foi possível inserir foto no PDF',error)}}
+                }
                 y += 8;
-            });
+            }
 
             if (observacoesGerais) {
                 const ls = linhas(observacoesGerais, 170, 10*fator);
@@ -2910,9 +2336,21 @@
             await DoCampoPDF.salvarECompartilhar(doc.output('datauristring'), nomeArquivo, 'Checklist de Lavoura', {
                 typeLabel:'Checklist de Lavoura', producer:produtor, farm:fazenda, fields:listaAvaliacoes.map(av=>av.talhao), responsible:responsavel, documentCode:codigo, fontLevel:checklistPdfFontLevel
             });
-            const idVisita=localStorage.getItem('docampo_current_visit_id');
-            if (idVisita && window.DoCampoDB) { const atual=DoCampoDB.get('visits',idVisita); if(atual) DoCampoDB.upsert('visits',{...atual,status:'concluida',documentCode:codigo,generalNotes:observacoesGerais}); localStorage.removeItem('docampo_current_visit_id'); }
+            const idVisita=localStorage.getItem(CHAVE_VISITA_ATUAL);
+            if (idVisita && window.DoCampoDB) {
+                const atual=DoCampoDB.get('visits',idVisita);
+                if(atual) DoCampoDB.upsert('visits',{...atual,status:'concluida',documentCode:codigo,generalNotes:observacoesGerais});
+                await DoCampoDB.flush();
+                localStorage.removeItem(CHAVE_VISITA_ATUAL);
+            }
             fecharPreviaChecklist(); exibirToast('PDF gerado e registrado com o código '+codigo+'!', 'bg-green-700');
+            } catch (error) {
+                console.error('Falha ao gerar o PDF do checklist', error);
+                exibirToast(error?.message || 'Não foi possível gerar o PDF do checklist.', 'bg-red-700');
+            } finally {
+                checklistPdfActive = false;
+                botoesPdf.forEach(botao => { botao.disabled = false; botao.classList.remove('opacity-60'); });
+            }
         }
 
         function exportarCSV() {

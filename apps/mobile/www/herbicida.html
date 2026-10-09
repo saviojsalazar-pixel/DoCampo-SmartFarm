@@ -14,14 +14,14 @@
     <!-- html2pdf.js for Client-side PDF Generation -->
     <script src="vendor/pdf/html2pdf.bundle.min.js"></script>
     <script src="supabase-config.js"></script>
-    <script src="unified-db.js"></script>
+    <script src="unified-db.js"></script><script src="cloud-auth.js"></script><script src="photo-storage.js"></script>
     <script src="shared-data.js"></script>
-    <script src="herbicide-catalog.js"></script>
     <script src="registry-loader.js"></script>
     <script src="checklist-filter.js"></script>
     <script src="sync-engine.js"></script>
     <script src="native-pdf.js"></script>
     <script src="document-code.js"></script>
+    <script src="form-drafts.js"></script>
     <script src="app-shell.js"></script>
 
     <script>
@@ -217,7 +217,7 @@
             <div class="flex flex-wrap items-center gap-3">
                 <div class="bg-slate-100 p-3 rounded-xl border border-slate-200 text-right min-w-[160px]">
                     <label for="rec-number-input" class="block text-xs font-semibold text-slate-500 uppercase cursor-pointer">Nº da Recomendação</label>
-                    <input type="text" id="rec-number-input" oninput="updateRecNumber(this.value)" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-sm font-bold font-mono text-emerald-800 text-right focus:ring-2 focus:ring-emerald-600 focus:outline-none mt-0.5" value="#DC-0001">
+                    <input type="text" id="rec-number-input" readonly class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-sm font-bold font-mono text-emerald-800 text-right mt-0.5" value="HER-PRÉVIA">
                 </div>
                 <div class="bg-slate-100 p-3 rounded-xl border border-slate-200 text-right min-w-[150px]">
                     <p class="text-xs font-semibold text-slate-500 uppercase">Data da Prescrição</p>
@@ -319,7 +319,7 @@
                     </div>
                     <div class="space-y-1.5 md:col-span-2">
                         <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">Nome Comercial do Herbicida / Produto <span class="text-red-500">*</span></label>
-                        <input type="text" id="new-prod-name" placeholder="Ex: RoundUp Ultra / Alion 500 SC" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                        <input type="text" id="new-prod-name" placeholder="Ex: Nome comercial do produto" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
                     </div>
                 </div>
 
@@ -871,7 +871,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                                     </div>
                                 </div>
                                 <div class="text-right">
-                                    <span id="pdf-rec-id" style="font-size: 10px; font-weight: 700; color: #15803d; display: block;">#DC-0000</span>
+                                    <span id="pdf-rec-id" style="font-size: 10px; font-weight: 700; color: #15803d; display: block;">HER-PRÉVIA</span>
                                     <span id="pdf-date" style="font-size: 9.5px; color: #64748b;">--/--/----</span>
                                 </div>
                             </div>
@@ -1012,7 +1012,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                                     </div>
                                 </div>
                                 <div class="text-right">
-                                    <span id="pdf-rec-id-p2" style="font-size: 9.5px; font-weight: 700; color: #15803d; display: block;">#DC-0000</span>
+                                    <span id="pdf-rec-id-p2" style="font-size: 9.5px; font-weight: 700; color: #15803d; display: block;">HER-PRÉVIA</span>
                                     <span style="font-size: 8.5px; color: #64748b;">Página 2 de 2</span>
                                 </div>
                             </div>
@@ -1181,289 +1181,10 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
     </div>
 
     <script>
-        const EMBEDDED_DATABASE = [
-            {
-                farm: "Fazenda Alcantilado-São Francisco",
-                producer: "Francisco Lacerda de Aguiar Neto",
-                cpf: "813.253.397-68",
-                address: "Avenida Governador Francisco, Bairro São Tiago, Guaçuí, Espírito Santo",
-                fields: [
-                    { name: "1.1 Fazenda", area: 3.7 },
-                    { name: "2.1 Joselito Piloto", area: 0.9 },
-                    { name: "3.1 Regiane Tavares", area: 1.6 },
-                    { name: "3.2 Luciana Lopes", area: 0.6 },
-                    { name: "3.3 Fazenda", area: 0.6 },
-                    { name: "3.4 João Martins", area: 0.7 },
-                    { name: "4.1 Jorge Gumeiro", area: 1.4 },
-                    { name: "4.2 Jorge Gumeiro", area: 0.4 },
-                    { name: "5.1 Jerusa Tavares", area: 0.4 },
-                    { name: "6.1 Angelica Flores", area: 0.2 },
-                    { name: "6.2 Fazenda", area: 1.3 },
-                    { name: "6.3 Jerusa Tavares", area: 1.1 },
-                    { name: "6.4 Viviane Flores", area: 0.8 },
-                    { name: "6.5 Sonia Tavares", area: 0.8 },
-                    { name: "6.6 Afonso Tavares", area: 1.7 },
-                    { name: "6.7 Joselito Piloto", area: 1.7 },
-                    { name: "7.1 José Flores", area: 0.8 },
-                    { name: "7.2 Fazenda", area: 1.1 },
-                    { name: "7.3 Fazenda", area: 1.6 },
-                    { name: "7.4 Maria Januária", area: 1.1 },
-                    { name: "7.5 Janaina Lourenço", area: 0.6 },
-                    { name: "7.6 Celi Raimundo", area: 2.3 },
-                    { name: "7.7 Izael da Silva", area: 0.6 },
-                    { name: "8.1 Fazenda", area: 0.5 },
-                    { name: "8.2 Alcemar Venancio", area: 0.8 },
-                    { name: "8.3 Fazenda", area: 0.8 },
-                    { name: "8.4 Fazenda", area: 0.6 },
-                    { name: "8.5 Angelica Flores", area: 0.6 },
-                    { name: "9.1 Edmilson Teixeira", area: 2.5 },
-                    { name: "9.2 Fazenda", area: 0.7 },
-                    { name: "10.1 Felipe Sabino", area: 0.9 },
-                    { name: "10.2 Fazenda", area: 1.3 },
-                    { name: "10.3 Fazenda", area: 0.5 },
-                    { name: "10.4 Fazenda", area: 0.7 },
-                    { name: "10.5 Fazenda", area: 1.2 },
-                    { name: "10.6 Fazenda", area: 0.6 },
-                    { name: "10.7 Fazenda", area: 1.2 },
-                    { name: "10.8 Fazenda", area: 1.1 },
-                    { name: "10.9 Fazenda", area: 0.4 },
-                    { name: "11.1 Moises Lourenço", area: 0.7 },
-                    { name: "11.2 Fazenda", area: 1.7 },
-                    { name: "11.3 Fazenda", area: 0.7 },
-                    { name: "11.4 Natalino Lourenço", area: 0.8 },
-                    { name: "11.5 João Lourenço", area: 0.6 },
-                    { name: "11.6 Fazenda", area: 2.3 },
-                    { name: "12.1 Moises Lourenço", area: 1.3 },
-                    { name: "12.2 Fazenda", area: 5.3 },
-                    { name: "14.1 Fazenda", area: 2.2 },
-                    { name: "14.2 Fazenda", area: 1.4 },
-                    { name: "15.1 Fazenda", area: 9.7 },
-                    { name: "15.2 Fazenda", area: 1.3 },
-                    { name: "15.3 Fazenda", area: 3.5 },
-                    { name: "16.1 Fazenda", area: 9.3 }
-                ]
-            },
-            {
-                farm: "Fazenda Cafarnaum",
-                producer: "Olavo de Sousa Costa",
-                cpf: "031.209.246-60",
-                address: "Praça Coronel Maximiano, 41, ap. 901, Centro, Carangola, Minas Gerais",
-                fields: [
-                    { name: "1. Boboleta", area: 1.7 },
-                    { name: "2. 2016", area: 10.0 },
-                    { name: "3. 2017", area: 10.0 },
-                    { name: "4. 2018", area: 12.6 },
-                    { name: "5. Recepa 2024", area: 10.7 }
-                ]
-            },
-            {
-                farm: "Fazenda Flávia Adriana Elvira",
-                producer: "Elvira Maria de Oliveira e Sousa",
-                cpf: "811.507.766-68",
-                address: "Córrego dos Vieiras, Dom Corrêa, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1.1 Realeza (esquerda)", area: 7.0 },
-                    { name: "1.2 Realeza (direita)", area: 5.0 },
-                    { name: "2.1 BR (direita)", area: 2.3 },
-                    { name: "2.2 BR (esquerda)", area: 1.6 },
-                    { name: "3.1 Recanto Recepa do Alto", area: 1.4 },
-                    { name: "3.2 Recanto Zé Carlos Velha", area: 2.8 },
-                    { name: "3.3 Recanto Recepa de Baixo", area: 1.1 },
-                    { name: "3.4 Recanto Zé Carlos Nova", area: 3.7 },
-                    { name: "3.5 Recanto Fiete", area: 1.9 },
-                    { name: "3.6 Recanto Leo Fortão", area: 1.8 },
-                    { name: "4.1 Alto Peão", area: 10.0 },
-                    { name: "5.1 Gameleira Velha", area: 0.9 },
-                    { name: "5.2 Gameleira Nova", area: 1.8 },
-                    { name: "5.3 Gameleira Plantio", area: 0.5 },
-                    { name: "6.1 Viturino Nascentes", area: 1.0 },
-                    { name: "6.2 Viturino Lav. das Pedras", area: 0.3 },
-                    { name: "6.3 Viturino Lav. Velha", area: 0.2 }
-                ]
-            },
-            {
-                farm: "Fazenda Hott",
-                producer: "Ronaldo Luiz Hott",
-                cpf: "570.632.906-06",
-                address: "Rua Ulisses Calheiros Araújo, 139, Bairro Bom Pastor, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1.1 Extrema", area: 1.7 },
-                    { name: "2.1 Diamante Broto", area: 0.6 },
-                    { name: "2.2 Diamante Recepa 25", area: 2.5 },
-                    { name: "2.3 Diamante Julio", area: 2.1 },
-                    { name: "3.1 Luan e Gabriel", area: 1.3 },
-                    { name: "3.2 Lagoinha + Ararinha", area: 1.6 },
-                    { name: "3.3 Terreiro", area: 1.7 },
-                    { name: "3.4 Pasto plantio 25", area: 2.2 },
-                    { name: "4.1 Eucalipto Nova", area: 4.2 },
-                    { name: "4.2 Eucalipto Velha", area: 2.0 },
-                    { name: "5.1 Abaixo do Mato", area: 3.0 },
-                    { name: "6.1 Gameleira Plantio 25", area: 1.1 },
-                    { name: "6.2 Gameleira do Alto", area: 1.2 },
-                    { name: "6.3 Gameleira Recepa 23", area: 0.6 },
-                    { name: "6.4 Gameleira de Baixo", area: 1.3 }
-                ]
-            },
-            {
-                farm: "Fazenda Mafort",
-                producer: "Otaviano Mendes Mafort",
-                cpf: "012.845.486-51",
-                address: "Córrego dos Hott, Zona Rural, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1.1 Alto da Pedra", area: 5.0 },
-                    { name: "1.2 Baixada do Alto", area: 1.7 },
-                    { name: "1.3 Otaviano Cachoeira 23", area: 3.3 },
-                    { name: "1.4 Gustavo Cachoeira 23", area: 0.7 },
-                    { name: "1.5 Davi Cachoeira 23", area: 0.7 },
-                    { name: "1.6 Cachoeira Recepa 23", area: 4.3 },
-                    { name: "1.7 Pasto", area: 3.8 },
-                    { name: "1.8 Agulheiro", area: 1.1 },
-                    { name: "1.9 Grota Gustavo Esq. 24", area: 0.8 },
-                    { name: "1.10 Grota Gustavo", area: 1.8 },
-                    { name: "1.11 Grota do Davi", area: 1.9 },
-                    { name: "1.12 Despolpador", area: 0.4 },
-                    { name: "1.13 Despolpador Davi", area: 0.3 },
-                    { name: "1.14 Lav 17 mil", area: 6.0 },
-                    { name: "1.15 Pasto dos Cabritos", area: 1.0 },
-                    { name: "1.16 Lav. do Barraco", area: 3.7 },
-                    { name: "1.17 Lav. do Eucalipto", area: 1.0 },
-                    { name: "1.18 Morro Redondo Recepa 24", area: 0.8 },
-                    { name: "1.19 Morro Redondo", area: 0.5 },
-                    { name: "1.20 Quintal", area: 0.6 },
-                    { name: "1.21 Lav. 11 mil", area: 5.5 },
-                    { name: "1.22 Lav. 5 mil", area: 2.5 },
-                    { name: "2.1 Hot Casa", area: 0.3 },
-                    { name: "2.2 785 do Hott Nova", area: 2.5 },
-                    { name: "2.3 Zé Carlos Hott", area: 2.5 },
-                    { name: "2.4 Hott Divisa do Orlando", area: 0.3 },
-                    { name: "3.1 Jaca Otaviano", area: 4.7 },
-                    { name: "3.2 Jaca Gustavo", area: 2.7 },
-                    { name: "4.1 Gameleira", area: 5.6 },
-                    { name: "5.1 Vila Margem Rio", area: 2.7 },
-                    { name: "5.2 Vila Ronaldo", area: 1.5 },
-                    { name: "5.3 Vila Terreiro", area: 0.8 },
-                    { name: "5.4 Vila Bananeiras", area: 3.5 },
-                    { name: "5.5 Vila Pé de Limão", area: 1.5 },
-                    { name: "5.6 Vila Canto da Mata", area: 0.2 },
-                    { name: "5.7 Vila Vestido", area: 0.7 },
-                    { name: "5.8 Vila Barra do Mato", area: 0.8 },
-                    { name: "5.9 Vila Barra da Pedra", area: 0.8 },
-                    { name: "5.11 Vila 3 Coqueiros", area: 1.5 },
-                    { name: "5.12 Vila Acima da Mata", area: 0.5 }
-                ]
-            },
-            {
-                farm: "Fazenda Riacho Fundo",
-                producer: "Mariana Raissa Moreira Martins",
-                cpf: "089.339.946-96",
-                address: "Rua Onofre Martins Chaves, 307, ap. 301, Bairro Centro, Matipó, Minas Gerais",
-                fields: [
-                    { name: "1.", area: 0.5 },
-                    { name: "2.", area: 1.1 },
-                    { name: "3.", area: 0.3 },
-                    { name: "4.", area: 0.3 },
-                    { name: "5.", area: 0.9 },
-                    { name: "6.", area: 2.7 },
-                    { name: "7.", area: 0.3 },
-                    { name: "8.", area: 0.5 },
-                    { name: "9.", area: 0.3 },
-                    { name: "10.", area: 0.6 },
-                    { name: "11.", area: 0.6 },
-                    { name: "12.", area: 0.3 },
-                    { name: "13.", area: 1.3 },
-                    { name: "14.", area: 1.3 },
-                    { name: "15.", area: 1.6 },
-                    { name: "16.", area: 0.9 },
-                    { name: "17.", area: 1.1 },
-                    { name: "18.", area: 1.6 },
-                    { name: "19.", area: 0.9 },
-                    { name: "20.", area: 0.6 },
-                    { name: "21.", area: 1.1 },
-                    { name: "22.", area: 0.9 }
-                ]
-            },
-            {
-                farm: "Fazenda Santa Apolinária",
-                producer: "Edna Huebra Alves",
-                cpf: "063.341.206-62",
-                address: "Fazenda Santa Apolinária, zona rural, Córrego Jequitibá, Reduto, Minas Gerais",
-                fields: [
-                    { name: "1. Brotos", area: 0.7 },
-                    { name: "2. Acima do Secador", area: 1.9 },
-                    { name: "3. Abaixo do Secador", area: 0.7 },
-                    { name: "4. Canto da Mata", area: 1.0 }
-                ]
-            },
-            {
-                farm: "Fazendas Café Realeza",
-                producer: "Luiz Eduardo Santos de Sousa",
-                cpf: "148.005.796-78",
-                address: "Córrego dos Dutra, São Pedro do Avaí, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1.1 São Pedro", area: 4.3 },
-                    { name: "1.2 São Pedro", area: 2.0 },
-                    { name: "2.1 Vila Cruzeiro", area: 3.4 },
-                    { name: "2.2 Vila Natal", area: 2.0 },
-                    { name: "2.3 Vila", area: 14.0 },
-                    { name: "2.4 Vila Pomar", area: 0.8 },
-                    { name: "2.5 Vila Galpão", area: 1.5 },
-                    { name: "2.6 Vila Eucalipto", area: 1.5 },
-                    { name: "2.7 Vila Curral", area: 1.5 },
-                    { name: "2.8 Vila Arara", area: 1.7 },
-                    { name: "3.1 Realeza 785", area: 0.8 },
-                    { name: "3.2 Realeza Lav. da Pedra", area: 0.7 },
-                    { name: "3.3 Realeza Arara", area: 1.0 },
-                    { name: "3.4 Realeza Velha 10", area: 10.0 },
-                    { name: "3.5 Realeza Nova", area: 28.0 },
-                    { name: "4.1 Taquara Velha", area: 13.5 },
-                    { name: "4.2 Taquara Esqueletada", area: 2.5 }
-                ]
-            },
-            {
-                farm: "Propriedade Cristina Sousa",
-                producer: "Maria Cristina de Sousa Amâncio",
-                cpf: "536.173.556-68",
-                address: "Rua Andresa Filgueiras Batista, 48, ap. 101, Bairro Pinheiro, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1.1 Serra (produção)", area: 7.0 },
-                    { name: "1.1 Serra (brotos)", area: 2.0 },
-                    { name: "2.1 Curral", area: 3.5 }
-                ]
-            },
-            {
-                farm: "Sítio Boa Vista",
-                producer: "José Roberto de Sousa",
-                cpf: "347.845.786-68",
-                address: "Sítio Boa Vista, Dom Corrêa, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1. Porteira", area: 1.0 },
-                    { name: "2. Antena", area: 0.5 },
-                    { name: "3. Central", area: 1.0 },
-                    { name: "4. Encosta da Mata", area: 1.5 }
-                ]
-            },
-            {
-                farm: "Sítio Santa Catarina",
-                producer: "Célio da Silva Araujo",
-                cpf: "592.455.816-91",
-                address: "Córrego João Bento, Dom Corrêa, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1. Célio", area: 1.1 },
-                    { name: "2. Célio", area: 0.6 },
-                    { name: "3. Tirré", area: 0.3 },
-                    { name: "4. Glaucio", area: 0.7 },
-                    { name: "5. Célio", area: 0.8 },
-                    { name: "6. Glaucio", area: 0.5 },
-                    { name: "7. Célio", area: 0.7 },
-                    { name: "8. Mirella", area: 1.5 },
-                    { name: "9. Tirré", area: 0.5 },
-                    { name: "10. Célio", area: 0.1 },
-                    { name: "11. Glaucio", area: 0.1 }
-                ]
-            }
-        ];
+        const farmRegistryCache = [];
 
-        const PRODUCT_CATALOG = JSON.parse(JSON.stringify(window.DoCampoHerbicideDefaults || {}));
+        // Cache de tela preenchido exclusivamente pelo banco central.
+        const productCatalogCache = {};
 
         const DEFAULT_SAFETY_TEXT = "Utilizar obrigatoriamente os EPIs completos durante o manuseio, preparo da calda e aplicação de herbicidas: vestimenta hidrorepelente (macacão), botas de borracha, avental impermeável, máscara com filtro para vapores orgânicos, óculos de proteção ampla visão, touca árabe e luvas de nitrila. Não reutilizar embalagens. Respeitar rigorosamente o período de reentrada na área tratada (mínimo de 24 horas sem EPI). O manuseio e a aplicação devem ser efetuados exclusivamente por trabalhador capacitado.";
 
@@ -1478,6 +1199,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
         const DEFAULT_ENVIRONMENT_TEXT = "Respeitar as faixas de bordadura e zonas de segurança (mínimo de 10 metros) próximo a cursos d'água, nascentes, açudes, áreas de preservação ambiental e moradias.\nNão lavar equipamentos aplicadores nem descartar caldas residuais em rios, lagos ou valas de drenagem. A destinação incorreta de resíduos sujeita o infrator às penalidades da Lei de Crimes Ambientais.";
 
         let selectedFarm = "";
+        let pdfGenerationActive = false;
         let selectedFields = new Set();
         let checklistFilterEnabled = false;
         let checklistFilterKind = 'herbicida-pre';
@@ -1747,158 +1469,43 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
         }
 
         async function loadStoredData() {
-            /*
-             * O HTML mantém sua interface e cálculos originais, mas a fonte de
-             * cadastros passa a ser a mesma do restante do SmartFarm.
-             * Na primeira abertura desta versão, os itens originais do catálogo
-             * de herbicidas são incorporados uma única vez ao catálogo central.
-             */
-            if (window.DoCampoData && !localStorage.getItem('docampo_herb_catalog_seed_v1')) {
-                Object.keys(PRODUCT_CATALOG).forEach(function(cat) {
-                    (PRODUCT_CATALOG[cat] || []).forEach(function(product) {
-                        window.DoCampoData.mergeProduct(cat, Object.assign({}, product, {
-                            verified: true,
-                            source: 'catalogo-herbicidas-html'
-                        }));
-                    });
+            const central = await window.DoCampoRegistry.all();
+            farmRegistryCache.splice(0, farmRegistryCache.length);
+            (central.farms || []).forEach(function(farm) {
+                farmRegistryCache.push({
+                    id: farm.id, farm: farm.farm, producer: farm.producer || farm.proprietor || "",
+                    proprietor: farm.producer || farm.proprietor || "", cpf: farm.cpf || "",
+                    address: farm.address || "", fields: (farm.fields || []).map(function(field) {
+                        return { id: field.id, name: field.name, area: Number(field.area) || 0, plants: Number(field.plants) || 0 };
+                    })
                 });
-                localStorage.setItem('docampo_herb_catalog_seed_v1', '1');
-            }
-
-            if (window.DoCampoRegistry) {
-                try {
-                    const central = await window.DoCampoRegistry.all();
-                    EMBEDDED_DATABASE.splice(0, EMBEDDED_DATABASE.length);
-                    (central.farms || []).forEach(function(farm) {
-                        EMBEDDED_DATABASE.push({
-                            farm: farm.farm,
-                            producer: farm.producer || farm.proprietor || '',
-                            cpf: farm.cpf || '',
-                            address: farm.address || '',
-                            fields: (farm.fields || []).map(function(field) {
-                                return { name: field.name, area: Number(field.area) || 0 };
-                            })
-                        });
-                    });
-
-                    Object.keys(PRODUCT_CATALOG).forEach(function(cat) { delete PRODUCT_CATALOG[cat]; });
-                    Object.keys(central.products || {}).forEach(function(cat) {
-                        PRODUCT_CATALOG[cat] = (central.products[cat] || []).map(function(product) {
-                            return Object.assign({}, product);
-                        });
-                    });
-                    return;
-                } catch (centralError) {
-                    console.warn('Não foi possível atualizar o cadastro central; usando a cópia offline disponível.', centralError);
-                }
-            }
-
-            try {
-                const deletedFarms = JSON.parse(localStorage.getItem('agri_herb_deleted_farms') || '[]');
-                const storedFarms = JSON.parse(localStorage.getItem('agri_herb_custom_farms') || '[]');
-                
-                for (let i = EMBEDDED_DATABASE.length - 1; i >= 0; i--) {
-                    if (deletedFarms.includes(EMBEDDED_DATABASE[i].farm)) {
-                        EMBEDDED_DATABASE.splice(i, 1);
-                    }
-                }
-
-                storedFarms.forEach(function(stored) {
-                    const idx = EMBEDDED_DATABASE.findIndex(function(f) { 
-                        return f.farm.toLowerCase() === stored.farm.toLowerCase(); 
-                    });
-                    if (idx !== -1) {
-                        EMBEDDED_DATABASE[idx] = stored;
-                    } else if (!deletedFarms.includes(stored.farm)) {
-                        EMBEDDED_DATABASE.unshift(stored);
-                    }
-                });
-            } catch(e) {
-                console.error("Erro ao carregar fazendas salvas", e);
-            }
-
-            try {
-                const deletedProducts = JSON.parse(localStorage.getItem('agri_herb_deleted_products') || '{}');
-                const storedProducts = JSON.parse(localStorage.getItem('agri_herb_custom_products') || '{}');
-
-                Object.keys(PRODUCT_CATALOG).forEach(function(cat) {
-                    if (deletedProducts[cat]) {
-                        PRODUCT_CATALOG[cat] = PRODUCT_CATALOG[cat].filter(function(p) {
-                            return !deletedProducts[cat].includes(p.name.toLowerCase());
-                        });
-                    }
-                });
-
-                Object.keys(storedProducts).forEach(function(cat) {
-                    if (!PRODUCT_CATALOG[cat]) PRODUCT_CATALOG[cat] = [];
-                    storedProducts[cat].forEach(function(p) {
-                        const idx = PRODUCT_CATALOG[cat].findIndex(function(item) { 
-                            return item.name.toLowerCase() === p.name.toLowerCase(); 
-                        });
-                        if (idx !== -1) {
-                            PRODUCT_CATALOG[cat][idx] = p;
-                        } else {
-                            const isDeleted = deletedProducts[cat] && deletedProducts[cat].includes(p.name.toLowerCase());
-                            if (!isDeleted) {
-                                PRODUCT_CATALOG[cat].push(p);
-                            }
-                        }
-                    });
-                });
-            } catch(e) {
-                console.error("Erro ao carregar produtos salvos", e);
-            }
+            });
+            Object.keys(productCatalogCache).forEach(function(category) { delete productCatalogCache[category]; });
+            Object.entries(central.products || {}).forEach(function(entry) {
+                productCatalogCache[entry[0]] = (entry[1] || []).map(function(product) { return Object.assign({}, product); });
+            });
         }
 
         function saveStoredFarm(farmObj) {
-            try {
-                let stored = JSON.parse(localStorage.getItem('agri_herb_custom_farms') || '[]');
-                const idx = stored.findIndex(function(f) { return f.farm.toLowerCase() === farmObj.farm.toLowerCase(); });
-                if (idx !== -1) {
-                    stored[idx] = farmObj;
-                } else {
-                    stored.unshift(farmObj);
-                }
-                localStorage.setItem('agri_herb_custom_farms', JSON.stringify(stored));
-                if (window.DoCampoData) window.DoCampoData.mergeFarm(farmObj);
-            } catch(e) {
-                console.error("Erro ao salvar propriedade", e);
-            }
+            if (!window.DoCampoData) throw new Error('Banco central indisponível.');
+            return window.DoCampoData.mergeFarm(farmObj);
         }
 
         function saveStoredProduct(cat, prodObj) {
-            try {
-                let stored = JSON.parse(localStorage.getItem('agri_herb_custom_products') || '{}');
-                if (!stored[cat]) stored[cat] = [];
-                const idx = stored[cat].findIndex(function(p) { return p.name.toLowerCase() === prodObj.name.toLowerCase(); });
-                if (idx !== -1) {
-                    stored[cat][idx] = prodObj;
-                } else {
-                    stored[cat].push(prodObj);
-                }
-                localStorage.setItem('agri_herb_custom_products', JSON.stringify(stored));
-                if (window.DoCampoData) window.DoCampoData.mergeProduct(cat, prodObj);
-            } catch(e) {
-                console.error("Erro ao salvar produto", e);
-            }
-        }
-
-        function getNextSequenceNumber() {
-            let seq = parseInt(localStorage.getItem('agri_herb_rec_seq_counter') || '1', 10);
-            if (isNaN(seq) || seq < 1) seq = 1;
-            return seq;
+            if (!window.DoCampoData) throw new Error('Banco central indisponível.');
+            return window.DoCampoData.mergeProduct(cat, prodObj);
         }
 
         function loadSequenceNumber() {
-            let seq = getNextSequenceNumber();
-            let formatted = '#DC-H' + String(seq).padStart(4, '0');
+            const responsavel = AGRONOMISTS_LIST[selectedAgronomistIndex]?.name || (window.DoCampoDB ? DoCampoDB.user() : '');
+            const formatted = window.DoCampoDocumentCode ? DoCampoDocumentCode.previa('HER', responsavel) : 'HER-PRÉVIA';
             const input = document.getElementById('rec-number-input');
             if (input) input.value = formatted;
             updateRecNumber(formatted);
         }
 
         function updateRecNumber(val) {
-            const formatted = val ? val.trim() : '#DC-H0001';
+            const formatted = val ? val.trim() : 'HER-PRÉVIA';
             const pdfRecIdEl = document.getElementById('pdf-rec-id');
             const pdfRecIdElP2 = document.getElementById('pdf-rec-id-p2');
             if (pdfRecIdEl) pdfRecIdEl.innerText = formatted;
@@ -1949,6 +1556,104 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                     }
                 }
             });
+            loadSequenceNumber();
+        }
+
+        function captureHerbicideDraft() {
+            const products = Array.from(document.querySelectorAll('#products-tbody tr')).map(function(row) {
+                const id = row.id;
+                return {
+                    category: document.getElementById(id + '-cat')?.value || '',
+                    product: document.getElementById(id + '-prod-select')?.value || '',
+                    dose: document.getElementById(id + '-dose')?.value || '',
+                    unit: document.getElementById(id + '-unit')?.value || ''
+                };
+            }).filter(item => item.category || item.product || Number(item.dose));
+            if (!selectedFarm && !products.length) return null;
+            const controls = {};
+            document.querySelectorAll('input[id],select[id],textarea[id]').forEach(function(element) {
+                if (/^(row-|predilution-|pdf-|new-|farm-select$|producer-|manage-)/.test(element.id) || element.type === 'file') return;
+                controls[element.id] = /checkbox|radio/.test(element.type) ? { checked: element.checked } : { value: element.value };
+            });
+            return {
+                selectedFarm,
+                selectedFields: Array.from(selectedFields),
+                selectedAgronomistIndex,
+                checklistFilterEnabled,
+                checklistFilterKind,
+                controls,
+                products,
+                productStockMap: { ...productStockMap },
+                predilution: getPredilutionData()
+            };
+        }
+
+        async function restoreHerbicideDraft() {
+            const draft = window.DoCampoDrafts?.load('herbicida');
+            if (!draft || !draft.selectedFarm || !farmRegistryCache.some(farm => farm.farm === draft.selectedFarm)) return;
+            Object.entries(draft.controls || {}).forEach(function(entry) {
+                const element = document.getElementById(entry[0]);
+                if (!element) return;
+                if ('checked' in entry[1]) element.checked = !!entry[1].checked;
+                else if ('value' in entry[1]) element.value = entry[1].value;
+            });
+            checklistFilterEnabled = !!draft.checklistFilterEnabled;
+            checklistFilterKind = draft.checklistFilterKind || 'herbicida-pre';
+            const farmSelect = document.getElementById('farm-select');
+            farmSelect.value = draft.selectedFarm;
+            onFarmChange();
+            const wantedFields = new Set(draft.selectedFields || []);
+            document.querySelectorAll('#fields-container input[type="checkbox"]').forEach(function(box) {
+                if (!wantedFields.has(box.value)) return;
+                box.checked = true;
+                box.dispatchEvent(new Event('change'));
+            });
+            const tbody = document.getElementById('products-tbody');
+            if (tbody) tbody.innerHTML = '';
+            productRowCounter = 0;
+            const products = Array.isArray(draft.products) && draft.products.length ? draft.products : [{}, {}, {}, {}];
+            products.forEach(function(item) {
+                addProductRow(item.category || '');
+                const row = document.getElementById('products-tbody')?.lastElementChild;
+                if (!row) return;
+                const id = row.id;
+                if (item.category) {
+                    document.getElementById(id + '-cat').value = item.category;
+                    onCategoryChange(id);
+                }
+                if (item.product) {
+                    const select = document.getElementById(id + '-prod-select');
+                    if (select) { select.value = item.product; onProductSelect(id); }
+                }
+                if (item.dose !== undefined) document.getElementById(id + '-dose').value = item.dose;
+                if (item.unit) document.getElementById(id + '-unit').value = item.unit;
+            });
+            productStockMap = { ...(draft.productStockMap || {}) };
+            if (Number.isInteger(draft.selectedAgronomistIndex)) selectAgronomist(draft.selectedAgronomistIndex);
+            toggleMinimumPreparation();
+            calculateTotals();
+            const predList = document.getElementById('predilution-list');
+            if (predList) predList.innerHTML = '';
+            predilutionCounter = 0;
+            const predRows = Array.isArray(draft.predilution) ? draft.predilution : [];
+            const predEnabled = document.getElementById('predilution-enabled');
+            if (predEnabled) predEnabled.checked = predRows.length > 0;
+            document.getElementById('predilution-panel')?.classList.toggle('hidden', !predRows.length);
+            predRows.forEach(function(saved) {
+                addPredilutionRow();
+                const row = document.getElementById('predilution-list')?.lastElementChild;
+                if (!row) return;
+                const id = row.id;
+                const index = currentRecommendationProducts.findIndex(item => item.name === saved.product);
+                if (index >= 0) document.getElementById(id + '-product').value = String(index);
+                document.getElementById(id + '-water').value = saved.waterL;
+                document.getElementById(id + '-aliquot').value = saved.aliquotMl;
+                recalculatePredilution(id);
+                const qty = document.getElementById(id + '-product-qty');
+                if (qty) { qty.value = saved.productQty; qty.dataset.manual = 'true'; }
+                updatePredilutionText(id);
+            });
+            calculateTotals();
         }
 
         window.onload = async function() {
@@ -1970,6 +1675,8 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
             }
 
             calculateTotals();
+            await restoreHerbicideDraft();
+            window.DoCampoDrafts?.bind('herbicida', captureHerbicideDraft);
         };
 
         function populateFarmDropdown() {
@@ -1977,7 +1684,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
             if (!select) return;
             select.innerHTML = '<option value="">-- Selecione a Fazenda --</option>';
             
-            const sortedFarms = [...EMBEDDED_DATABASE].sort(function(a, b) {
+            const sortedFarms = [...farmRegistryCache].sort(function(a, b) {
                 return a.farm.localeCompare(b.farm, 'pt-BR', { sensitivity: 'base' });
             });
 
@@ -2056,28 +1763,23 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                 return;
             }
 
-            if (!PRODUCT_CATALOG[cat]) {
-                PRODUCT_CATALOG[cat] = [];
+            const newProdObj = { name: name, dose: dose, unit: unit, target: target, active: active };
+            try {
+                saveStoredProduct(cat, newProdObj);
+            } catch (error) {
+                console.error('Erro ao salvar herbicida', error);
+                showAlert('O herbicida não foi salvo. ' + (error.message || 'Tente novamente.'), 'Falha no salvamento');
+                return;
             }
 
-            const existingIdx = PRODUCT_CATALOG[cat].findIndex(function(p) { return p.name.toLowerCase() === name.toLowerCase(); });
-            const newProdObj = { name: name, dose: dose, unit: unit, target: target, active: active };
+            if (!productCatalogCache[cat]) productCatalogCache[cat] = [];
+            const existingIdx = productCatalogCache[cat].findIndex(function(p) { return p.name.toLowerCase() === name.toLowerCase(); });
 
             if (existingIdx !== -1) {
-                PRODUCT_CATALOG[cat][existingIdx] = newProdObj;
+                productCatalogCache[cat][existingIdx] = newProdObj;
             } else {
-                PRODUCT_CATALOG[cat].push(newProdObj);
+                productCatalogCache[cat].push(newProdObj);
             }
-
-            saveStoredProduct(cat, newProdObj);
-
-            try {
-                let deletedProds = JSON.parse(localStorage.getItem('agri_herb_deleted_products') || '{}');
-                if (deletedProds[cat]) {
-                    deletedProds[cat] = deletedProds[cat].filter(function(n) { return n !== name.toLowerCase(); });
-                    localStorage.setItem('agri_herb_deleted_products', JSON.stringify(deletedProds));
-                }
-            } catch(e) {}
 
             const rows = document.querySelectorAll('#products-tbody tr');
             rows.forEach(function(tr) {
@@ -2134,10 +1836,10 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
             let html = '';
             let totalCount = 0;
 
-            Object.keys(PRODUCT_CATALOG).forEach(function(cat) {
+            Object.keys(productCatalogCache).forEach(function(cat) {
                 if (filterCat !== 'ALL' && filterCat !== cat) return;
 
-                const prods = PRODUCT_CATALOG[cat];
+                const prods = productCatalogCache[cat];
                 if (!prods || prods.length === 0) return;
 
                 html += '<div class="space-y-1.5 pt-2">' +
@@ -2182,30 +1884,19 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
         }
 
         function deleteProduct(cat, prodName) {
-            if (PRODUCT_CATALOG[cat]) {
-                PRODUCT_CATALOG[cat] = PRODUCT_CATALOG[cat].filter(function(p) {
+            if (productCatalogCache[cat]) {
+                try {
+                    if (!window.DoCampoData || !window.DoCampoData.removeProduct(cat, prodName)) {
+                        throw new Error('Herbicida não encontrado no banco central.');
+                    }
+                } catch (error) {
+                    console.error('Erro ao excluir herbicida', error);
+                    showAlert('O herbicida não foi excluído. ' + (error.message || 'Tente novamente.'), 'Falha na exclusão');
+                    return;
+                }
+                productCatalogCache[cat] = productCatalogCache[cat].filter(function(p) {
                     return p.name.toLowerCase() !== prodName.toLowerCase();
                 });
-
-                try {
-                    let customProds = JSON.parse(localStorage.getItem('agri_herb_custom_products') || '{}');
-                    if (customProds[cat]) {
-                        customProds[cat] = customProds[cat].filter(function(p) {
-                            return p.name.toLowerCase() !== prodName.toLowerCase();
-                        });
-                        localStorage.setItem('agri_herb_custom_products', JSON.stringify(customProds));
-                    }
-
-                    let deletedProds = JSON.parse(localStorage.getItem('agri_herb_deleted_products') || '{}');
-                    if (!deletedProds[cat]) deletedProds[cat] = [];
-                    if (!deletedProds[cat].includes(prodName.toLowerCase())) {
-                        deletedProds[cat].push(prodName.toLowerCase());
-                    }
-                    localStorage.setItem('agri_herb_deleted_products', JSON.stringify(deletedProds));
-                } catch(e) {
-                    console.error("Erro ao salvar exclusão do produto", e);
-                }
-                if (window.DoCampoData) window.DoCampoData.removeProduct(cat, prodName);
 
                 const rows = document.querySelectorAll('#products-tbody tr');
                 rows.forEach(function(tr) {
@@ -2306,21 +1997,20 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                 fields: fields
             };
 
-            const existingIndex = EMBEDDED_DATABASE.findIndex(function(f) { return f.farm.toLowerCase() === farmName.toLowerCase(); });
-            if (existingIndex !== -1) {
-                EMBEDDED_DATABASE[existingIndex] = farmObj;
-            } else {
-                EMBEDDED_DATABASE.unshift(farmObj);
+            try {
+                saveStoredFarm(farmObj);
+            } catch (error) {
+                console.error('Erro ao salvar propriedade', error);
+                showAlert('A propriedade não foi salva. ' + (error.message || 'Tente novamente.'), 'Falha no salvamento');
+                return;
             }
 
-            saveStoredFarm(farmObj);
-
-            try {
-                let deletedFarms = JSON.parse(localStorage.getItem('agri_herb_deleted_farms') || '[]');
-                deletedFarms = deletedFarms.filter(function(n) { return n.toLowerCase() !== farmName.toLowerCase(); });
-                localStorage.setItem('agri_herb_deleted_farms', JSON.stringify(deletedFarms));
-            } catch(e) {}
-
+            const existingIndex = farmRegistryCache.findIndex(function(f) { return f.farm.toLowerCase() === farmName.toLowerCase(); });
+            if (existingIndex !== -1) {
+                farmRegistryCache[existingIndex] = farmObj;
+            } else {
+                farmRegistryCache.unshift(farmObj);
+            }
             populateFarmDropdown();
 
             const select = document.getElementById('farm-select');
@@ -2351,7 +2041,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                 return;
             }
 
-            showConfirm('Deseja realmente excluir a propriedade "' + selectedFarm + '" e TODOS os seus talhões? Esta ação é permanente.', function() {
+            showConfirm('Mover a propriedade "' + selectedFarm + '" e todos os seus talhões para a lixeira? Ela poderá ser restaurada.', function() {
                 deleteCurrentFarm();
             }, 'Excluir Propriedade Toda');
         }
@@ -2361,26 +2051,20 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
 
             const farmToDelete = selectedFarm;
 
-            const farmIdx = EMBEDDED_DATABASE.findIndex(function(f) { return f.farm === farmToDelete; });
-            if (farmIdx !== -1) {
-                EMBEDDED_DATABASE.splice(farmIdx, 1);
-            }
-
             try {
-                let storedFarms = JSON.parse(localStorage.getItem('agri_herb_custom_farms') || '[]');
-                storedFarms = storedFarms.filter(function(f) { return f.farm.toLowerCase() !== farmToDelete.toLowerCase(); });
-                localStorage.setItem('agri_herb_custom_farms', JSON.stringify(storedFarms));
-
-                let deletedFarms = JSON.parse(localStorage.getItem('agri_herb_deleted_farms') || '[]');
-                if (!deletedFarms.includes(farmToDelete)) {
-                    deletedFarms.push(farmToDelete);
+                if (!window.DoCampoData || !window.DoCampoData.removeFarm(farmToDelete)) {
+                    throw new Error('Propriedade não encontrada no banco central.');
                 }
-                localStorage.setItem('agri_herb_deleted_farms', JSON.stringify(deletedFarms));
-            } catch(e) {
-                console.error("Erro ao salvar exclusão de propriedade", e);
+            } catch (error) {
+                console.error('Erro ao excluir propriedade', error);
+                showAlert('A propriedade não foi excluída. ' + (error.message || 'Tente novamente.'), 'Falha na exclusão');
+                return;
             }
-            if (window.DoCampoData) window.DoCampoData.removeFarm(farmToDelete);
 
+            const farmIdx = farmRegistryCache.findIndex(function(f) { return f.farm === farmToDelete; });
+            if (farmIdx !== -1) {
+                farmRegistryCache.splice(farmIdx, 1);
+            }
             selectedFarm = "";
             selectedFields.clear();
             const select = document.getElementById('farm-select');
@@ -2405,13 +2089,21 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
         }
 
         function deleteField(fieldName) {
-            const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+            const farmData = farmRegistryCache.find(function(f) { return f.farm === selectedFarm; });
             if (!farmData) return;
 
-            farmData.fields = farmData.fields.filter(function(f) { return f.name !== fieldName; });
+            const updatedFarm = Object.assign({}, farmData, {
+                fields: farmData.fields.filter(function(f) { return f.name !== fieldName; })
+            });
+            try {
+                saveStoredFarm(updatedFarm);
+            } catch (error) {
+                console.error('Erro ao excluir talhão', error);
+                showAlert('O talhão não foi excluído. ' + (error.message || 'Tente novamente.'), 'Falha na exclusão');
+                return;
+            }
+            farmData.fields = updatedFarm.fields;
             selectedFields.delete(fieldName);
-
-            saveStoredFarm(farmData);
 
             renderFields(farmData.fields);
             calculateTotals();
@@ -2455,7 +2147,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
             const kindSelect = document.getElementById('checklist-filter-kind');
             if (kindSelect) checklistFilterKind = kindSelect.value || 'herbicida-pre';
             checklistFilterEnabled = !checklistFilterEnabled;
-            const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+            const farmData = farmRegistryCache.find(function(f) { return f.farm === selectedFarm; });
             const visible = checklistFieldsFor(farmData);
             const visibleNames = new Set(visible.map(function(f) { return f.name; }));
             if (checklistFilterEnabled) selectedFields.forEach(function(name) { if (!visibleNames.has(name)) selectedFields.delete(name); });
@@ -2467,7 +2159,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
         function onChecklistFilterKindChange() {
             const kindSelect = document.getElementById('checklist-filter-kind');
             if (kindSelect) checklistFilterKind = kindSelect.value || 'herbicida-pre';
-            const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+            const farmData = farmRegistryCache.find(function(f) { return f.farm === selectedFarm; });
             if (checklistFilterEnabled && farmData) {
                 const visible = checklistFieldsFor(farmData);
                 const visibleNames = new Set(visible.map(function(f) { return f.name; }));
@@ -2508,7 +2200,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                 return;
             }
 
-            const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+            const farmData = farmRegistryCache.find(function(f) { return f.farm === selectedFarm; });
             if (farmData) {
                 if (producerInput) producerInput.value = farmData.producer;
                 if (producerCpfInput) producerCpfInput.value = farmData.cpf || "--";
@@ -2700,8 +2392,8 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                     '</select>';
 
                 const prodSelect = document.getElementById(rowId + '-prod-select');
-                if (prodSelect && PRODUCT_CATALOG[category]) {
-                    const sortedProducts = [...PRODUCT_CATALOG[category]].sort(function(a, b) { 
+                if (prodSelect && productCatalogCache[category]) {
+                    const sortedProducts = [...productCatalogCache[category]].sort(function(a, b) { 
                         return a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' });
                     });
                     sortedProducts.forEach(function(p) {
@@ -2737,8 +2429,8 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                 const unitEl = document.getElementById(rowId + '-unit');
                 if (doseEl) doseEl.value = parseFloat((sprayVolHa * 0.0025).toFixed(4));
                 if (unitEl) unitEl.value = "L/ha";
-            } else if (PRODUCT_CATALOG[category]) {
-                const prodData = PRODUCT_CATALOG[category].find(function(p) { return p.name === selectedProdName; });
+            } else if (productCatalogCache[category]) {
+                const prodData = productCatalogCache[category].find(function(p) { return p.name === selectedProdName; });
                 if (prodData) {
                     const doseEl = document.getElementById(rowId + '-dose');
                     const unitEl = document.getElementById(rowId + '-unit');
@@ -2817,7 +2509,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
         function calculateTotals() {
             let totalArea = 0;
             if (selectedFarm) {
-                const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+                const farmData = farmRegistryCache.find(function(f) { return f.farm === selectedFarm; });
                 if (farmData) {
                     farmData.fields.forEach(function(f) {
                         if (selectedFields.has(f.name)) totalArea += f.area;
@@ -2889,8 +2581,8 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
 
                 if (selectEl) {
                     prodName = selectEl.value;
-                    if (cat && PRODUCT_CATALOG[cat]) {
-                        const itemData = PRODUCT_CATALOG[cat].find(function(p) { return p.name === prodName; });
+                    if (cat && productCatalogCache[cat]) {
+                        const itemData = productCatalogCache[cat].find(function(p) { return p.name === prodName; });
                         if (itemData) {
                             if (itemData.active) activeIng = itemData.active;
                             if (itemData.target) targetInfo = itemData.target;
@@ -2981,7 +2673,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
         }
 
         function updatePDFPreview() {
-            const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+            const farmData = farmRegistryCache.find(function(f) { return f.farm === selectedFarm; });
             const pdfProducerEl = document.getElementById('pdf-producer');
             const pdfFarmEl = document.getElementById('pdf-farm');
             const pdfCpfEl = document.getElementById('pdf-cpf');
@@ -3065,8 +2757,8 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
 
                 if (selectEl) {
                     prodName = selectEl.value;
-                    if (cat && PRODUCT_CATALOG[cat]) {
-                        const pData = PRODUCT_CATALOG[cat].find(function(p) { return p.name === prodName; });
+                    if (cat && productCatalogCache[cat]) {
+                        const pData = productCatalogCache[cat].find(function(p) { return p.name === prodName; });
                         if (pData) {
                             if (pData.active) activeIng = pData.active;
                             if (pData.target) targetInfo = pData.target;
@@ -3228,7 +2920,11 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
             setPdfFontLevel(pdfFontLevel);
         }
 
-        function downloadPDF() {
+        async function downloadPDF() {
+            if (pdfGenerationActive) {
+                showAlert('Já existe um PDF sendo gerado. Aguarde a conclusão.');
+                return;
+            }
             if (!selectedFarm) {
                 showAlert("Por favor, selecione uma fazenda antes de gerar a recomendação em PDF.");
                 return;
@@ -3254,7 +2950,9 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
 
             updatePDFPreview();
             applyPdfFontLevel();
-            saveToHistory();
+            pdfGenerationActive = true;
+            const generateButton = document.getElementById('btn-pdf-generate');
+            if (generateButton) generateButton.disabled = true;
 
             const btnText = document.getElementById('btn-pdf-text');
             if (btnText) btnText.innerText = "Gerando PDF...";
@@ -3275,10 +2973,12 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
             cloneContainer.appendChild(clonedContent);
             document.body.appendChild(cloneContainer);
 
-            const docFarmForName = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+            const docFarmForName = farmRegistryCache.find(function(f) { return f.farm === selectedFarm; });
             const docProducerName = docFarmForName ? (docFarmForName.producer || docFarmForName.proprietor || '') : '';
             const docResponsibleName = (document.getElementById('agronomist-name') || {}).value || (window.DoCampoDB ? DoCampoDB.user() : '');
             const documentCode = window.DoCampoDocumentCode ? DoCampoDocumentCode.reservar('HER', docResponsibleName) : ('HER-' + Date.now());
+            const recInputForSave=document.getElementById('rec-number-input');if(recInputForSave)recInputForSave.value=documentCode;
+            const clonedRecId=clonedContent.querySelector('#pdf-rec-id');if(clonedRecId)clonedRecId.textContent=documentCode;
             const documentDate = new Date().toISOString().slice(0,10);
             const filename = (window.DoCampoDocumentCode ? DoCampoDocumentCode.arquivo(`Receituario_Herbicida_${docProducerName || selectedFarm}_${documentDate}_${documentCode}`) : ('Recomendacao_Herbicidas_' + selectedFarm.replace(/[^a-zA-Z0-9]/g, '_'))) + '.pdf';
 
@@ -3300,36 +3000,35 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                 pagebreak:    { mode: ['css', 'legacy'] }
             };
 
-            setTimeout(function() {
-                if (window.DoCampoPDF && window.DoCampoPDF.gerarDataUri) {
-                    window.DoCampoPDF.gerarDataUri(clonedContent, opt).then(async function(pdfData) {
-                        const docFarm = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
-                        await window.DoCampoPDF.salvarECompartilhar(pdfData, filename, 'Receituário de Herbicida', {
-                                typeLabel: 'Receituário de Herbicida',
-                                producer: docFarm ? (docFarm.producer || docFarm.proprietor || '') : '',
-                                farm: selectedFarm,
-                                fields: Array.from(selectedFields),
-                                documentCode: documentCode,
-                                fontLevel: pdfFontLevel,
-                                responsible: (document.getElementById('agronomist-name') || {}).value || (window.DoCampoDB ? DoCampoDB.user() : '')
-                        });
-                        if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
-                        if (wrapper) wrapper.classList.add('hidden');
-                        if (btnText) btnText.innerText = "Gerar Relatório PDF de Herbicidas";
-                    }).catch(function(err) {
-                        console.error("Falha ao gerar ou salvar PDF", err);
-                        if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
-                        showAlert(err && err.message ? err.message : 'Não foi possível gerar e salvar o PDF. Tente novamente.');
-                        if (wrapper) wrapper.classList.add('hidden');
-                        if (btnText) btnText.innerText = "Gerar Relatório PDF de Herbicidas";
-                    });
-                } else {
-                    if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
-                    showAlert('O gerador de PDF não foi carregado. Feche e abra o aplicativo e tente novamente.');
-                    if (wrapper) wrapper.classList.add('hidden');
-                    if (btnText) btnText.innerText = "Gerar Relatório PDF de Herbicidas";
+            try {
+                if (!window.DoCampoPDF || !window.DoCampoPDF.gerarDataUri) {
+                    throw new Error('O gerador de PDF não foi carregado. Feche e abra o aplicativo e tente novamente.');
                 }
-            }, 300);
+                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                const pdfData = await window.DoCampoPDF.gerarDataUri(clonedContent, opt);
+                const docFarm = farmRegistryCache.find(function(f) { return f.farm === selectedFarm; });
+                const savedResult = await window.DoCampoPDF.salvarECompartilhar(pdfData, filename, 'Receituário de Herbicida', {
+                    typeLabel: 'Receituário de Herbicida',
+                    producer: docFarm ? (docFarm.producer || docFarm.proprietor || '') : '',
+                    farm: selectedFarm,
+                    fields: Array.from(selectedFields),
+                    documentCode: documentCode,
+                    fontLevel: pdfFontLevel,
+                    responsible: (document.getElementById('agronomist-name') || {}).value || (window.DoCampoDB ? DoCampoDB.user() : '')
+                });
+                saveToHistory(documentCode, savedResult?.document?.id || '');
+                window.DoCampoDrafts?.clear('herbicida');
+                if (window.DoCampoDB) await DoCampoDB.flush();
+            } catch (err) {
+                console.error('Falha ao gerar ou salvar PDF', err);
+                showAlert(err && err.message ? err.message : 'Não foi possível gerar e salvar o PDF. Tente novamente.');
+            } finally {
+                if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
+                if (wrapper) wrapper.classList.add('hidden');
+                if (btnText) btnText.innerText = 'Gerar Relatório PDF de Herbicidas';
+                pdfGenerationActive = false;
+                if (generateButton) generateButton.disabled = false;
+            }
         }
 
         function closePDFModal() {
@@ -3352,16 +3051,14 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
             }).filter(function(item) { return item.name && item.dose > 0; });
         }
 
-        function saveToHistory() {
-            const history = JSON.parse(localStorage.getItem('agri_herb_recommendations_history') || '[]');
-            
-            const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+        function saveToHistory(documentCode, documentId) {
+            const farmData = farmRegistryCache.find(function(f) { return f.farm === selectedFarm; });
             const recInput = document.getElementById('rec-number-input');
-            const recIdVal = recInput ? recInput.value.trim() : '#DC-H0001';
+            const recIdVal = recInput ? recInput.value.trim() : 'HER-PRÉVIA';
             const areaDisplayEl = document.getElementById('selected-area-display');
 
             const entry = {
-                id: recIdVal,
+                id: documentCode || recIdVal,
                 date: new Date().toLocaleString('pt-BR'),
                 farm: selectedFarm,
                 producer: farmData ? farmData.producer : '',
@@ -3375,10 +3072,10 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                 predilution: getPredilutionData()
             };
 
-            history.unshift(entry);
-            localStorage.setItem('agri_herb_recommendations_history', JSON.stringify(history.slice(0, 20)));
             if (window.DoCampoDB) window.DoCampoDB.upsert('recommendations', {
-                code: recIdVal,
+                id: documentId ? 'recommendation-' + documentId : DoCampoDB.stableId('her', documentCode || recIdVal),
+                code: documentCode || recIdVal,
+                documentId: documentId || '',
                 recommendationType: 'herbicida',
                 status: 'emitida',
                 immutable: true,
@@ -3386,15 +3083,12 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
                 snapshot: JSON.parse(JSON.stringify(entry))
             });
 
-            let currentSeq = getNextSequenceNumber();
-            let expectedCode = '#DC-H' + String(currentSeq).padStart(4, '0');
-            if (recIdVal.toUpperCase() === expectedCode.toUpperCase()) {
-                localStorage.setItem('agri_herb_rec_seq_counter', currentSeq + 1);
-            }
         }
 
         function openHistoryModal() {
-            const history = JSON.parse(localStorage.getItem('agri_herb_recommendations_history') || '[]');
+            const history = window.DoCampoDB ? DoCampoDB.list('recommendations')
+                .filter(item => item.recommendationType === 'herbicida')
+                .map(item => item.snapshot || item) : [];
             const container = document.getElementById('history-list');
 
             if (container) {
@@ -3471,6 +3165,7 @@ Não lavar equipamentos aplicadores nem descartar caldas residuais em rios, lago
 
             loadSequenceNumber();
             calculateTotals();
+            window.DoCampoDrafts?.clear('herbicida');
         }
     </script>
 </body>

@@ -22,17 +22,22 @@
       if (!elemento || !elemento.isConnected) throw new Error('O conteúdo do documento não está pronto para gerar o PDF.');
       await esperarLayout(elemento);
       const native = plugins().native;
-      const escalas = native ? [1.45, 1.1] : [Number(opcoes?.html2canvas?.scale)||1.8, 1.35];
+      const escalas = native ? [1.25, 1, 0.85] : [Number(opcoes?.html2canvas?.scale)||1.8, 1.35, 1.05];
       let ultimoErro;
       for (const scale of escalas) {
         try {
           const config={...(opcoes||{}),html2canvas:{...((opcoes&&opcoes.html2canvas)||{}),scale,useCORS:true,logging:false}};
-          const dataUri=await comPrazo(html2pdf().set(config).from(elemento).outputPdf('datauristring'),45000);
+          const tarefa = html2pdf().set(config).from(elemento).outputPdf('datauristring');
+          // No Android, abandonar uma Promise por tempo excedido não cancela o
+          // html2canvas. Uma nova tentativa concorrente duplicava o pico de RAM
+          // e explicava falhas intermitentes, principalmente com fotos.
+          const dataUri = native ? await tarefa : await comPrazo(tarefa, 60000);
           validarPdf(String(dataUri).split(',')[1]||'');
           return dataUri;
         } catch (error) { ultimoErro=error; await new Promise(resolve=>setTimeout(resolve,200)); }
       }
-      throw new Error('Não foi possível montar o PDF. Libere memória do aparelho e tente novamente. Detalhe: '+String(ultimoErro?.message||ultimoErro||''));
+      const detail = String(ultimoErro?.message || ultimoErro || 'erro desconhecido');
+      throw new Error('Não foi possível montar o PDF. A geração foi interrompida antes do salvamento. Detalhe técnico: ' + detail);
     })();
     try{return await generationJob}finally{generationJob=null}
   }
@@ -74,6 +79,24 @@
     const value = String(base64 || '').replace(/\s/g, '');
     if (value.length < 100 || !value.startsWith('JVBER')) throw new Error('O conteúdo gerado não é um PDF válido.');
     return value;
+  }
+
+  function erroDeArmazenamento(error) {
+    const technical = String(error?.message || error?.code || error || 'falha desconhecida').replace(/\s+/g, ' ').slice(0, 180);
+    const fingerprint = (String(error?.code || '') + ' ' + technical).toLowerCase();
+    let message = 'O PDF foi criado, mas o Android não permitiu gravá-lo no armazenamento interno do aplicativo.';
+    if (/enospc|no space|insufficient storage|quota|disk full/.test(fingerprint)) {
+      message = 'O PDF foi criado, mas não há espaço livre suficiente para gravá-lo neste aparelho.';
+    } else if (/permission|denied|unauthorized|security/.test(fingerprint)) {
+      message = 'O PDF foi criado, mas o Android recusou a permissão de gravação do aplicativo.';
+    } else if (/not found|enoent|directory/.test(fingerprint)) {
+      message = 'O PDF foi criado, mas a pasta interna de documentos não pôde ser preparada.';
+    }
+    const detail = new Error(message + ' Detalhe técnico: ' + technical);
+    detail.stage = 'storage';
+    detail.code = error?.code || 'PDF_STORAGE_FAILED';
+    detail.cause = error;
+    return detail;
   }
 
   function commonMeta(titulo, meta) {
@@ -148,7 +171,20 @@
     if (!navigator.onLine || !window.DoCampoDB) return 0;
     const docs = DoCampoDB.list('documents').filter(d => d.localAvailable && !d.remoteUploaded && d.remotePath);
     let count = 0;
-    for (const doc of docs) { if (await uploadOne(doc)) count++; }
+    const failures = [];
+    for (const doc of docs) {
+      try {
+        if (await uploadOne(doc)) count++;
+      } catch (error) {
+        failures.push({ id: doc.id, name: doc.name, message: String(error?.message || error) });
+      }
+    }
+    if (failures.length) {
+      const error = new Error(`${failures.length} PDF(s) permaneceram pendentes; ${count} foram enviados nesta tentativa. Primeiro erro: ${failures[0].message}`);
+      error.uploadedCount = count;
+      error.failures = failures;
+      throw error;
+    }
     return count;
   }
 
@@ -199,17 +235,16 @@
   async function shareDocument(doc, dialogTitle) {
     doc = await ensureLocal(doc);
     const p = plugins();
-    const base64 = await readPersistentBase64(doc);
     if (!p.native || !p.filesystem || !p.share) {
+      const base64 = await readPersistentBase64(doc);
       baixarNoNavegador('data:application/pdf;base64,' + base64, doc.name);
       return;
     }
-    const nomeCompartilhamento = limparNome(doc.name || ((doc.displayName || doc.id) + '.pdf'));
-    const temp = await p.filesystem.writeFile({ path: nomeCompartilhamento, data: base64, directory: 'CACHE', recursive: true });
+    const persistent = await p.filesystem.getUri({ path: doc.localPath, directory: 'DATA' });
     await p.share.share({
       title: doc.displayName || doc.typeLabel || 'Documento Do Campo',
       text: doc.displayName || 'Documento gerado pelo Do Campo SmartFarm',
-      url: temp.uri,
+      url: persistent.uri,
       dialogTitle: dialogTitle || 'Abrir ou compartilhar PDF'
     });
   }
@@ -260,11 +295,10 @@
     if (p.native && p.filesystem) {
       try {
         await p.filesystem.writeFile({ path: localPath, data: base64, directory: 'DATA', recursive: true });
-        const check = await p.filesystem.readFile({ path: localPath, directory: 'DATA' });
-        if (!check || String(check.data || '').length < 100) throw new Error('Arquivo gravado sem conteúdo.');
+        const check = await p.filesystem.stat({ path: localPath, directory: 'DATA' });
+        if (!check || Number(check.size) < 100) throw new Error('Arquivo gravado sem conteúdo.');
       } catch (error) {
-        const detail = new Error('O PDF foi criado, mas não pôde ser salvo no aparelho. Verifique o espaço disponível e tente novamente.');
-        detail.stage = 'storage'; detail.cause = error; throw detail;
+        throw erroDeArmazenamento(error);
       }
       localAvailable = true;
     }
@@ -281,6 +315,9 @@
         remotePath, remoteUploaded: false, fileMissing: false, fileMissingAt: '',
         snapshot: { displayName, name: nome, ...info, ...((meta && meta.snapshot && typeof meta.snapshot === 'object') ? meta.snapshot : {}) }
       });
+      // O Android pode suspender o WebView ao abrir o compartilhamento. O
+      // registro precisa estar confirmado no IndexedDB antes dessa troca.
+      await DoCampoDB.flush();
     }
 
     if (!p.native || !p.filesystem || !p.share) {
@@ -289,9 +326,9 @@
     }
 
     try {
-      const temp = await p.filesystem.writeFile({ path: nome, data: base64, directory: 'CACHE', recursive: true });
-      await p.share.share({ title: titulo || 'Relatório Do Campo', text: displayName, url: temp.uri, dialogTitle: 'Salvar ou compartilhar PDF' });
-      return { uri: temp.uri, document: record, saved: true, shared: true };
+      const persistent = await p.filesystem.getUri({ path: localPath, directory: 'DATA' });
+      await p.share.share({ title: titulo || 'Relatório Do Campo', text: displayName, url: persistent.uri, dialogTitle: 'Salvar ou compartilhar PDF' });
+      return { uri: persistent.uri, document: record, saved: true, shared: true };
     } catch (error) {
       // O documento persistente e o registro do histórico já existem. Uma
       // falha/cancelamento do compartilhamento não pode apagar nem mascarar isso.

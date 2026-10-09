@@ -18,12 +18,12 @@
 
     <!-- html2pdf.js for Client-side PDF Generation -->
     <script src="vendor/pdf/html2pdf.bundle.min.js"></script>
-    <script src="unified-db.js"></script>
+    <script src="supabase-config.js"></script><script src="unified-db.js"></script><script src="cloud-auth.js"></script><script src="photo-storage.js"></script>
     <script src="shared-data.js"></script>
     <script src="registry-loader.js"></script>
     <script src="document-code.js"></script>
     <script src="native-pdf.js"></script>
-    <script src="app-shell.js"></script>
+    <script src="sync-engine.js"></script><script src="app-shell.js"></script>
 
     <script>
         tailwind.config = {
@@ -837,260 +837,7 @@
     </div>
 
     <script>
-        const EMBEDDED_DATABASE = [
-            {
-                farm: "Fazenda Alcantilado-São Francisco",
-                producer: "Francisco Lacerda de Aguiar Neto",
-                cpf: "813.253.397-68",
-                address: "Avenida Governador Francisco, Bairro São Tiago, Guaçuí, Espírito Santo",
-                fields: [
-                    { name: "1.1 Fazenda", area: 3.7 },
-                    { name: "2.1 Joselito Piloto", area: 0.9 },
-                    { name: "3.1 Regiane Tavares", area: 1.6 },
-                    { name: "3.2 Luciana Lopes", area: 0.6 },
-                    { name: "3.3 Fazenda", area: 0.6 },
-                    { name: "3.4 João Martins", area: 0.7 },
-                    { name: "4.1 Jorge Gumeiro", area: 1.4 },
-                    { name: "4.2 Jorge Gumeiro", area: 0.4 },
-                    { name: "5.1 Jerusa Tavares", area: 0.4 },
-                    { name: "6.1 Angelica Flores", area: 0.2 },
-                    { name: "6.2 Fazenda", area: 1.3 },
-                    { name: "6.3 Jerusa Tavares", area: 1.1 },
-                    { name: "6.4 Viviane Flores", area: 0.8 },
-                    { name: "6.5 Sonia Tavares", area: 0.8 },
-                    { name: "6.6 Afonso Tavares", area: 1.7 },
-                    { name: "6.7 Joselito Piloto", area: 1.7 },
-                    { name: "7.1 José Flores", area: 0.8 },
-                    { name: "7.2 Fazenda", area: 1.1 },
-                    { name: "7.3 Fazenda", area: 1.6 },
-                    { name: "7.4 Maria Januária", area: 1.1 },
-                    { name: "7.5 Janaina Lourenço", area: 0.6 },
-                    { name: "7.6 Celi Raimundo", area: 2.3 },
-                    { name: "7.7 Izael da Silva", area: 0.6 },
-                    { name: "8.1 Fazenda", area: 0.5 },
-                    { name: "8.2 Alcemar Venancio", area: 0.8 },
-                    { name: "8.3 Fazenda", area: 0.8 },
-                    { name: "8.4 Fazenda", area: 0.6 },
-                    { name: "8.5 Angelica Flores", area: 0.6 },
-                    { name: "9.1 Edmilson Teixeira", area: 2.5 },
-                    { name: "9.2 Fazenda", area: 0.7 },
-                    { name: "10.1 Felipe Sabino", area: 0.9 },
-                    { name: "10.2 Fazenda", area: 1.3 },
-                    { name: "10.3 Fazenda", area: 0.5 },
-                    { name: "10.4 Fazenda", area: 0.7 },
-                    { name: "10.5 Fazenda", area: 1.2 },
-                    { name: "10.6 Fazenda", area: 0.6 },
-                    { name: "10.7 Fazenda", area: 1.2 },
-                    { name: "10.8 Fazenda", area: 1.1 },
-                    { name: "10.9 Fazenda", area: 0.4 },
-                    { name: "11.1 Moises Lourenço", area: 0.7 },
-                    { name: "11.2 Fazenda", area: 1.7 },
-                    { name: "11.3 Fazenda", area: 0.7 },
-                    { name: "11.4 Natalino Lourenço", area: 0.8 },
-                    { name: "11.5 João Lourenço", area: 0.6 },
-                    { name: "11.6 Fazenda", area: 2.3 },
-                    { name: "12.1 Moises Lourenço", area: 1.3 },
-                    { name: "12.2 Fazenda", area: 5.3 },
-                    { name: "14.1 Fazenda", area: 2.2 },
-                    { name: "14.2 Fazenda", area: 1.4 },
-                    { name: "15.1 Fazenda", area: 9.7 },
-                    { name: "15.2 Fazenda", area: 1.3 },
-                    { name: "15.3 Fazenda", area: 3.5 },
-                    { name: "16.1 Fazenda", area: 9.3 }
-                ]
-            },
-            {
-                farm: "Fazenda Cafarnaum",
-                producer: "Olavo de Sousa Costa",
-                cpf: "031.209.246-60",
-                address: "Praça Coronel Maximiano, 41, ap. 901, Centro, Carangola, Minas Gerais",
-                fields: [
-                    { name: "1. Boboleta", area: 1.7 },
-                    { name: "2. 2016", area: 10.0 },
-                    { name: "3. 2017", area: 10.0 },
-                    { name: "4. 2018", area: 12.6 },
-                    { name: "5. Recepa 2024", area: 10.7 }
-                ]
-            },
-            {
-                farm: "Fazenda Flávia Adriana Elvira",
-                producer: "Elvira Maria de Oliveira e Sousa",
-                cpf: "811.507.766-68",
-                address: "Córrego dos Vieiras, Dom Corrêa, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1.1 Realeza (esquerda)", area: 7.0 },
-                    { name: "1.2 Realeza (direita)", area: 5.0 },
-                    { name: "2.1 BR (direita)", area: 2.3 },
-                    { name: "2.2 BR (esquerda)", area: 1.6 },
-                    { name: "3.1 Recanto Recepa do Alto", area: 1.4 },
-                    { name: "3.2 Recanto Zé Carlos Velha", area: 2.8 },
-                    { name: "3.3 Recanto Recepa de Baixo", area: 1.1 },
-                    { name: "3.4 Recanto Zé Carlos Nova", area: 3.7 },
-                    { name: "3.5 Recanto Fiete", area: 1.9 },
-                    { name: "3.6 Recanto Leo Fortão", area: 1.8 },
-                    { name: "4.1 Alto Peão", area: 10.0 },
-                    { name: "5.1 Gameleira Velha", area: 0.9 },
-                    { name: "5.2 Gameleira Nova", area: 1.8 },
-                    { name: "5.3 Gameleira Plantio", area: 0.5 },
-                    { name: "6.1 Viturino Nascentes", area: 1.0 },
-                    { name: "6.2 Viturino Lav. das Pedras", area: 0.3 },
-                    { name: "6.3 Viturino Lav. Velha", area: 0.2 }
-                ]
-            },
-            {
-                farm: "Fazenda Hott",
-                producer: "Ronaldo Luiz Hott",
-                cpf: "570.632.906-06",
-                address: "Rua Ulisses Calheiros Araújo, 139, Bairro Bom Pastor, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1.1 Extrema", area: 1.7 },
-                    { name: "2.1 Diamante Broto", area: 0.6 },
-                    { name: "2.2 Diamante Recepa 25", area: 2.5 },
-                    { name: "2.3 Diamante Julio", area: 2.1 },
-                    { name: "3.1 Luan e Gabriel", area: 1.3 },
-                    { name: "3.2 Lagoinha + Ararinha", area: 1.6 },
-                    { name: "3.3 Terreiro", area: 1.7 },
-                    { name: "3.4 Pasto plantio 25", area: 2.2 },
-                    { name: "4.1 Eucalipto Nova", area: 4.2 },
-                    { name: "4.2 Eucalipto Velha", area: 2.0 },
-                    { name: "5.1 Abaixo do Mato", area: 3.0 },
-                    { name: "6.1 Gameleira Plantio 25", area: 1.1 },
-                    { name: "6.2 Gameleira do Alto", area: 1.2 },
-                    { name: "6.3 Gameleira Recepa 23", area: 0.6 },
-                    { name: "6.4 Gameleira de Baixo", area: 1.3 }
-                ]
-            },
-            {
-                farm: "Fazenda Mafort",
-                producer: "Otaviano Mendes Mafort",
-                cpf: "012.845.486-51",
-                address: "Córrego dos Hott, Zona Rural, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1.1 Alto da Pedra", area: 5.0 },
-                    { name: "1.2 Baixada do Alto", area: 1.7 },
-                    { name: "1.3 Otaviano Cachoeira 23", area: 3.3 },
-                    { name: "1.4 Gustavo Cachoeira 23", area: 0.7 },
-                    { name: "1.5 Davi Cachoeira 23", area: 0.7 },
-                    { name: "1.6 Cachoeira Recepa 23", area: 4.3 },
-                    { name: "1.7 Pasto", area: 3.8 },
-                    { name: "1.8 Agulheiro", area: 1.1 },
-                    { name: "1.9 Grota Gustavo Esq. 24", area: 0.8 },
-                    { name: "1.10 Grota Gustavo", area: 1.8 },
-                    { name: "1.11 Grota do Davi", area: 1.9 },
-                    { name: "1.12 Despolpador", area: 0.4 },
-                    { name: "1.13 Despolpador Davi", area: 0.3 },
-                    { name: "1.14 Lav 17 mil", area: 6.0 },
-                    { name: "1.15 Pasto dos Cabritos", area: 1.0 },
-                    { name: "1.16 Lav. do Barraco", area: 3.7 },
-                    { name: "1.17 Lav. do Eucalipto", area: 1.0 },
-                    { name: "1.18 Morro Redondo Recepa 24", area: 0.8 },
-                    { name: "1.19 Morro Redondo", area: 0.5 },
-                    { name: "1.20 Quintal", area: 0.6 },
-                    { name: "1.21 Lav. 11 mil", area: 5.5 },
-                    { name: "1.22 Lav. 5 mil", area: 2.5 },
-                    { name: "2.1 Hot Casa", area: 0.3 },
-                    { name: "2.2 785 do Hott Nova", area: 2.5 },
-                    { name: "2.3 Zé Carlos Hott", area: 2.5 },
-                    { name: "2.4 Hott Divisa do Orlando", area: 0.3 },
-                    { name: "3.1 Jaca Otaviano", area: 4.7 },
-                    { name: "3.2 Jaca Gustavo", area: 2.7 },
-                    { name: "4.1 Gameleira", area: 5.6 },
-                    { name: "5.1 Vila Margem Rio", area: 2.7 },
-                    { name: "5.2 Vila Ronaldo", area: 1.5 },
-                    { name: "5.3 Vila Terreiro", area: 0.8 },
-                    { name: "5.4 Vila Bananeiras", area: 3.5 },
-                    { name: "5.5 Vila Pé de Limão", area: 1.5 },
-                    { name: "5.6 Vila Canto da Mata", area: 0.2 },
-                    { name: "5.7 Vila Vestido", area: 0.7 },
-                    { name: "5.8 Vila Barra do Mato", area: 0.8 },
-                    { name: "5.9 Vila Barra da Pedra", area: 0.8 },
-                    { name: "5.11 Vila 3 Coqueiros", area: 1.5 },
-                    { name: "5.12 Vila Acima da Mata", area: 0.5 }
-                ]
-            },
-            {
-                farm: "Fazenda Riacho Fundo",
-                producer: "Mariana Raissa Moreira Martins",
-                cpf: "089.339.946-96",
-                address: "Rua Onofre Martins Chaves, 307, ap. 301, Bairro Centro, Matipó, Minas Gerais",
-                fields: [
-                    { name: "1.", area: 0.5 }, { name: "2.", area: 1.1 }, { name: "3.", area: 0.3 },
-                    { name: "4.", area: 0.3 }, { name: "5.", area: 0.9 }, { name: "6.", area: 2.7 },
-                    { name: "7.", area: 0.3 }, { name: "8.", area: 0.5 }, { name: "9.", area: 0.3 },
-                    { name: "10.", area: 0.6 }, { name: "11.", area: 0.6 }, { name: "12.", area: 0.3 },
-                    { name: "13.", area: 1.3 }, { name: "14.", area: 1.3 }, { name: "15.", area: 1.6 },
-                    { name: "16.", area: 0.9 }, { name: "17.", area: 1.1 }, { name: "18.", area: 1.6 },
-                    { name: "19.", area: 0.9 }, { name: "20.", area: 0.6 }, { name: "21.", area: 1.1 },
-                    { name: "22.", area: 0.9 }
-                ]
-            },
-            {
-                farm: "Fazenda Santa Apolinária",
-                producer: "Edna Huebra Alves",
-                cpf: "063.341.206-62",
-                address: "Fazenda Santa Apolinária, zona rural, Córrego Jequitibá, Reduto, Minas Gerais",
-                fields: [
-                    { name: "1. Brotos", area: 0.7 },
-                    { name: "2. Acima do Secador", area: 1.9 },
-                    { name: "3. Abaixo do Secador", area: 0.7 },
-                    { name: "4. Canto da Mata", area: 1.0 }
-                ]
-            },
-            {
-                farm: "Fazendas Café Realeza",
-                producer: "Luiz Eduardo Santos de Sousa",
-                cpf: "148.005.796-78",
-                address: "Córrego dos Dutra, São Pedro do Avaí, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1.1 São Pedro", area: 4.3 }, { name: "1.2 São Pedro", area: 2.0 },
-                    { name: "2.1 Vila Cruzeiro", area: 3.4 }, { name: "2.2 Vila Natal", area: 2.0 },
-                    { name: "2.3 Vila", area: 14.0 }, { name: "2.4 Vila Pomar", area: 0.8 },
-                    { name: "2.5 Vila Galpão", area: 1.5 }, { name: "2.6 Vila Eucalipto", area: 1.5 },
-                    { name: "2.7 Vila Curral", area: 1.5 }, { name: "2.8 Vila Arara", area: 1.7 },
-                    { name: "3.1 Realeza 785", area: 0.8 }, { name: "3.2 Realeza Lav. da Pedra", area: 0.7 },
-                    { name: "3.3 Realeza Arara", area: 1.0 }, { name: "3.4 Realeza Velha 10", area: 10.0 },
-                    { name: "3.5 Realeza Nova", area: 28.0 }, { name: "4.1 Taquara Velha", area: 13.5 },
-                    { name: "4.2 Taquara Esqueletada", area: 2.5 }
-                ]
-            },
-            {
-                farm: "Propriedade Cristina Sousa",
-                producer: "Maria Cristina de Sousa Amâncio",
-                cpf: "536.173.556-68",
-                address: "Rua Andresa Filgueiras Batista, 48, ap. 101, Bairro Pinheiro, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1.1 Serra (produção)", area: 7.0 },
-                    { name: "1.1 Serra (brotos)", area: 2.0 },
-                    { name: "2.1 Curral", area: 3.5 }
-                ]
-            },
-            {
-                farm: "Sítio Boa Vista",
-                producer: "José Roberto de Sousa",
-                cpf: "347.845.786-68",
-                address: "Sítio Boa Vista, Dom Corrêa, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1. Porteira", area: 1.0 },
-                    { name: "2. Antena", area: 0.5 },
-                    { name: "3. Central", area: 1.0 },
-                    { name: "4. Encosta da Mata", area: 1.5 }
-                ]
-            },
-            {
-                farm: "Sítio Santa Catarina",
-                producer: "Célio da Silva Araujo",
-                cpf: "592.455.816-91",
-                address: "Córrego João Bento, Dom Corrêa, Manhuaçu, Minas Gerais",
-                fields: [
-                    { name: "1. Célio", area: 1.1 }, { name: "2. Célio", area: 0.6 },
-                    { name: "3. Tirré", area: 0.3 }, { name: "4. Glaucio", area: 0.7 },
-                    { name: "5. Célio", area: 0.8 }, { name: "6. Glaucio", area: 0.5 },
-                    { name: "7. Célio", area: 0.7 }, { name: "8. Mirella", area: 1.5 },
-                    { name: "9. Tirré", area: 0.5 }, { name: "10. Célio", area: 0.1 },
-                    { name: "11. Glaucio", area: 0.1 }
-                ]
-            }
-        ];
+        const farmRegistryCache = [];
 
         let selectedFarm = "";
         let fieldEntriesMap = new Map(); // fieldName -> { sacks, baskets, factor, obs }
@@ -1101,6 +848,7 @@
         let productionChartInstance = null;
         let productivityChartInstance = null;
         let pdfGenerationActive = false;
+        let productionDraftTimer = null;
 
         const AGRONOMISTS_LIST = [
             {
@@ -1177,31 +925,85 @@
 
         function onSafraChange() {
             calculateProductionTotals();
+            scheduleProductionDraft();
+        }
+
+        function productionDraftId() {
+            const device = window.DoCampoDB ? DoCampoDB.deviceId() : 'aparelho';
+            return 'draft-production-' + device;
+        }
+
+        function productionDraftSnapshot() {
+            return {
+                selectedFarm,
+                crop: document.getElementById('crop-name')?.value || 'Café',
+                safra: document.getElementById('safra-select')?.value || String(new Date().getFullYear()),
+                globalFactor: Number(document.getElementById('global-conversion-factor')?.value) || 8,
+                selectedAgronomists: [...selectedAgronomists],
+                fields: currentFarmFieldsList.map(field => ({ ...field })),
+                entries: Array.from(fieldEntriesMap.entries()).map(([name, entry]) => [name, { ...entry }])
+            };
+        }
+
+        function saveProductionDraft() {
+            if (!window.DoCampoDB || !selectedFarm) return;
+            DoCampoDB.upsert('drafts', {
+                id: productionDraftId(),
+                module: 'production',
+                deviceId: DoCampoDB.deviceId(),
+                formDraft: productionDraftSnapshot()
+            }, { enqueue: false });
+        }
+
+        function scheduleProductionDraft() {
+            clearTimeout(productionDraftTimer);
+            productionDraftTimer = setTimeout(saveProductionDraft, 300);
+        }
+
+        function clearProductionDraft() {
+            clearTimeout(productionDraftTimer);
+            if (!window.DoCampoDB) return;
+            const draft = DoCampoDB.get('drafts', productionDraftId());
+            if (draft && !draft.deletedAt) DoCampoDB.softDelete('drafts', draft.id, { removalReason: 'Relatório concluído ou formulário limpo' }, { enqueue: false });
+        }
+
+        async function restoreProductionDraft() {
+            if (!window.DoCampoDB) return;
+            await DoCampoDB.ready();
+            const saved = DoCampoDB.get('drafts', productionDraftId());
+            const draft = saved && !saved.deletedAt ? saved.formDraft : null;
+            if (!draft || !draft.selectedFarm || !farmRegistryCache.some(farm => farm.farm === draft.selectedFarm)) return;
+            const select = document.getElementById('farm-select');
+            if (select) select.value = draft.selectedFarm;
+            onFarmChange();
+            if (draft.crop) document.getElementById('crop-name').value = draft.crop;
+            if (draft.safra) document.getElementById('safra-select').value = draft.safra;
+            if (draft.globalFactor) document.getElementById('global-conversion-factor').value = draft.globalFactor;
+            if (Array.isArray(draft.selectedAgronomists) && draft.selectedAgronomists.length) selectedAgronomists = draft.selectedAgronomists;
+            if (Array.isArray(draft.fields) && draft.fields.length) currentFarmFieldsList = draft.fields.map(field => ({ ...field }));
+            if (Array.isArray(draft.entries)) fieldEntriesMap = new Map(draft.entries.map(([name, entry]) => [name, { ...entry }]));
+            updateAgronomistUI();
+            renderFieldsList(currentFarmFieldsList);
+            calculateProductionTotals();
         }
 
         async function loadStoredData() {
-            try {
-                // Migracao unica das chaves exclusivas do HTML antigo para o
-                // cadastro central. So removemos a copia depois de incorporada.
-                if(window.DoCampoData){
-                    const antigas=JSON.parse(localStorage.getItem('agri_prod_custom_farms')||'[]');
-                    antigas.forEach(f=>window.DoCampoData.mergeFarm(f));
-                    const excluidas=JSON.parse(localStorage.getItem('agri_prod_deleted_farms')||'[]');
-                    excluidas.forEach(nome=>window.DoCampoData.removeFarm(nome));
-                    if(antigas.length||excluidas.length){localStorage.removeItem('agri_prod_custom_farms');localStorage.removeItem('agri_prod_deleted_farms')}
-                }
-                const central = await window.DoCampoRegistry.all();
-                EMBEDDED_DATABASE.splice(0, EMBEDDED_DATABASE.length);
-                (central.farms || []).forEach(function(farm){EMBEDDED_DATABASE.push({farm:farm.farm,producer:farm.producer||farm.proprietor||'',proprietor:farm.producer||farm.proprietor||'',cpf:farm.cpf||'',address:farm.address||'',fields:(farm.fields||[]).map(field=>({name:field.name,area:Number(field.area)||0,plants:Number(field.plants)||0}))})});
-            } catch(e) { console.error("Erro ao carregar o cadastro central", e); }
+            const central = await window.DoCampoRegistry.all();
+            farmRegistryCache.splice(0, farmRegistryCache.length);
+            (central.farms || []).forEach(function(farm) {
+                farmRegistryCache.push({
+                    id: farm.id, farm: farm.farm, producer: farm.producer || farm.proprietor || "",
+                    proprietor: farm.producer || farm.proprietor || "", cpf: farm.cpf || "",
+                    address: farm.address || "", fields: (farm.fields || []).map(function(field) {
+                        return { id: field.id, name: field.name, area: Number(field.area) || 0, plants: Number(field.plants) || 0 };
+                    })
+                });
+            });
         }
 
         function saveStoredFarm(farmObj) {
-            try {
-                if(window.DoCampoData)window.DoCampoData.mergeFarm(farmObj);
-            } catch(e) {
-                console.error("Erro ao salvar propriedade", e);
-            }
+            if (!window.DoCampoData) throw new Error('O banco central de cadastros não está disponível.');
+            return window.DoCampoData.mergeFarm(farmObj);
         }
 
         function populateFarmDropdown() {
@@ -1209,7 +1011,7 @@
             if (!select) return;
             select.innerHTML = '<option value="">-- Selecione a Fazenda --</option>';
             
-            const sortedFarms = [...EMBEDDED_DATABASE].sort(function(a, b) {
+            const sortedFarms = [...farmRegistryCache].sort(function(a, b) {
                 return a.farm.localeCompare(b.farm, 'pt-BR', { sensitivity: 'base' });
             });
 
@@ -1234,6 +1036,8 @@
             updateAgronomistUI();
             calculateProductionTotals();
             initCharts();
+            document.getElementById('crop-name')?.addEventListener('input', scheduleProductionDraft);
+            await restoreProductionDraft();
         };
 
         function initCharts() {
@@ -1549,14 +1353,20 @@
                 fields: fields
             };
 
-            const existingIndex = EMBEDDED_DATABASE.findIndex(function(f) { return f.farm.toLowerCase() === farmName.toLowerCase(); });
-            if (existingIndex !== -1) {
-                EMBEDDED_DATABASE[existingIndex] = farmObj;
-            } else {
-                EMBEDDED_DATABASE.unshift(farmObj);
+            try {
+                saveStoredFarm(farmObj);
+            } catch (error) {
+                console.error('Erro ao salvar propriedade', error);
+                showAlert('A propriedade não foi salva. ' + (error.message || 'Tente novamente.'), 'Falha no salvamento');
+                return;
             }
 
-            saveStoredFarm(farmObj);
+            const existingIndex = farmRegistryCache.findIndex(function(f) { return f.farm.toLowerCase() === farmName.toLowerCase(); });
+            if (existingIndex !== -1) {
+                farmRegistryCache[existingIndex] = farmObj;
+            } else {
+                farmRegistryCache.unshift(farmObj);
+            }
 
             populateFarmDropdown();
 
@@ -1594,12 +1404,19 @@
             if (!selectedFarm) return;
 
             const farmToDelete = selectedFarm;
-            const farmIdx = EMBEDDED_DATABASE.findIndex(function(f) { return f.farm === farmToDelete; });
-            if (farmIdx !== -1) {
-                EMBEDDED_DATABASE.splice(farmIdx, 1);
+            try {
+                if (!window.DoCampoData || !window.DoCampoData.removeFarm(farmToDelete)) {
+                    throw new Error('O cadastro não foi encontrado no banco central.');
+                }
+            } catch (error) {
+                console.error('Erro ao excluir propriedade', error);
+                showAlert('A propriedade não foi excluída. ' + (error.message || 'Tente novamente.'), 'Falha na exclusão');
+                return;
             }
-
-            if(window.DoCampoData)window.DoCampoData.removeFarm(farmToDelete);
+            const farmIdx = farmRegistryCache.findIndex(function(f) { return f.farm === farmToDelete; });
+            if (farmIdx !== -1) {
+                farmRegistryCache.splice(farmIdx, 1);
+            }
 
             selectedFarm = "";
             fieldEntriesMap.clear();
@@ -1642,7 +1459,7 @@
                 return;
             }
 
-            const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+            const farmData = farmRegistryCache.find(function(f) { return f.farm === selectedFarm; });
             const defaultGlobalFactor = parseFloat(document.getElementById('global-conversion-factor').value) || 8;
 
             if (farmData) {
@@ -1791,6 +1608,7 @@
 
             renderFieldsList(currentFarmFieldsList);
             calculateProductionTotals();
+            scheduleProductionDraft();
             closeMergeModal();
 
             showAlert('Talhões mesclados com sucesso sob o nome "' + newName + '"!', 'Sucesso', true);
@@ -1822,6 +1640,7 @@
             if (prodHaEl) prodHaEl.innerText = prodPerHa.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' sc/ha';
 
             calculateProductionTotals();
+            scheduleProductionDraft();
         }
 
         function onGlobalConversionFactorChange() {
@@ -1835,6 +1654,7 @@
                 renderFieldsList(currentFarmFieldsList);
             }
             calculateProductionTotals();
+            scheduleProductionDraft();
         }
 
         function clearAllFieldsEntries() {
@@ -1845,6 +1665,7 @@
             });
             renderFieldsList(currentFarmFieldsList);
             calculateProductionTotals();
+            scheduleProductionDraft();
         }
 
         function calculateProductionTotals() {
@@ -1882,7 +1703,7 @@
         }
 
         function updatePDFPreview() {
-            const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
+            const farmData = farmRegistryCache.find(function(f) { return f.farm === selectedFarm; });
             const pdfProducerEl = document.getElementById('pdf-producer');
             const pdfFarmEl = document.getElementById('pdf-farm');
             const pdfCpfEl = document.getElementById('pdf-cpf');
@@ -2017,7 +1838,7 @@
             const wrapper=document.getElementById('pdf-content-wrapper');if(wrapper)wrapper.classList.remove('hidden');
         }
 
-        function confirmSavePDF() {
+        async function confirmSavePDF() {
             if(pdfGenerationActive){showAlert('O documento ainda está sendo gerado. Aguarde a conclusão.');return;}
             if (!selectedFarm) {
                 showAlert("Por favor, selecione uma fazenda antes de gerar o relatório em PDF.");
@@ -2057,8 +1878,11 @@
             cloneContainer.appendChild(clonedContent);
             document.body.appendChild(cloneContainer);
 
-            const farmCleanName = selectedFarm.replace(/[^a-zA-Z0-9]/g, '_');
-            const filename = 'Acompanhamento_Producao_' + farmCleanName + '.pdf';
+            const farmDataForName = farmRegistryCache.find(function(f){ return f.farm === selectedFarm; }) || {};
+            const responsibleForName = selectedAgronomists.map(i => AGRONOMISTS_LIST[i]?.name).filter(Boolean).join(' e ');
+            const documentCodeForName = window.DoCampoDocumentCode ? DoCampoDocumentCode.reservar('PROD', responsibleForName) : ('PROD-' + Date.now());
+            const documentDate = new Date().toISOString().slice(0,10);
+            const filename = (window.DoCampoDocumentCode ? DoCampoDocumentCode.arquivo(`Acompanhamento_Producao_${farmDataForName.producer || farmDataForName.proprietor || selectedFarm}_${documentDate}_${documentCodeForName}`) : ('Acompanhamento_Producao_' + selectedFarm.replace(/[^a-zA-Z0-9]/g, '_'))) + '.pdf';
 
             const opt = {
                 margin:       0,
@@ -2078,34 +1902,39 @@
                 pagebreak:    { mode: ['css', 'legacy'] }
             };
 
-            setTimeout(function() {
-                if (window.DoCampoPDF && window.DoCampoPDF.gerarDataUri) {
-                    window.DoCampoPDF.gerarDataUri(clonedContent, opt).then(async function(dataUri) {
-                        const farmData=EMBEDDED_DATABASE.find(function(f){return f.farm===selectedFarm})||{};
-                        const responsible=selectedAgronomists.map(i=>AGRONOMISTS_LIST[i]?.name).filter(Boolean).join(' e ');
-                        const code=window.DoCampoDocumentCode?DoCampoDocumentCode.reservar('PROD',responsible):('PROD-'+Date.now());
-                        const productionEntries=currentFarmFieldsList.map(function(f){const e=fieldEntriesMap.get(f.name);if(!e||(!e.sacks&&!e.baskets))return null;const factor=e.factor>0?e.factor:8,total=e.sacks+(e.baskets/factor);return{field:f.name,area:f.area,plants:f.plants||0,sacks:e.sacks,baskets:e.baskets,factor,totalSacks:Number(total.toFixed(2)),productivity:Number((f.area>0?total/f.area:0).toFixed(2)),notes:e.notes||''}}).filter(Boolean);
-                        await window.DoCampoPDF.salvarECompartilhar(dataUri,filename,'Acompanhamento da Produção',{typeLabel:'Acompanhamento da Produção',producer:farmData.producer||farmData.proprietor||'',farm:selectedFarm,fields:productionEntries.map(x=>x.field),responsible,documentCode:code,snapshot:{safra:document.getElementById('safra-select')?.value||'',cultura:document.getElementById('crop-name')?.value||'Café',productionEntries}});
-                        if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
-                        if (wrapper) wrapper.classList.add('hidden');
-                        if (btnText) btnText.innerText = "Visualizar relatório";
-                        pdfGenerationActive=false;if(saveButton)saveButton.disabled=false;
-                    }).catch(function(err) {
-                        console.error("Falha ao gerar ou salvar PDF", err);
-                        if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
-                        alert(err && err.message ? err.message : 'Não foi possível gerar e salvar o PDF. Tente novamente.');
-                        if (wrapper) wrapper.classList.add('hidden');
-                        if (btnText) btnText.innerText = "Visualizar relatório";
-                        pdfGenerationActive=false;if(saveButton)saveButton.disabled=false;
-                    });
-                } else {
-                    if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
-                    alert('O gerador de PDF não foi carregado. Feche e abra o aplicativo e tente novamente.');
-                    if (wrapper) wrapper.classList.add('hidden');
-                    if (btnText) btnText.innerText = "Visualizar relatório";
-                    pdfGenerationActive=false;if(saveButton)saveButton.disabled=false;
+            try {
+                if (!window.DoCampoPDF || !window.DoCampoPDF.gerarDataUri) {
+                    throw new Error('O gerador de PDF não foi carregado. Feche e abra o aplicativo e tente novamente.');
                 }
-            }, 300);
+                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                const dataUri = await window.DoCampoPDF.gerarDataUri(clonedContent, opt);
+                const farmData = farmRegistryCache.find(function(f){ return f.farm === selectedFarm; }) || {};
+                const responsible = selectedAgronomists.map(i => AGRONOMISTS_LIST[i]?.name).filter(Boolean).join(' e ');
+                const code = documentCodeForName;
+                const productionEntries = currentFarmFieldsList.map(function(f){
+                    const e = fieldEntriesMap.get(f.name);
+                    if (!e || (!e.sacks && !e.baskets)) return null;
+                    const factor = e.factor > 0 ? e.factor : 8;
+                    const total = e.sacks + (e.baskets / factor);
+                    return {field:f.name,area:f.area,plants:f.plants||0,sacks:e.sacks,baskets:e.baskets,factor,totalSacks:Number(total.toFixed(2)),productivity:Number((f.area>0?total/f.area:0).toFixed(2)),notes:e.obs||e.notes||''};
+                }).filter(Boolean);
+                const snapshot = {safra:document.getElementById('safra-select')?.value||'',cultura:document.getElementById('crop-name')?.value||'Café',productionEntries};
+                const result = await window.DoCampoPDF.salvarECompartilhar(dataUri, filename, 'Acompanhamento da Produção', {typeLabel:'Acompanhamento da Produção',producer:farmData.producer||farmData.proprietor||'',farm:selectedFarm,fields:productionEntries.map(x=>x.field),responsible,documentCode:code,snapshot});
+                if (window.DoCampoDB) {
+                    DoCampoDB.upsert('productionReports', {id:code,module:'production',documentId:result?.document?.id||'',documentCode:code,producer:farmData.producer||farmData.proprietor||'',farm:selectedFarm,responsible,generatedAt:new Date().toISOString(),snapshot});
+                }
+                clearProductionDraft();
+                if (window.DoCampoDB) await DoCampoDB.flush();
+            } catch (err) {
+                console.error('Falha ao gerar ou salvar PDF', err);
+                alert(err && err.message ? err.message : 'Não foi possível gerar e salvar o PDF. Tente novamente.');
+            } finally {
+                if (document.body.contains(cloneContainer)) document.body.removeChild(cloneContainer);
+                if (wrapper) wrapper.classList.add('hidden');
+                if (btnText) btnText.innerText = 'Visualizar relatório';
+                pdfGenerationActive = false;
+                if (saveButton) saveButton.disabled = false;
+            }
         }
 
         function closePDFModal() {
@@ -2113,45 +1942,8 @@
             if (wrapper) wrapper.classList.add('hidden');
         }
 
-        function saveToHistory() {
-            const history = JSON.parse(localStorage.getItem('agri_prod_recommendations_history') || '[]');
-            const farmData = EMBEDDED_DATABASE.find(function(f) { return f.farm === selectedFarm; });
-
-            let totalArea = 0;
-            let totalVol = 0;
-            let countFields = 0;
-
-            fieldEntriesMap.forEach(function(d) {
-                if (d.sacks > 0 || d.baskets > 0) {
-                    countFields++;
-                }
-            });
-
-            currentFarmFieldsList.forEach(function(f) {
-                const e = fieldEntriesMap.get(f.name);
-                if (e && (e.sacks > 0 || e.baskets > 0)) {
-                    totalArea += f.area;
-                    const effFactor = e.factor > 0 ? e.factor : 8;
-                    totalVol += (e.sacks + (e.baskets / effFactor));
-                }
-            });
-
-            const entry = {
-                id: '#AP-' + String(Math.floor(Math.random() * 9000) + 1000),
-                date: new Date().toLocaleString('pt-BR'),
-                farm: selectedFarm,
-                producer: farmData ? farmData.producer : '',
-                fieldsCount: countFields,
-                totalArea: totalArea.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ha',
-                totalVolume: totalVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' sc'
-            };
-
-            history.unshift(entry);
-            localStorage.setItem('agri_prod_recommendations_history', JSON.stringify(history.slice(0, 20)));
-        }
-
         function openHistoryModal() {
-            const history = JSON.parse(localStorage.getItem('agri_prod_recommendations_history') || '[]');
+            const history = window.DoCampoDB ? DoCampoDB.list('productionReports') : [];
             const container = document.getElementById('history-list');
 
             if (container) {
@@ -2160,13 +1952,16 @@
                 } else {
                     let historyHtml = '';
                     history.forEach(function(item) {
+                        const entries=item.snapshot?.productionEntries||[];
+                        const totalArea=entries.reduce((sum,entry)=>sum+(Number(entry.area)||0),0);
+                        const totalVolume=entries.reduce((sum,entry)=>sum+(Number(entry.totalSacks)||0),0);
                         historyHtml += '<div class="p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 flex justify-between items-center">' +
                             '<div>' +
-                                '<span class="text-xs font-bold text-amber-700">' + item.id + '</span> • ' +
+                                '<span class="text-xs font-bold text-amber-700">' + (item.documentCode||item.id) + '</span> • ' +
                                 '<span class="text-xs font-bold text-slate-800">' + item.farm + '</span>' +
-                                '<p class="text-[11px] text-slate-500">' + item.producer + ' • ' + item.fieldsCount + ' talhão(ões) (' + item.totalArea + ') • Vol: ' + item.totalVolume + '</p>' +
+                                '<p class="text-[11px] text-slate-500">' + item.producer + ' • ' + entries.length + ' talhão(ões) (' + totalArea.toLocaleString('pt-BR',{minimumFractionDigits:2}) + ' ha) • Vol: ' + totalVolume.toLocaleString('pt-BR',{minimumFractionDigits:2}) + ' sc</p>' +
                             '</div>' +
-                            '<span class="text-[10px] font-mono text-slate-400">' + item.date + '</span>' +
+                            '<span class="text-[10px] font-mono text-slate-400">' + new Date(item.generatedAt||item.createdAt).toLocaleString('pt-BR') + '</span>' +
                         '</div>';
                     });
                     container.innerHTML = historyHtml;
@@ -2199,6 +1994,7 @@
             selectedAgronomists = [0];
             updateAgronomistUI();
             calculateProductionTotals();
+            clearProductionDraft();
         }
     </script>
 </body>

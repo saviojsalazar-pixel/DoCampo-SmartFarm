@@ -1,121 +1,256 @@
 (function () {
-    'use strict';
-    const KEY = 'docampo_shared_v1';
-    const clean = value => String(value || '').trim().replace(/\s+/g, ' ');
-    const key = value => clean(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    // "1" e "1." representam o mesmo talhão. A pontuação interna de nomes
-    // como "1.1 Lavoura" continua preservada.
-    const fieldKey = value => key(value).replace(/[.\-–—,:;]+\s*$/, '').trim();
-    const fieldCompare = (a, b) => clean(a && a.name || '').localeCompare(clean(b && b.name || ''), 'pt-BR', { numeric: true, sensitivity: 'base' });
-    function normalizeField(field) {
-        const source = typeof field === 'object' && field ? field : { name: field };
-        return { ...source, name: clean(source.name || source.talhao), area: Number(source.area) || 0, plants: Number(source.plants) || 0, rowSpacing: Number(source.rowSpacing) || 0, plantSpacing: Number(source.plantSpacing) || 0, culture: clean(source.culture), notes: clean(source.notes) };
+  'use strict';
+
+  /*
+   * Adaptador único de cadastros.
+   * Mantém a API usada pelas telas antigas, mas não cria cópias em
+   * localStorage. Produtores, fazendas, talhões e produtos vivem somente no
+   * DoCampoDB.
+   */
+  const clean = value => String(value || '').trim().replace(/\s+/g, ' ');
+  const key = value => clean(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const digits = value => String(value || '').replace(/\D/g, '');
+  const fieldKey = value => key(value).replace(/[.\-–—,:;]+\s*$/, '').trim();
+  const fieldCompare = (a, b) => clean(a?.name).localeCompare(clean(b?.name), 'pt-BR', { numeric: true, sensitivity: 'base' });
+
+  function normalizeField(field) {
+    const source = typeof field === 'object' && field ? field : { name: field };
+    return {
+      ...source,
+      name: clean(source.name || source.talhao),
+      area: Number(source.area) || 0,
+      plants: Math.max(0, Math.round(Number(source.plants) || 0)),
+      rowSpacing: Number(source.rowSpacing) || 0,
+      plantSpacing: Number(source.plantSpacing) || 0,
+      culture: clean(source.culture),
+      notes: clean(source.notes)
+    };
+  }
+
+  function normalizeFields(fields) {
+    const result = [];
+    const seen = new Set();
+    (Array.isArray(fields) ? fields : []).map(normalizeField).filter(field => field.name).forEach(field => {
+      const id = fieldKey(field.name);
+      if (seen.has(id)) throw new Error('Talhão duplicado no mesmo cadastro: ' + field.name);
+      seen.add(id);
+      result.push(field);
+    });
+    return result.sort(fieldCompare);
+  }
+
+  function requireDatabase() {
+    if (!window.DoCampoDB) throw new Error('O banco central não foi carregado.');
+  }
+
+  function producerForFarm(farm, producers) {
+    return producers.find(item => item.id === farm.producerId) || null;
+  }
+
+  function read() {
+    requireDatabase();
+    const producers = DoCampoDB.list('producers');
+    const fields = DoCampoDB.list('fields');
+    const farms = DoCampoDB.list('farms').map(farm => {
+      const producer = producerForFarm(farm, producers);
+      return {
+        id: farm.id,
+        farm: farm.name,
+        producerId: farm.producerId || producer?.id || '',
+        producer: producer?.name || farm.producerName || '',
+        proprietor: producer?.name || farm.producerName || '',
+        cpf: producer?.cpf || farm.cpf || '',
+        address: farm.address || producer?.address || '',
+        notes: farm.notes || '',
+        fields: fields
+          .filter(field => field.farmId === farm.id)
+          .map(field => ({ ...field, name: field.name || field.talhao || '' }))
+          .sort(fieldCompare)
+      };
+    });
+    const products = {};
+    DoCampoDB.list('products').forEach(product => {
+      const category = clean(product.category) || 'Outros';
+      if (!products[category]) products[category] = [];
+      products[category].push({ ...product });
+    });
+    Object.values(products).forEach(list => list.sort((a, b) => clean(a.name).localeCompare(clean(b.name), 'pt-BR')));
+    return { farms, products, updatedAt: DoCampoDB.status().lastSyncAt };
+  }
+
+  function locateProducer(data) {
+    const cpf = digits(data.cpf);
+    const name = key(data.producer || data.proprietor);
+    const producers = DoCampoDB.list('producers');
+    return (cpf && producers.find(item => digits(item.cpf) === cpf)) ||
+      (name && producers.find(item => key(item.name) === name)) || null;
+  }
+
+  function mergeFarmInternal(input) {
+    requireDatabase();
+    if (!input || !clean(input.farm || input.name)) throw new Error('Informe o nome da propriedade.');
+    const fields = normalizeFields(input.fields);
+    const farmName = clean(input.farm || input.name);
+    const producerName = clean(input.producer || input.proprietor || input.producerName);
+    if (!producerName) throw new Error('Informe o produtor.');
+
+    const previousProducer = locateProducer(input);
+    const producer = DoCampoDB.upsert('producers', {
+      id: input.producerId || previousProducer?.id || DoCampoDB.stableId('producer', digits(input.cpf) || key(producerName)),
+      name: producerName,
+      cpf: clean(input.cpf),
+      address: clean(input.producerAddress || input.address),
+      verified: input.verified !== false,
+      importBatchId: clean(input.importBatchId),
+      importSource: clean(input.importSource)
+    });
+
+    const matches = DoCampoDB.list('farms').filter(item =>
+      item.id === input.id || key(item.name) === key(farmName)
+    );
+    if (matches.length > 1) throw new Error('Há mais de uma propriedade ativa com o nome ' + farmName + '. Resolva a duplicidade antes de editar.');
+    const oldFarm = matches[0];
+    const farm = DoCampoDB.upsert('farms', {
+      id: input.id || oldFarm?.id || DoCampoDB.stableId('farm', key(farmName)),
+      name: farmName,
+      producerId: producer.id,
+      producerName,
+      cpf: clean(input.cpf),
+      address: clean(input.address),
+      notes: clean(input.notes),
+      verified: input.verified !== false,
+      importBatchId: clean(input.importBatchId),
+      importSource: clean(input.importSource)
+    });
+
+    if (oldFarm?.producerId && oldFarm.producerId !== producer.id) {
+      const stillUsed = DoCampoDB.list('farms').some(item => item.id !== farm.id && item.producerId === oldFarm.producerId);
+      if (!stillUsed) DoCampoDB.softDelete('producers', oldFarm.producerId, {
+        removalReason: 'Produtor substituído no cadastro oficial da propriedade'
+      });
     }
-    function mergeFieldValues(previous, incoming) {
-        return { ...(previous || {}), ...incoming, name: clean(incoming.name || previous?.name), area: Number(incoming.area) || Number(previous?.area) || 0, plants: Number(incoming.plants) || Number(previous?.plants) || 0, rowSpacing: Number(incoming.rowSpacing) || Number(previous?.rowSpacing) || 0, plantSpacing: Number(incoming.plantSpacing) || Number(previous?.plantSpacing) || 0 };
-    }
-    function normalizeFields(fields) {
-        const result = new Map();
-        (Array.isArray(fields) ? fields : []).map(normalizeField).filter(field => field.name).forEach(field => {
-            const id = fieldKey(field.name);
-            result.set(id, mergeFieldValues(result.get(id), field));
-        });
-        return Array.from(result.values()).sort(fieldCompare);
-    }
-    function read() {
-        try {
-            const value = JSON.parse(localStorage.getItem(KEY) || '{}');
-            return { farms: Array.isArray(value.farms) ? value.farms : [], products: value.products && typeof value.products === 'object' ? value.products : {}, updatedAt: value.updatedAt || null };
-        } catch (_) { return { farms: [], products: {}, updatedAt: null }; }
-    }
-    function write(data) {
-        data.updatedAt = new Date().toISOString();
-        localStorage.setItem(KEY, JSON.stringify(data));
-        window.dispatchEvent(new CustomEvent('docampo:data-updated', { detail: data }));
-        return data;
-    }
-    function mergeFarm(farm) {
-        if (!farm || !String(farm.farm || '').trim()) return read();
-        const data = read(), name = clean(farm.farm);
-        const normalized = { farm: name, producer: clean(farm.producer || farm.proprietor), cpf: clean(farm.cpf), address: clean(farm.address), notes: clean(farm.notes), fields: normalizeFields(farm.fields), importBatchId: clean(farm.importBatchId), importSource: clean(farm.importSource) };
-        const idx = data.farms.findIndex(item => key(item.farm) === key(name));
-        if (idx >= 0) data.farms[idx] = Object.assign({}, data.farms[idx], normalized); else data.farms.unshift(normalized);
-        try {
-            const custom = JSON.parse(localStorage.getItem('agri_custom_farms') || '[]');
-            const ci = custom.findIndex(item => key(item.farm) === key(name));
-            if (ci >= 0) custom[ci] = normalized; else custom.unshift(normalized);
-            localStorage.setItem('agri_custom_farms', JSON.stringify(custom));
-            const deleted = JSON.parse(localStorage.getItem('agri_deleted_farms') || '[]').filter(item => String(item).toLowerCase() !== name.toLowerCase());
-            localStorage.setItem('agri_deleted_farms', JSON.stringify(deleted));
-        } catch (_) {}
-        const result = write(data);
-        if (window.DoCampoDB) {
-            const existing = window.DoCampoDB.list('farms').find(f => key(f.name) === key(normalized.farm));
-            const farmRecord = window.DoCampoDB.upsert('farms', { id: existing && existing.id, name: normalized.farm, producerName: normalized.producer, cpf: normalized.cpf, address: normalized.address, notes: normalized.notes, fieldsSnapshot: normalized.fields, verified: true });
-            const incoming = new Set(normalized.fields.map(field => fieldKey(field.name)));
-            // A edição/importação é uma substituição autoritativa: o que não
-            // veio na lista nova deve permanecer excluído e não pode reaparecer.
-            window.DoCampoDB.list('fields').filter(item => item.farmId === farmRecord.id).forEach(item => {
-                if (!incoming.has(fieldKey(item.name))) window.DoCampoDB.softDelete('fields', item.id, { importBatchId: normalized.importBatchId, importSource: normalized.importSource });
-            });
-            normalized.fields.forEach(field => {
-                const matches = window.DoCampoDB.list('fields').filter(item => item.farmId === farmRecord.id && fieldKey(item.name) === fieldKey(field.name));
-                const oldField = matches[0];
-                window.DoCampoDB.upsert('fields', { ...field, id: oldField && oldField.id, farmId: farmRecord.id, verified: true, importBatchId: normalized.importBatchId, importSource: normalized.importSource });
-                matches.slice(1).forEach(item => window.DoCampoDB.softDelete('fields', item.id));
-            });
-        }
-        return result;
-    }
-    function removeFarm(name) { const data = read(); data.farms = data.farms.filter(item => key(item.farm) !== key(name)); try{const deleted=JSON.parse(localStorage.getItem('agri_deleted_farms')||'[]');if(!deleted.some(x=>key(x)===key(name)))deleted.push(name);localStorage.setItem('agri_deleted_farms',JSON.stringify(deleted))}catch(_){} const result=write(data); if(window.DoCampoDB){const item=window.DoCampoDB.list('farms').find(f=>key(f.name)===key(name));if(item){window.DoCampoDB.list('fields').filter(field=>field.farmId===item.id).forEach(field=>window.DoCampoDB.softDelete('fields',field.id));window.DoCampoDB.softDelete('farms',item.id)}} return result; }
-    function mergeProduct(category, product) {
-        if (!category || !product || !product.name) return read();
-        const data = read(); if (!Array.isArray(data.products[category])) data.products[category] = [];
-        const idx = data.products[category].findIndex(item => key(item.name) === key(product.name));
-        if (idx >= 0) data.products[category][idx] = product; else data.products[category].push(product);
-        try{const custom=JSON.parse(localStorage.getItem('agri_custom_products')||'{}');custom[category]||(custom[category]=[]);const ci=custom[category].findIndex(x=>String(x.name).toLowerCase()===String(product.name).toLowerCase());if(ci>=0)custom[category][ci]=product;else custom[category].push(product);localStorage.setItem('agri_custom_products',JSON.stringify(custom));const deleted=JSON.parse(localStorage.getItem('agri_deleted_products')||'{}');if(deleted[category])deleted[category]=deleted[category].filter(x=>String(x).toLowerCase()!==String(product.name).toLowerCase());localStorage.setItem('agri_deleted_products',JSON.stringify(deleted))}catch(_){}
-        const result = write(data);
-        if (window.DoCampoDB) {
-            const matches = window.DoCampoDB.list('products').filter(p => key(p.name) === key(product.name) && key(p.category) === key(category));
-            const existing = matches[0];
-            window.DoCampoDB.upsert('products', Object.assign({}, product, { id: existing && existing.id, category, verified: product.verified === true }));
-            matches.slice(1).forEach(item => window.DoCampoDB.softDelete('products', item.id));
-        }
-        return result;
-    }
-    function removeProduct(category,name){const data=read();if(Array.isArray(data.products[category]))data.products[category]=data.products[category].filter(p=>key(p.name)!==key(name));try{const deleted=JSON.parse(localStorage.getItem('agri_deleted_products')||'{}');deleted[category]||(deleted[category]=[]);if(!deleted[category].some(x=>key(x)===key(name)))deleted[category].push(key(name));localStorage.setItem('agri_deleted_products',JSON.stringify(deleted))}catch(_){}const result=write(data);if(window.DoCampoDB)window.DoCampoDB.list('products').filter(p=>key(p.name)===key(name)&&key(p.category)===key(category)).forEach(item=>window.DoCampoDB.softDelete('products',item.id));return result}
-    function restoreFarm(id){if(!window.DoCampoDB)return false;const item=window.DoCampoDB.get('farms',id);if(!item)return false;window.DoCampoDB.restore('farms',id);mergeFarm({farm:item.name,producer:item.producerName,cpf:item.cpf,address:item.address,fields:item.fieldsSnapshot||[]});return true}
-    function restoreProduct(id){if(!window.DoCampoDB)return false;const item=window.DoCampoDB.get('products',id);if(!item)return false;window.DoCampoDB.restore('products',id);mergeProduct(item.category,item);return true}
-    function repairDuplicates(force) {
-        const migrationKey = 'docampo_data_repair_v2';
-        if (!force && localStorage.getItem(migrationKey) === 'done') return { repaired: false };
-        const data = read(), farmMap = new Map();
-        data.farms.forEach(farm => {
-            if (!farm || !clean(farm.farm)) return;
-            const k = key(farm.farm), old = farmMap.get(k);
-            if (!old) farmMap.set(k, { ...farm, farm: clean(farm.farm), fields: normalizeFields(farm.fields) });
-            else farmMap.set(k, { ...old, ...farm, farm: clean(farm.farm), producer: clean(farm.producer || old.producer), cpf: clean(farm.cpf || old.cpf), address: clean(farm.address || old.address), fields: normalizeFields([...(old.fields || []), ...(farm.fields || [])]) });
-        });
-        data.farms = Array.from(farmMap.values());
-        write(data);
-        if (window.DoCampoDB) {
-            window.DoCampoDB.list('farms').forEach(farm => {
-                const fields = window.DoCampoDB.list('fields').filter(field => field.farmId === farm.id);
-                const groups = new Map();
-                fields.forEach(field => { const k = fieldKey(field.name); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(field); });
-                groups.forEach(matches => {
-                    if (matches.length < 2) return;
-                    const keep = matches.slice().sort((a,b)=>(Number(b.area)||0)-(Number(a.area)||0)||(Number(b.plants)||0)-(Number(a.plants)||0)||String(b.updatedAt).localeCompare(String(a.updatedAt)))[0];
-                    const merged = matches.reduce((acc,item)=>mergeFieldValues(acc,item),keep);
-                    window.DoCampoDB.upsert('fields',{...merged,id:keep.id,farmId:farm.id,verified:true});
-                    matches.filter(item=>item.id!==keep.id).forEach(item=>window.DoCampoDB.softDelete('fields',item.id));
-                });
-            });
-        }
-        localStorage.setItem(migrationKey, 'done');
-        return { repaired: true };
-    }
-    window.DoCampoData = { read, mergeFarm, removeFarm, mergeProduct, removeProduct, restoreFarm, restoreProduct, normalizeFields, fieldKey, key, repairDuplicates };
-    repairDuplicates();
-    if(window.addEventListener)window.addEventListener('docampo:sync-complete',()=>repairDuplicates(true));
+
+    const activeFields = DoCampoDB.list('fields').filter(item => item.farmId === farm.id);
+    const incomingKeys = new Set(fields.map(field => fieldKey(field.name)));
+    activeFields.forEach(field => {
+      if (!incomingKeys.has(fieldKey(field.name))) DoCampoDB.softDelete('fields', field.id, {
+        removalReason: 'Cadastro substituído pela fonte oficial',
+        importBatchId: clean(input.importBatchId)
+      });
+    });
+    fields.forEach(field => {
+      const same = activeFields.filter(item => fieldKey(item.name) === fieldKey(field.name));
+      if (same.length > 1) throw new Error('Duplicidade interna detectada no talhão ' + field.name + '.');
+      DoCampoDB.upsert('fields', {
+        ...field,
+        id: field.id || same[0]?.id || DoCampoDB.stableId('field', farm.id + '|' + fieldKey(field.name)),
+        farmId: farm.id,
+        verified: input.verified !== false,
+        importBatchId: clean(input.importBatchId),
+        importSource: clean(input.importSource)
+      });
+    });
+    return read();
+  }
+
+  function mergeFarm(input) {
+    requireDatabase();
+    return DoCampoDB.transaction(() => mergeFarmInternal(input));
+  }
+
+  function removeFarmInternal(nameOrId) {
+    requireDatabase();
+    const farm = DoCampoDB.list('farms').find(item => item.id === nameOrId || key(item.name) === key(nameOrId));
+    if (!farm) return false;
+    DoCampoDB.list('fields').filter(field => field.farmId === farm.id).forEach(field => DoCampoDB.softDelete('fields', field.id));
+    DoCampoDB.softDelete('farms', farm.id);
+    const otherFarm = DoCampoDB.list('farms').some(item => item.id !== farm.id && item.producerId === farm.producerId);
+    if (!otherFarm && farm.producerId) DoCampoDB.softDelete('producers', farm.producerId);
+    return true;
+  }
+
+  function removeFarm(nameOrId) {
+    requireDatabase();
+    return DoCampoDB.transaction(() => removeFarmInternal(nameOrId));
+  }
+
+  function mergeProductInternal(category, product) {
+    requireDatabase();
+    category = clean(category || product?.category);
+    const name = clean(product?.name);
+    if (!category || !name) throw new Error('Informe a categoria e o nome do produto.');
+    const matches = DoCampoDB.list('products').filter(item => key(item.category) === key(category) && key(item.name) === key(name));
+    if (matches.length > 1) throw new Error('Há produtos duplicados: ' + name + '. Resolva a duplicidade antes de editar.');
+    DoCampoDB.upsert('products', {
+      ...product,
+      id: product.id || matches[0]?.id || DoCampoDB.stableId('product', key(category) + '|' + key(name)),
+      name,
+      category,
+      dose: Number(product.dose) || 0,
+      verified: product.verified === true
+    });
+    return read();
+  }
+
+  function mergeProduct(category, product) {
+    requireDatabase();
+    return DoCampoDB.transaction(() => mergeProductInternal(category, product));
+  }
+
+  function removeProduct(category, nameOrId) {
+    requireDatabase();
+    const item = DoCampoDB.list('products').find(product =>
+      product.id === nameOrId || (key(product.category) === key(category) && key(product.name) === key(nameOrId))
+    );
+    return item ? DoCampoDB.softDelete('products', item.id) : false;
+  }
+
+  function restoreFarm(id) {
+    requireDatabase();
+    const farm = DoCampoDB.get('farms', id);
+    if (!farm) return false;
+    if (farm.producerId && DoCampoDB.get('producers', farm.producerId)?.deletedAt) DoCampoDB.restore('producers', farm.producerId);
+    DoCampoDB.restore('farms', id);
+    DoCampoDB.list('fields', { deleted: true }).filter(field => field.farmId === id).forEach(field => DoCampoDB.restore('fields', field.id));
+    return true;
+  }
+
+  function restoreProduct(id) {
+    requireDatabase();
+    return DoCampoDB.restore('products', id);
+  }
+
+  function findDuplicates() {
+    requireDatabase();
+    const groups = [];
+    const collect = (type, identity) => {
+      const map = new Map();
+      DoCampoDB.list(type).forEach(item => {
+        const id = identity(item);
+        if (!id) return;
+        if (!map.has(id)) map.set(id, []);
+        map.get(id).push(item);
+      });
+      map.forEach(items => { if (items.length > 1) groups.push({ type, identity: identity(items[0]), items }); });
+    };
+    collect('producers', item => digits(item.cpf) || key(item.name));
+    collect('farms', item => key(item.name));
+    collect('fields', item => item.farmId + '|' + fieldKey(item.name));
+    collect('products', item => key(item.category) + '|' + key(item.name));
+    return groups;
+  }
+
+  window.DoCampoData = {
+    read,
+    mergeFarm,
+    removeFarm,
+    mergeProduct,
+    removeProduct,
+    restoreFarm,
+    restoreProduct,
+    normalizeFields,
+    fieldKey,
+    key,
+    findDuplicates
+  };
 })();

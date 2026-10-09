@@ -26,18 +26,35 @@
 
   async function request(path, options) {
     if (!cfg().configured) throw new Error('A nuvem ainda não foi configurada.');
-    const response = await fetch(cfg().url + path, {
-      ...options,
-      headers: {
-        'apikey': cfg().anonKey,
-        'Content-Type': 'application/json',
-        ...(options && options.headers ? options.headers : {})
-      }
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+    let response;
+    try {
+      response = await fetch(cfg().url + path, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          'apikey': cfg().anonKey,
+          'Content-Type': 'application/json',
+          ...(options && options.headers ? options.headers : {})
+        }
+      });
+    } catch (error) {
+      if (error?.name === 'AbortError') throw new Error('O servidor de sincronização não respondeu em 20 segundos. Seus dados locais permanecem salvos.');
+      throw new Error('Não foi possível acessar o servidor de sincronização. Confirme a internet e se o projeto do Supabase está ativo.');
+    } finally {
+      clearTimeout(timeout);
+    }
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       const message = data.msg || data.message || data.error_description || data.error || 'Falha na autenticação.';
-      const translated = message === 'Invalid login credentials' ? 'E-mail ou senha incorretos.' : /missing email or phone/i.test(message) ? 'Informe o e-mail e a senha para entrar.' : message;
+      const translated = message === 'Invalid login credentials'
+        ? 'E-mail ou senha incorretos.'
+        : /missing email or phone/i.test(message)
+          ? 'Informe o e-mail e a senha para entrar.'
+          : /database error querying schema/i.test(message)
+            ? 'O banco do Supabase ainda está iniciando ou não recebeu a estrutura desta versão. Aguarde a ativação e execute o setup-v2.sql.'
+            : message;
       throw new Error(translated);
     }
     return data;

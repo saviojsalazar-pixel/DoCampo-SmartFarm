@@ -36,20 +36,10 @@
     return (window.DoCampoDB.list('visits') || []).find(v => sameFarm(v.farmName, farm) && Array.isArray(v.checklist)) || null;
   }
 
-  function localChecklistFor(farm) {
-    try {
-      const list = JSON.parse(localStorage.getItem('docampo_listaAvaliacoes') || '[]');
-      if (!Array.isArray(list)) return [];
-      return list.filter(item => sameFarm(item.fazenda, farm));
-    } catch (_) { return []; }
-  }
-
   function get(farm, kind) {
     const visit = currentVisitFor(farm);
-    let checklist = visit && Array.isArray(visit.checklist) ? visit.checklist : [];
-    let source = visit ? 'visita' : '';
-    const local = localChecklistFor(farm);
-    if (!checklist.length && local.length) { checklist = local; source = 'local'; }
+    const checklist = visit && Array.isArray(visit.checklist) ? visit.checklist : [];
+    const source = visit ? 'visita' : '';
     const fields = checklist.filter(item => hasAction(item, kind)).map(item => item.talhao).filter(Boolean);
     return { fields, keys: new Set(fields.map(normField)), checklist, visit, source };
   }

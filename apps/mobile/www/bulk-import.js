@@ -2,7 +2,6 @@
   'use strict';
 
   const MODEL = 'assets/Modelo_Importacao_SmartFarm.xlsx';
-  const HISTORY_KEY = 'docampo_import_history_v1';
   const textDecoder = new TextDecoder('utf-8');
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const norm = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\*/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
@@ -227,7 +226,16 @@
       const producer=String(row.producer||'').trim(),farm=String(row.farm||'').trim(),k=norm(farm),old=byFarm.get(k);
       if(!producer||!farm){errors.push({status:'error',label:`Propriedades • linha ${row._line}: produtor e propriedade são obrigatórios.`});return}
       if(old?.producer&&norm(old.producer)!==norm(producer)){errors.push({status:'error',label:`${farm}: produtor atual “${old.producer}” difere de “${producer}”.`});return}
-      records.set(k,{old,rows:[],data:mergeNonBlank({producer:old?.producer||'',farm,cpf:old?.cpf||'',address:old?.address||'',fields:[]},{producer,farm,cpf:String(row.cpf||'').trim(),address:[row.address,row.city].filter(filled).join(' • '),notes:String(row.notes||'').trim()})});
+      const data=mergeNonBlank({producer:old?.producer||'',farm,cpf:old?.cpf||'',address:old?.address||'',notes:old?.notes||'',fields:[]},{producer,farm,cpf:String(row.cpf||'').trim(),address:[row.address,row.city].filter(filled).join(' • '),notes:String(row.notes||'').trim()});
+      const existing=records.get(k);
+      if(existing){
+        if(norm(existing.data.producer)!==norm(producer)){errors.push({status:'error',label:`Propriedades • linhas ${existing.propertyRows[0].line} e ${row._line}: a mesma propriedade possui produtores diferentes.`});return}
+        existing.propertyRows.push({line:row._line,data});
+        existing.data=mergeNonBlank(existing.data,data);
+      }else records.set(k,{old,rows:[],propertyRows:[{line:row._line,data}],data});
+    });
+    records.forEach((record,farmKey)=>{
+      if(record.propertyRows.length>1)decisions.push({id:`d${decisions.length}`,farmKey,type:'propertyDuplicate',label:`${record.data.farm} • ${record.propertyRows.length} linhas na aba Propriedades`,group:record.propertyRows,old:record.old?[record.old]:[],options:[{value:'merge',label:'Unificar os campos preenchidos'},...record.propertyRows.map((x,i)=>({value:`row${i}`,label:`Usar somente a linha ${x.line}`})),...(record.old?[{value:'current',label:'Manter os dados atuais da propriedade'}]:[]),{value:'exclude',label:'Não importar esta propriedade'}]});
     });
     fields.rows.filter(x=>!isExample(x)).forEach(row=>{
       const producer=String(row.producer||'').trim(),farm=String(row.farm||'').trim(),name=String(row.field||'').trim(),fk=norm(farm),record=records.get(fk);
@@ -259,14 +267,14 @@
 
   function applyClientDecisions(prepared){
     const choices=new Map();document.querySelectorAll('[data-import-decision]').forEach(x=>choices.set(x.dataset.importDecision,x.value));prepared.resolutions=[];
-    prepared.operations.forEach(op=>{const fields=(op.record.accepted||[]).map(x=>({...x}));prepared.decisions.filter(d=>d.farmKey===op.farmKey).forEach(d=>{const c=choices.get(d.id);prepared.resolutions.push({type:d.type,label:d.label,choice:c});let value=null;if(d.type==='missing'){if(c==='keep')value=bestFields(d.old)}else if(d.type==='zero'){if(c==='zero')value={...d.group[0].data,area:0};if(c==='current')value=bestFields(d.old)}else if(d.type==='duplicate'){if(c==='merge')value=bestFields([...d.old,...d.group.map(x=>x.data)]);if(c==='current')value=bestFields(d.old);if(/^row\d+$/.test(c))value=d.group[Number(c.slice(3))].data}else if(d.type==='currentDuplicate'){if(c==='sheet')value=d.group[0].data;if(c==='merge')value=bestFields([...d.old,d.group[0].data]);if(c==='current')value=bestFields(d.old)}if(value)fields.push(value)});op.data={...op.data,fields:fields.sort(fieldCompare)};op.status=op.record.old?'update':'new'});return prepared.operations.filter(x=>x.status==='new'||x.status==='update')}
+    prepared.operations.forEach(op=>{let propertyData={...op.record.data};const propertyDecision=prepared.decisions.find(d=>d.farmKey===op.farmKey&&d.type==='propertyDuplicate');if(propertyDecision){const c=choices.get(propertyDecision.id);prepared.resolutions.push({type:propertyDecision.type,label:propertyDecision.label,choice:c});if(c==='exclude'){op.status='skip';return}if(c==='current'&&op.record.old)propertyData={...op.record.old,producer:op.record.old.producer||op.record.old.proprietor||'',farm:op.record.old.farm,fields:[]};else if(/^row\d+$/.test(c))propertyData={...propertyDecision.group[Number(c.slice(3))].data};else if(c==='merge')propertyData=propertyDecision.group.reduce((out,row)=>mergeNonBlank(out,row.data),{...(op.record.old||{}),fields:[]})}const fields=(op.record.accepted||[]).map(x=>({...x}));prepared.decisions.filter(d=>d.farmKey===op.farmKey&&d.type!=='propertyDuplicate').forEach(d=>{const c=choices.get(d.id);prepared.resolutions.push({type:d.type,label:d.label,choice:c});let value=null;if(d.type==='missing'){if(c==='keep')value=bestFields(d.old)}else if(d.type==='zero'){if(c==='zero')value={...d.group[0].data,area:0};if(c==='current')value=bestFields(d.old)}else if(d.type==='duplicate'){if(c==='merge')value=bestFields([...d.old,...d.group.map(x=>x.data)]);if(c==='current')value=bestFields(d.old);if(/^row\d+$/.test(c))value=d.group[Number(c.slice(3))].data}else if(d.type==='currentDuplicate'){if(c==='sheet')value=d.group[0].data;if(c==='merge')value=bestFields([...d.old,d.group[0].data]);if(c==='current')value=bestFields(d.old)}if(value)fields.push(value)});op.data={...propertyData,fields:fields.sort(fieldCompare)};op.status=op.record.old?'update':'new'});return prepared.operations.filter(x=>x.status==='new'||x.status==='update')}
 
   async function prepareProducts(book) {
     const sheet = Object.entries(book).find(([name]) => norm(name) === 'produtos')?.[1] || [];
     const table = tableFromSheet(sheet, [['name'], ['category'], ['dose'], ['unit']]);
-    if (table.error) return { operations: [], items: [{ status: 'error', label: `Aba Produtos: ${table.error}` }], errors: [{}] };
+    if (table.error) return { operations: [], decisions: [], items: [{ status: 'error', label: `Aba Produtos: ${table.error}` }], errors: [{}] };
     const registry = await DoCampoRegistry.all(), current = Object.entries(registry.products || {}).flatMap(([category, list]) => (list || []).map(p => ({ ...p, category })));
-    const byName = new Map(current.map(p => [norm(p.name), p])), operations = [], items = [], errors = [];
+    const byName = new Map(current.map(p => [norm(p.name), p])), operations = [], items = [], errors = [], decisions = [], groups = new Map();
     table.rows.filter(x => !isExample(x)).forEach(row => {
       const name = String(row.name || '').trim(), category = String(row.category || '').trim(), unit = String(row.unit || '').trim(), dose = number(row.dose);
       if (!name || !category || !unit || !Number.isFinite(dose) || dose <= 0) { const error = { status: 'error', label: `Produtos • linha ${row._line}: nome, categoria, dose maior que zero e unidade são obrigatórios.` }; errors.push(error); items.push(error); return; }
@@ -276,18 +284,81 @@
         name, category, dose, unit,
         manufacturer: String(row.manufacturer || '').trim(), formulation: String(row.formulation || '').trim(), active: String(row.active || '').trim(),
         target: String(row.target || '').trim(), grace: String(row.grace || '').trim(), toxicology: String(row.toxicology || '').trim(),
-        mixOrder: String(row.mixOrder || '').trim(), notes: String(row.notes || '').trim(), verified: false, localStatus: 'Cadastro importado — conferir', importSource: 'XLSX',
+        mixOrder: String(row.mixOrder || '').trim(), notes: String(row.notes || '').trim(), verified: true, localStatus: '', importSource: 'XLSX',
       });
-      const comparable = value => { const x = { ...value }; delete x.id; delete x.type; delete x.revision; delete x.createdAt; delete x.updatedAt; delete x.updatedBy; delete x.deviceId; delete x.deletedAt; return x; };
-      const status = !old ? 'new' : same(comparable(old), comparable(data)) ? 'same' : 'update';
-      operations.push({ status, label: `${name} • ${category}`, data }); items.push({ status, label: `${name} • ${category}` });
+      const key = norm(name);
+      if (!groups.has(key)) groups.set(key, { old, rows: [] });
+      groups.get(key).rows.push({ line: row._line, data });
     });
-    return { operations, items, errors };
+    const comparable = value => { const x = { ...value }; delete x.id; delete x.type; delete x.revision; delete x.createdAt; delete x.updatedAt; delete x.updatedBy; delete x.deviceId; delete x.deletedAt; return x; };
+    groups.forEach((group, key) => {
+      if (group.rows.length > 1) {
+        const decision = {
+          id: `p${decisions.length}`, type: 'productDuplicate', productKey: key,
+          label: `${group.rows[0].data.name} • duplicado nas linhas ${group.rows.map(row => row.line).join(', ')}`,
+          group: group.rows, old: group.old ? [group.old] : [],
+          options: [
+            { value: 'merge', label: 'Unificar os campos preenchidos' },
+            ...group.rows.map((row, index) => ({ value: `row${index}`, label: `Usar linha ${row.line}: ${row.data.category} • ${row.data.dose} ${row.data.unit}` })),
+            ...(group.old ? [{ value: 'current', label: 'Manter o produto atual' }] : []),
+            { value: 'exclude', label: 'Não importar este produto' }
+          ]
+        };
+        decisions.push(decision);
+        items.push({ status: 'decision', label: decision.label, decision });
+        return;
+      }
+      const data = group.rows[0].data, old = group.old;
+      const status = !old ? 'new' : same(comparable(old), comparable(data)) ? 'same' : 'update';
+      operations.push({ status, label: `${data.name} • ${data.category}`, data });
+      items.push({ status, label: `${data.name} • ${data.category}` });
+    });
+    return { operations, decisions, items, errors };
+  }
+
+  function applyProductDecisions(prepared) {
+    const choices = new Map();
+    document.querySelectorAll('[data-import-decision]').forEach(element => choices.set(element.dataset.importDecision, element.value));
+    prepared.resolutions = [];
+    const resolved = [...prepared.operations];
+    (prepared.decisions || []).forEach(decision => {
+      const choice = choices.get(decision.id);
+      prepared.resolutions.push({ type: decision.type, label: decision.label, choice });
+      if (choice === 'exclude') return;
+      let data = null;
+      if (choice === 'current') data = decision.old[0] || null;
+      else if (/^row\d+$/.test(choice || '')) data = decision.group[Number(choice.slice(3))]?.data || null;
+      else if (choice === 'merge') data = decision.group.reduce((out, row) => mergeNonBlank(out, row.data), { ...(decision.old[0] || {}) });
+      if (!data) return;
+      const status = decision.old.length ? 'update' : 'new';
+      resolved.push({ status, label: `${data.name} • ${data.category}`, data });
+    });
+    return resolved.filter(operation => operation.status === 'new' || operation.status === 'update');
+  }
+
+  async function prepareAll(book) {
+    const clients = await prepareClients(book);
+    const products = await prepareProducts(book);
+    return {
+      kind: 'all',
+      clients,
+      products,
+      operations: [
+        ...clients.operations.map(operation => ({ ...operation, importDomain: 'clients' })),
+        ...products.operations.map(operation => ({ ...operation, importDomain: 'products' }))
+      ],
+      decisions: [...(clients.decisions || []), ...(products.decisions || [])],
+      items: [
+        ...clients.items,
+        ...products.items.map(item => ({ ...item, label: `Produto • ${item.label}` }))
+      ],
+      errors: [...(clients.errors || []), ...(products.errors || [])]
+    };
   }
 
   function ensureModal() {
     if (document.getElementById('bulkImportModal')) return;
-    document.body.insertAdjacentHTML('beforeend', `<div id="bulkImportModal" class="modal hidden"><div class="modalbox import-modal"><div class="modalhead"><div><h2>Revisar importação oficial</h2><p id="bulkFileName" class="meta"></p></div><button id="bulkClose" class="close">×</button></div><div id="bulkSummary" class="import-summary"></div><div class="notice">A planilha será a fonte oficial somente das propriedades presentes nela. Resolva todas as decisões antes de confirmar. Talhões removidos irão para a lixeira.</div><div id="bulkPreview" class="import-preview"></div><div class="actions import-actions"><button id="bulkCancel" class="secondary">Cancelar</button><button id="bulkConfirm" class="primary">Confirmar alterações revisadas</button></div></div></div>`);
+    document.body.insertAdjacentHTML('beforeend', `<div id="bulkImportModal" class="modal hidden"><div class="modalbox import-modal"><div class="modalhead"><div><h2>Revisar importação oficial</h2><p id="bulkFileName" class="meta"></p></div><button id="bulkClose" class="close">×</button></div><div id="bulkSummary" class="import-summary"></div><div class="notice">A mesma planilha atualiza produtores, propriedades, talhões e produtos em uma única confirmação. Ela será a fonte oficial das propriedades presentes nela. Resolva todas as decisões antes de confirmar; talhões ausentes só serão excluídos quando você escolher “Enviar para a lixeira”.</div><div id="bulkPreview" class="import-preview"></div><div class="actions import-actions"><button id="bulkCancel" class="secondary">Cancelar</button><button id="bulkConfirm" class="primary">Confirmar alterações revisadas</button></div></div></div>`);
   }
 
   function statusLabel(status) { return ({ new: 'Novo', update: 'Atualizar', same: 'Sem alteração', error: 'Erro', decision: 'Decidir' })[status] || status; }
@@ -302,11 +373,14 @@
   }
 
   function saveHistory(kind, fileName, prepared) {
-    let history = [];
-    try { history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch (_) {}
     const counts = prepared.items.reduce((a, x) => (a[x.status] = (a[x.status] || 0) + 1, a), {});
-    history.unshift({ id: prepared.importBatchId || `imp-${Date.now()}`, kind, fileName, counts, resolutions: prepared.resolutions || [], importedAt: new Date().toISOString(), user: window.DoCampoDB?.user?.() || '' });
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 50)));
+    if (window.DoCampoDB) DoCampoDB.upsert('settings', {
+      id: prepared.importBatchId || `import-${Date.now()}`,
+      settingType: 'import-audit', kind, fileName, counts,
+      resolutions: prepared.resolutions || [],
+      importedAt: new Date().toISOString(),
+      user: DoCampoDB.user()
+    });
   }
 
   function init(options) {
@@ -322,7 +396,7 @@
       button.disabled = true; button.textContent = 'Lendo planilha...';
       try {
         const book = await readWorkbook(file);
-        prepared = kind === 'clients' ? await prepareClients(book) : await prepareProducts(book);
+        prepared = kind === 'all' ? await prepareAll(book) : (kind === 'clients' ? await prepareClients(book) : await prepareProducts(book));
         document.getElementById('bulkFileName').textContent = file.name; renderPreview(prepared);
         document.getElementById('bulkImportModal').classList.remove('hidden');
       } catch (error) { console.error(error); alert(`Não foi possível ler a planilha: ${error.message}`); }
@@ -332,14 +406,25 @@
     document.getElementById('bulkClose').onclick = document.getElementById('bulkCancel').onclick = close;
     document.getElementById('bulkConfirm').onclick = async () => {
       if (!prepared) return;
-      const actionable = kind === 'clients' ? applyClientDecisions(prepared) : prepared.operations.filter(x => x.status === 'new' || x.status === 'update');
+      let clientActions = [], productActions = [];
+      if (kind === 'all') {
+        clientActions = applyClientDecisions(prepared.clients);
+        productActions = applyProductDecisions(prepared.products);
+        prepared.resolutions = [...(prepared.clients.resolutions || []), ...(prepared.products.resolutions || [])];
+      } else if (kind === 'clients') clientActions = applyClientDecisions(prepared);
+      else productActions = applyProductDecisions(prepared);
+      const actionable = [...clientActions, ...productActions];
       if (!actionable.length) return;
       const confirm = document.getElementById('bulkConfirm'); confirm.disabled = true; confirm.textContent = 'Importando...';
       try {
         prepared.importBatchId=`imp-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-        if (kind === 'clients') actionable.forEach(op => DoCampoData.mergeFarm({...op.data,importBatchId:prepared.importBatchId,importSource:fileName}));
-        else actionable.forEach(op => DoCampoData.mergeProduct(op.data.category, op.data));
-        saveHistory(kind, fileName, prepared); close(); await options.onComplete?.();
+        DoCampoDB.transaction(() => {
+          clientActions.forEach(op => DoCampoData.mergeFarm({...op.data,verified:true,importBatchId:prepared.importBatchId,importSource:fileName}));
+          productActions.forEach(op => DoCampoData.mergeProduct(op.data.category, {...op.data,verified:true,importBatchId:prepared.importBatchId,importSource:fileName}));
+          saveHistory(kind, fileName, prepared);
+        });
+        await DoCampoDB.flush();
+        close(); await options.onComplete?.();
         alert(`${actionable.length} registro(s) importado(s). Os dados já estão disponíveis offline e aguardam a sincronização normal.`);
       } catch (error) { console.error(error); alert(`Falha durante a importação: ${error.message}`); }
       finally { confirm.disabled = false; }
@@ -355,13 +440,16 @@
       const registry = await DoCampoRegistry.all();
       const blob = await populatedModel(await response.arrayBuffer(), registry.farms || [], registry.products || {});
       const filename = `Cadastros_DoCampo_SmartFarm_${new Date().toISOString().slice(0, 10)}.xlsx`;
-      const plugins = window.Capacitor?.Plugins;
-      if (plugins?.Filesystem && plugins?.Share) {
+      const cap = window.Capacitor;
+      const plugin = name => cap?.Plugins?.[name] || (cap?.registerPlugin ? cap.registerPlugin(name) : null);
+      const filesystem = plugin('Filesystem');
+      const share = plugin('Share');
+      if (filesystem && share) {
         const bytes = new Uint8Array(await blob.arrayBuffer());
         let binary = '';
         for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-        const saved = await plugins.Filesystem.writeFile({ path: filename, data: btoa(binary), directory: 'CACHE', recursive: true });
-        await plugins.Share.share({ title: 'Cadastros Do Campo SmartFarm', text: 'Planilha preenchida para atualizar produtores, propriedades e talhões.', url: saved.uri, dialogTitle: 'Salvar ou enviar planilha de atualização' });
+        const saved = await filesystem.writeFile({ path: 'docampo-share/' + filename, data: btoa(binary), directory: 'CACHE', recursive: true });
+        await share.share({ title: 'Cadastros Do Campo SmartFarm', text: 'Planilha preenchida para atualizar produtores, propriedades, talhões e produtos.', url: saved.uri, dialogTitle: 'Salvar ou enviar planilha de atualização' });
       } else {
         const url = URL.createObjectURL(blob), link = document.createElement('a');
         link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove();
@@ -374,7 +462,7 @@
     }
   }
 
-  window.DoCampoBulkImport = { init, modelUrl: MODEL, readWorkbook, populatedModel, prepareClients, applyClientDecisions };
+  window.DoCampoBulkImport = { init, modelUrl: MODEL, readWorkbook, populatedModel, prepareClients, prepareProducts, prepareAll, applyClientDecisions, applyProductDecisions };
   window.addEventListener('DOMContentLoaded', () => {
     const downloadButton = document.getElementById('downloadModel');
     if (downloadButton) { downloadButton.textContent = '↓ Baixar cadastros XLSX'; downloadButton.onclick = downloadModel; }
@@ -383,7 +471,7 @@
     const importBar = document.querySelector('.importbar'), toolbar = document.querySelector('.toolbar');
     if (importBar && toolbar) toolbar.insertAdjacentElement('afterend', importBar);
     const page = location.pathname.split('/').pop();
-    if (page === 'clientes.html') init({ kind: 'clients', buttonId: 'importBulk', inputId: 'importFile', onComplete: () => location.reload() });
+    if (page === 'clientes.html') init({ kind: 'all', buttonId: 'importBulk', inputId: 'importFile', onComplete: () => location.reload() });
     if (page === 'produtos.html') init({ kind: 'products', buttonId: 'importBulk', inputId: 'importFile', onComplete: () => location.reload() });
   });
 })();
