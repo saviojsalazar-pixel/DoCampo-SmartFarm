@@ -2,11 +2,14 @@
 
 Aplicativo Android híbrido com uma central de acesso aos módulos da Do Campo Agronegócios.
 
+Versão atual: **1.9.47**.
+
 ## Estrutura atual
 
 - Central única de produtores, propriedades, talhões e produtos
 - Checklist de lavoura com GPS, câmera, galeria e recuperação de rascunho
 - Receituários de pulverização e herbicidas
+- Recomendação técnica via solo com cálculo por talhão, cargas completas e carga final
 - Interpretação de análise de solo
 - Acompanhamento de produção e produtividade
 - Histórico de documentos, lixeira e retenção automática
@@ -19,9 +22,10 @@ Aplicativo Android híbrido com uma central de acesso aos módulos da Do Campo A
 - Rascunhos e arquivos são gravados antes de abrir o compartilhamento do Android.
 - A internet é necessária apenas para o primeiro login e para sincronizar os aparelhos.
 
-## Restauração de fábrica v1.9.46
+## Geração de dados iniciada na v1.9.46
 
-Esta versão inicia uma geração nova e vazia. Antes de instalar nos dois aparelhos,
+Essa geração foi iniciada vazia na versão 1.9.46. A atualização 1.9.47 mantém a
+mesma geração e não apaga os dados já inseridos. Antes da primeira instalação nos dois aparelhos,
 leia `supabase/CONFIGURACAO.md` e execute uma única vez o script destrutivo
 `supabase/setup-v2.sql`. Depois, importe a planilha oficial em somente um aparelho
 e sincronize o segundo.

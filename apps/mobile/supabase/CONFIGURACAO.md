@@ -1,4 +1,4 @@
-# Configuração da sincronização Do Campo SmartFarm 1.9.46
+# Configuração da sincronização Do Campo SmartFarm 1.9.47
 
 Esta versão usa uma base nova (`v2`) e uma geração exclusiva. Isso impede que um
 celular com uma versão antiga republique produtores, propriedades, talhões ou
@@ -17,7 +17,7 @@ produtos que foram removidos na restauração de fábrica.
    Não exclua diretamente linhas de `storage.objects` no SQL.
 6. Confirme a Project URL e a chave pública em `www/supabase-config.js`. Nunca
    coloque a chave `service_role` dentro do aplicativo.
-7. Instale o APK 1.9.46 nos dois aparelhos. A primeira abertura apaga a base
+7. Instale o APK 1.9.47 nos dois aparelhos. A primeira abertura desta geração apaga a base
    empresarial antiga de cada aparelho e cria uma identidade nova para ele.
 8. Entre na conta de sincronização nos dois celulares.
 9. Em apenas um aparelho, importe a planilha oficial. Sincronize esse aparelho

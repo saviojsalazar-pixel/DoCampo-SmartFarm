@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Do Campo Agronegócios - Recomendação Via Solo</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="vendor/tailwind/tailwindcss.js"></script>
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+
+<script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['system-ui', 'sans-serif'],
+                        heading: ['system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        agri: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+
+        @media print { .no-print { display: none !important; } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased bg-slate-50">
+
+    <!-- HEADER -->
+    <header class="bg-emerald-700 text-white sticky top-0 z-40 shadow-md no-print border-b border-emerald-600">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <img src="assets/logo.png" alt="Do Campo Agronegócios" class="w-12 h-12 rounded-xl bg-white object-contain shadow-inner border border-emerald-400">
+                <div>
+                    <h1 class="text-xl font-bold font-heading tracking-wide text-white leading-tight">DO CAMPO</h1>
+                    <p class="text-xs font-semibold text-emerald-100 tracking-wider uppercase">AGRONEGÓCIOS • Prescrição Técnica Via Solo</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <button onclick="openHistoryModal()" class="flex items-center gap-2 bg-emerald-800 hover:bg-emerald-900 text-emerald-100 px-3.5 py-2 rounded-lg text-sm font-medium transition border border-emerald-600 shadow-sm cursor-pointer">
+                    <i class="fa-solid fa-clock-rotate-left text-emerald-300"></i>
+                    <span class="hidden sm:inline">Histórico</span>
+                </button>
+                <button onclick="resetForm()" class="flex items-center gap-2 bg-emerald-800 hover:bg-emerald-900 text-emerald-100 px-3.5 py-2 rounded-lg text-sm font-medium transition border border-emerald-600 shadow-sm cursor-pointer">
+                    <i class="fa-solid fa-rotate text-emerald-300"></i>
+                    <span class="hidden sm:inline">Nova Recomendação</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 no-print">
+
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="space-y-1">
+                <div class="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-full text-emerald-800 text-xs font-bold uppercase tracking-wider">
+                    <i class="fa-solid fa-flask text-emerald-600"></i> Aplicação Via Solo
+                </div>
+                <h2 class="text-2xl font-black font-heading text-slate-900">Recomendação de Fungicida, Inseticida e Nematicida Via Solo</h2>
+                <p class="text-slate-500 text-sm">Configure plantas, mL/planta e insumos por talhão com cálculo de tanques completos e fração para cargas parciais.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="bg-slate-100 p-3 rounded-xl border border-slate-200 text-right min-w-[160px]">
+                    <label for="rec-number-input" class="block text-xs font-semibold text-slate-500 uppercase cursor-pointer">Nº da Recomendação</label>
+                    <input type="text" id="rec-number-input" readonly aria-readonly="true" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-sm font-bold font-mono text-emerald-800 text-right focus:ring-2 focus:ring-emerald-600 focus:outline-none mt-0.5" value="VSL-PRÉVIA">
+                </div>
+                <div class="bg-slate-100 p-3 rounded-xl border border-slate-200 text-right min-w-[150px]">
+                    <p class="text-xs font-semibold text-slate-500 uppercase">Data da Prescrição</p>
+                    <p id="current-date-display" class="text-base font-bold text-slate-800 font-mono">--/--/----</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CADASTRAR NOVA PROPRIEDADE -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-800 px-6 py-3.5 border-b border-slate-700 flex items-center justify-between cursor-pointer select-none hover:bg-slate-900 transition" onclick="toggleNewFarmPanel()">
+                <h3 class="text-sm font-bold text-white font-heading flex items-center gap-2.5">
+                    <i class="fa-solid fa-plus-circle text-emerald-400 text-base"></i>
+                    Cadastrar Nova Propriedade e Talhões (Opcional)
+                </h3>
+                <span id="toggle-new-farm-icon" class="text-emerald-300 text-xs font-bold flex items-center gap-1.5 bg-slate-700/80 px-3 py-1 rounded-lg border border-slate-600">
+                    <span id="toggle-new-farm-text">Expandir Formulário</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </span>
+            </div>
+
+            <div id="new-farm-panel" class="p-6 space-y-4 hidden bg-slate-50/70 border-t border-slate-200">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">Nome da Nova Fazenda / Propriedade <span class="text-red-500">*</span></label>
+                        <input type="text" id="new-farm-name" placeholder="Ex: Fazenda Bela Vista" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">Produtor Rural Responsável <span class="text-red-500">*</span></label>
+                        <input type="text" id="new-producer-name" placeholder="Ex: João da Silva" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">CPF do Produtor</label>
+                        <input type="text" id="new-producer-cpf" placeholder="Ex: 000.000.000-00" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">Endereço / Localização</label>
+                        <input type="text" id="new-producer-address" placeholder="Ex: Córrego dos Vieiras, Zona Rural, Manhuaçu - MG" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="space-y-3 pt-3 border-t border-slate-200">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-map-location-dot text-emerald-600"></i>
+                            Talhões da Propriedade
+                        </label>
+                        <button type="button" onclick="addNewFarmFieldRow()" class="text-xs font-bold bg-emerald-100 hover:bg-emerald-200 text-emerald-800 px-3 py-1.5 rounded-lg border border-emerald-300 transition flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-plus"></i> Adicionar Talhão
+                        </button>
+                    </div>
+
+                    <div id="new-farm-fields-container" class="space-y-2"></div>
+                </div>
+
+                <div class="flex justify-end pt-3 border-t border-slate-200">
+                    <button type="button" onclick="saveAndSelectNewFarm()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow transition flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-circle-check"></i>
+                        Salvar e Selecionar Propriedade
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CADASTRAR NOVO INSUMO E GERENCIAR CATÁLOGO -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-800 px-6 py-3.5 border-b border-slate-700 flex items-center justify-between cursor-pointer select-none hover:bg-slate-900 transition" onclick="toggleNewProductPanel()">
+                <h3 class="text-sm font-bold text-white font-heading flex items-center gap-2.5">
+                    <i class="fa-solid fa-vial-circle-check text-emerald-400 text-base"></i>
+                    Cadastrar Novo Insumo / Produto (Opcional)
+                </h3>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="event.stopPropagation(); openManageProductsModal()" class="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded-lg border border-slate-600 transition font-semibold cursor-pointer flex items-center gap-1.5">
+                        <i class="fa-solid fa-boxes-stacked text-amber-400"></i>
+                        <span>Gerenciar / Excluir Insumos</span>
+                    </button>
+                    <span id="toggle-new-product-icon" class="text-emerald-300 text-xs font-bold flex items-center gap-1.5 bg-slate-700/80 px-3 py-1 rounded-lg border border-slate-600">
+                        <span id="toggle-new-product-text">Expandir Formulário</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </span>
+                </div>
+            </div>
+
+            <div id="new-product-panel" class="p-6 space-y-4 hidden bg-slate-50/70 border-t border-slate-200">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">Categoria / Tipo <span class="text-red-500">*</span></label>
+                        <select id="new-prod-category" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                            <option value="Via Solo (Inseticida/Fungicida)">Via Solo (Inseticida/Fungicida)</option>
+                            <option value="Via Solo (Inseticida)">Via Solo (Inseticida)</option>
+                            <option value="Via Solo (Fungicida)">Via Solo (Fungicida)</option>
+                            <option value="Via Solo (Fungicida/Nematicida)">Via Solo (Fungicida/Nematicida)</option>
+                            <option value="Via Solo (Nematicida)">Via Solo (Nematicida)</option>
+                            <option value="Via Solo (Nutrição)">Via Solo (Nutrição)</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5 md:col-span-2">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">Nome Comercial do Produto <span class="text-red-500">*</span></label>
+                        <input type="text" id="new-prod-name" placeholder="Ex: Ampligo-SC-Syngenta" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">Dose Padrão / ha <span class="text-red-500">*</span></label>
+                        <input type="number" step="0.01" min="0" id="new-prod-dose" placeholder="Ex: 1.00" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-bold font-mono text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">Unidade <span class="text-red-500">*</span></label>
+                        <select id="new-prod-unit" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                            <option value="L/ha">L/ha</option>
+                            <option value="kg/ha">kg/ha</option>
+                            <option value="mL/ha">mL/ha</option>
+                            <option value="g/ha">g/ha</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">Alvo / Praga / Doença</label>
+                        <input type="text" id="new-prod-target" placeholder="Ex: Ferrugem/Bicho Mineiro" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">Ingrediente Ativo (I.A.)</label>
+                        <input type="text" id="new-prod-active" placeholder="Ex: Tiametoxam" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center pt-3 border-t border-slate-200">
+                    <button type="button" onclick="openManageProductsModal()" class="text-slate-600 hover:text-emerald-700 font-bold text-xs flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-list-check"></i> Visualizar Todos Insumos Cadastrados
+                    </button>
+                    <button type="button" onclick="saveNewProduct()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow transition flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-circle-check"></i>
+                        Salvar e Adicionar ao Catálogo
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PASSO 1 -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-emerald-800 px-6 py-4 border-b border-emerald-700 flex items-center justify-between">
+                <h3 class="text-base font-bold text-white font-heading flex items-center gap-2.5">
+                    <span class="w-7 h-7 bg-emerald-600 rounded-lg flex items-center justify-center text-xs text-white font-black">1</span>
+                    Seleção da Propriedade e Dados do Produtor
+                </h3>
+                <span class="text-xs text-emerald-200 font-medium">Passo 1 de 3</span>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">Fazenda / Propriedade <span class="text-red-500">*</span></label>
+                    <select id="farm-select" onchange="onFarmChange()" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-200">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-user text-emerald-600"></i>
+                            Nome do Produtor
+                        </label>
+                        <input type="text" id="producer-display" readonly placeholder="Selecione a fazenda..." class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 cursor-not-allowed">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-id-card text-emerald-600"></i>
+                            CPF do Produtor
+                        </label>
+                        <input type="text" id="producer-cpf-display" readonly placeholder="Selecione a fazenda..." class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold font-mono text-slate-800 cursor-not-allowed">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-location-dot text-emerald-600"></i>
+                            Endereço / Localização
+                        </label>
+                        <input type="text" id="producer-address-display" readonly placeholder="Selecione a fazenda..." class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 cursor-not-allowed">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PASSO 2 -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-emerald-800 px-6 py-4 border-b border-emerald-700 flex items-center justify-between">
+                <h3 class="text-base font-bold text-white font-heading flex items-center gap-2.5">
+                    <span class="w-7 h-7 bg-emerald-600 rounded-lg flex items-center justify-center text-xs text-white font-black">2</span>
+                    Cultura, Talhões, Volume por Planta (mL/planta) e Produtos
+                </h3>
+                <span class="text-xs text-emerald-200 font-medium">Passo 2 de 3</span>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pb-6 border-b border-slate-200">
+                    <div class="space-y-1.5 md:col-span-1">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-leaf text-emerald-600"></i>
+                            Cultura <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="crop-name" value="Café" placeholder="Ex: Café, Milho, Citrus..." class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                    </div>
+
+                    <div class="space-y-1.5 md:col-span-2">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-tree text-emerald-600"></i>
+                            Estado da Cultura
+                        </label>
+                        <div class="flex flex-wrap items-center gap-2 pt-0.5">
+                            <label class="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-emerald-400 cursor-pointer text-xs text-slate-700 select-none">
+                                <input type="checkbox" value="Plantio (até 12 meses)" class="crop-stage-cb w-3.5 h-3.5 text-emerald-600 focus:ring-emerald-500 rounded border-slate-300">
+                                <span>Plantio (até 12 meses)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-emerald-400 cursor-pointer text-xs text-slate-700 select-none">
+                                <input type="checkbox" value="De 12 a 24 meses" class="crop-stage-cb w-3.5 h-3.5 text-emerald-600 focus:ring-emerald-500 rounded border-slate-300">
+                                <span>De 12 a 24 meses</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-emerald-400 cursor-pointer text-xs text-slate-700 select-none">
+                                <input type="checkbox" value="Recepa 1º ano" class="crop-stage-cb w-3.5 h-3.5 text-emerald-600 focus:ring-emerald-500 rounded border-slate-300">
+                                <span>Recepa 1º ano</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-emerald-400 cursor-pointer text-xs text-slate-700 select-none">
+                                <input type="checkbox" value="Em Produção" class="crop-stage-cb w-3.5 h-3.5 text-emerald-600 focus:ring-emerald-500 rounded border-slate-300">
+                                <span>Em Produção</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-bold text-sm text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-list-check text-emerald-600"></i>
+                                Configuração de Talhões, Tanques e Produtos por Talhão
+                            </h4>
+                            <p class="text-xs text-slate-500">Defina a população, mL/planta, produtos e dosagens para obter o cálculo de tanques completos e frações de calda.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="selectAllFields(true)" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg border border-emerald-200 transition font-semibold cursor-pointer">Marcar Todos</button>
+                            <button type="button" onclick="selectAllFields(false)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg border border-slate-200 transition font-semibold cursor-pointer">Desmarcar Todos</button>
+                        </div>
+                    </div>
+
+                    <div id="fields-container" class="space-y-4">
+                        <div class="py-8 text-center text-slate-400 italic bg-slate-50 border border-dashed border-slate-200 rounded-xl">
+                            Selecione uma fazenda no Passo 1 acima para carregar a lista de talhões disponíveis.
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-200 text-xs font-bold text-slate-700 bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
+                        <div>
+                            <span class="block text-[10px] uppercase text-emerald-800">Área Total Selecionada:</span>
+                            <span class="text-sm text-emerald-700 font-mono font-black"><span id="selected-area-display">0,00</span> ha</span>
+                        </div>
+                        <div>
+                            <span class="block text-[10px] uppercase text-emerald-800">Total de Plantas Aprox.:</span>
+                            <span class="text-sm text-emerald-700 font-mono font-black"><span id="selected-plants-display">0</span> plantas</span>
+                        </div>
+                        <div>
+                            <span class="block text-[10px] uppercase text-emerald-800">Volume Total de Calda:</span>
+                            <span class="text-sm text-emerald-700 font-mono font-black"><span id="selected-volume-display">0</span> L</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- PASSO 3 -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-emerald-800 px-6 py-4 border-b border-emerald-700 flex items-center justify-between">
+                <h3 class="text-base font-bold text-white font-heading flex items-center gap-2.5">
+                    <span class="w-7 h-7 bg-emerald-600 rounded-lg flex items-center justify-center text-xs text-white font-black">3</span>
+                    Parâmetros Globais, Instruções e Resumo Consolidado
+                </h3>
+                <span class="text-xs text-emerald-200 font-medium">Passo 3 de 3</span>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-syringe text-emerald-600"></i>
+                        Método de Aplicação Via Solo
+                    </label>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <label class="flex items-center gap-2 bg-white px-3.5 py-2 rounded-xl border border-slate-200 hover:border-emerald-400 cursor-pointer text-xs font-semibold text-slate-800 shadow-sm transition">
+                            <input type="checkbox" id="spray-type-drench" value="Drench / Esguicho" checked onchange="calculateTotals()" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded border-slate-300">
+                            <span>Drench / Esguicho (Tronco/Saia)</span>
+                        </label>
+                        <label class="flex items-center gap-2 bg-white px-3.5 py-2 rounded-xl border border-slate-200 hover:border-emerald-400 cursor-pointer text-xs font-semibold text-slate-800 shadow-sm transition">
+                            <input type="checkbox" id="spray-type-fertirrigation" value="Fertirrigação" onchange="calculateTotals()" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded border-slate-300">
+                            <span>Fertirrigação / Injeção</span>
+                        </label>
+                        <label class="flex items-center gap-2 bg-white px-3.5 py-2 rounded-xl border border-slate-200 hover:border-emerald-400 cursor-pointer text-xs font-semibold text-slate-800 shadow-sm transition">
+                            <input type="checkbox" id="spray-type-granulated" value="Granulado A Lança / Sulco" onchange="calculateTotals()" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded border-slate-300">
+                            <span>Granulado A Lança / Sulco</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div class="space-y-1.5 max-w-xs">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Capacidade do Tanque / Reservatório (L)</label>
+                        <div class="relative">
+                            <input type="number" id="tank-capacity" value="200" step="10" min="1" oninput="onTankCapacityChange()" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 font-bold text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                            <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-400">Litros</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-emerald-50 text-slate-800 rounded-xl p-5 shadow-sm space-y-3 border border-emerald-200">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-emerald-200 pb-3">
+                        <h4 class="font-bold text-base flex items-center gap-2 text-emerald-900">
+                            <i class="fa-solid fa-boxes-stacked text-emerald-600"></i>
+                            Total Consolidado de Insumos Necessários (Todos os Talhões)
+                        </h4>
+                        <span class="text-xs font-semibold bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full border border-emerald-300">
+                            Agrupamento Automático
+                        </span>
+                    </div>
+                    <div id="total-products-summary-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div class="text-xs text-emerald-700 italic col-span-full">Selecione os talhões e escolha os produtos desejados acima para visualizar o totalizador.</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-emerald-700 text-white p-4 rounded-xl shadow-inner">
+                    <div class="text-center p-2 border-b sm:border-b-0 sm:border-r border-emerald-600">
+                        <span class="text-[11px] font-semibold text-emerald-100 uppercase block">Volume Total de Solução</span>
+                        <span id="total-syrup-volume" class="text-xl font-black text-white font-mono">0 L</span>
+                    </div>
+                    <div class="text-center p-2 border-b sm:border-b-0 sm:border-r border-emerald-600">
+                        <span class="text-[11px] font-semibold text-emerald-100 uppercase block">Estimativa de Tanques Geral</span>
+                        <span id="total-tanks-count" class="text-xl font-black text-white font-mono">0 tanques</span>
+                    </div>
+                    <div class="text-center p-2">
+                        <span class="text-[11px] font-semibold text-emerald-100 uppercase block">Área Coberta Geral / Tanque</span>
+                        <span id="ha-per-tank" class="text-xl font-black text-white font-mono">0 ha</span>
+                    </div>
+                </div>
+
+                <!-- INSTRUÇÕES TÉCNICAS E SEGURANÇA PARA PÁGINA 2 DO PDF -->
+                <div class="space-y-4 pt-4 border-t border-slate-200">
+                    <h4 class="font-bold text-sm text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-file-lines text-emerald-600"></i>
+                        Instruções e Observações Técnicas (Página 2 do PDF)
+                    </h4>
+
+                    <div class="space-y-1.5 w-full">
+                        <label class="block text-xs font-bold text-slate-700 uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-shield-halved text-emerald-600"></i>
+                            Instruções de Segurança e EPI
+                        </label>
+                        <textarea id="safety-notes" rows="3" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">Utilizar os EPIs recomendados durante a preparação da calda e aplicação. Os Equipamentos de Proteção Individual (EPI) recomendados devem ser vestidos na seguinte ordem: macacão, botas, avental, máscara, óculos, touca árabe e luvas. Não entre na área em que o produto foi aplicado antes da secagem completa da calda (no mínimo 24 horas após a aplicação). Respeitar o intervalo de reentrada e carência informados nas bulas dos produtos. O manuseio do produto deve ser realizado apenas por trabalhador capacitado.</textarea>
+                    </div>
+
+                    <div class="space-y-1.5 w-full">
+                        <label class="block text-xs font-bold text-slate-700 uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-kit-medical text-rose-600"></i>
+                            Primeiros Socorros
+                        </label>
+                        <textarea id="first-aid-notes" rows="2" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">procure imediatamente um serviço médico de emergência levando a embalagem, rótulo, bula, folheto informativo e/ou receituário agronômico do produto. Ingestão: Se engolir o produto, não provoque vômito, exceto quando houver indicação médica. Caso o vômito ocorra naturalmente, deite a pessoa de lado.</textarea>
+                    </div>
+
+                    <div class="space-y-1.5 w-full">
+                        <label class="block text-xs font-bold text-slate-700 uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-flask-vial text-emerald-600"></i>
+                            Observações Técnicas de Aplicação e Preparo da Calda
+                        </label>
+                        <textarea id="tech-notes" rows="4" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">Para o preparo da calda, deve-se utilizar água de boa qualidade, livre de coloides em suspensão (terra, argila ou matéria orgânica).
+Preencher o tanque/pulverizador com água até a metade de sua capacidade, inserir as doses recomendadas dos produtos, completar a capacidade do reservatório mantendo a agitação.
+Acrescente os produtos na ordem indicada pelo técnico.
+Realize a aplicação em momentos de temperatura amena (<25°C) e solo com boa umidade. O equipamento deve estar limpo e calibrado.</textarea>
+                    </div>
+
+                    <div class="space-y-1.5 w-full">
+                        <label class="block text-xs font-bold text-slate-700 uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
+                            Precauções de Uso e Aplicação
+                        </label>
+                        <textarea id="precautions-notes" rows="2" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">Aplique o produto somente nas doses recomendadas e observe o intervalo de segurança.
+Mantenha o restante do produto em sua embalagem original, trancado, longe de crianças e animais. Tome banho imediatamente após o trabalho.</textarea>
+                    </div>
+
+                    <div class="space-y-1.5 w-full">
+                        <label class="block text-xs font-bold text-slate-700 uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-bug text-emerald-600"></i>
+                            Manejo Integrado
+                        </label>
+                        <textarea id="ipm-notes" rows="2" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">Adotar outras táticas de controle, previstas no Manejo Integrado de Pragas e Doenças (MIP/MID) como controle biológico e cultural sempre que disponível e apropriado.</textarea>
+                    </div>
+
+                    <div class="space-y-1.5 w-full">
+                        <label class="block text-xs font-bold text-slate-700 uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-earth-americas text-emerald-600"></i>
+                            Cuidados ao Meio Ambiente
+                        </label>
+                        <textarea id="environment-notes" rows="2" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none">Não aplique o produto na presença de ventos fortes ou solo encharcado com risco de escorrimento.
+Não lave equipamentos em corpos d'água. Realizar a tríplice lavagem e devolução das embalagens vazias nos postos autorizados.</textarea>
+                    </div>
+                </div>
+
+                <div class="space-y-3 pt-4 border-t border-slate-200">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-user-doctor text-emerald-600"></i>
+                        Engenheiro Agrônomo Responsável <span class="text-red-500">*</span>
+                    </label>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button type="button" id="agro-btn-0" onclick="selectAgronomist(0)" class="text-left p-4 rounded-xl border-2 transition flex items-start justify-between bg-white border-slate-200 hover:border-emerald-400 cursor-pointer shadow-sm">
+                            <div class="space-y-1">
+                                <span class="inline-block text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">01</span>
+                                <p class="text-xs font-bold text-slate-900 font-heading">Dr. Glaucio Luciano Araujo</p>
+                                <div class="text-[11px] text-slate-600 font-mono space-y-0.5">
+                                    <p>CREA: MG0000254008D</p>
+                                    <p>CFTA: 7926903620</p>
+                                </div>
+                            </div>
+                            <i id="agro-check-0" class="fa-solid fa-circle-check text-emerald-600 text-xl opacity-0 transition"></i>
+                        </button>
+
+                        <button type="button" id="agro-btn-1" onclick="selectAgronomist(1)" class="text-left p-4 rounded-xl border-2 transition flex items-start justify-between bg-white border-slate-200 hover:border-emerald-400 cursor-pointer shadow-sm">
+                            <div class="space-y-1">
+                                <span class="inline-block text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">02</span>
+                                <p class="text-xs font-bold text-slate-900 font-heading">M.Sc. Sávio José Souza Salazar</p>
+                                <div class="text-[11px] text-slate-600 font-mono space-y-0.5">
+                                    <p>CREA: MG142362346-0</p>
+                                </div>
+                            </div>
+                            <i id="agro-check-1" class="fa-solid fa-circle-check text-emerald-600 text-xl opacity-0 transition"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-6 border-t border-slate-200 flex justify-end">
+                    <button id="btn-pdf-generate" onclick="openPDFPreview()" class="w-full sm:w-auto flex items-center justify-center gap-3 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold px-8 py-3.5 rounded-xl shadow-md transition border border-amber-400 text-base cursor-pointer">
+                        <i class="fa-solid fa-file-pdf text-xl"></i>
+                        <span id="btn-pdf-text">Ver antes de salvar</span>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+
+    <!-- PRÉ-VISUALIZAÇÃO SEGURA -->
+    <div id="pdf-content-wrapper" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto hidden no-print" role="dialog" aria-modal="true" aria-labelledby="preview-title">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full p-4 space-y-3 max-h-[95vh] overflow-y-auto">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
+                <div>
+                    <h3 id="preview-title" class="font-black text-slate-900 flex items-center gap-2"><i class="fa-solid fa-file-circle-check text-emerald-700"></i> Confira antes de salvar</h3>
+                    <p class="text-xs text-slate-500 mt-1">O PDF final será vetorial e terá paginação automática para não cortar informações.</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" onclick="closePDFModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs">Voltar e corrigir</button>
+                    <button type="button" id="preview-save-button" onclick="finalizeAndShare()" class="bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i><span id="preview-save-text">Salvar e compartilhar PDF</span>
+                    </button>
+                </div>
+            </div>
+            <div id="preview-content" class="bg-white border border-slate-200 rounded-xl p-5 sm:p-7 text-sm text-slate-800"></div>
+        </div>
+    </div>
+
+    <!-- GERENCIAMENTO DE PRODUTOS -->
+    <div id="manage-products-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print" role="dialog" aria-modal="true">
+        <div class="bg-white rounded-2xl max-w-3xl w-full p-6 space-y-4 shadow-xl border border-slate-200 max-h-[85vh] flex flex-col">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2"><i class="fa-solid fa-boxes-stacked text-emerald-600"></i> Catálogo central de insumos</h3>
+                <button type="button" onclick="closeManageProductsModal()" class="text-slate-500 hover:text-slate-800 text-lg p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                <label class="text-xs font-bold text-slate-700 uppercase">Filtrar por categoria</label>
+                <select id="manage-cat-filter" onchange="renderManageProductsList()" class="bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold"></select>
+            </div>
+            <div id="manage-products-list" class="flex-1 overflow-y-auto space-y-3 pr-1 text-sm"></div>
+            <div class="flex justify-end pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeManageProductsModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold px-4 py-2 rounded-xl text-xs">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HISTÓRICO VIA SOLO -->
+    <div id="history-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print" role="dialog" aria-modal="true">
+        <div class="bg-white rounded-2xl max-w-4xl w-full p-6 space-y-4 shadow-xl border border-slate-200 max-h-[88vh] flex flex-col">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                    <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-emerald-600"></i> Recomendações via solo</h3>
+                    <p class="text-xs text-slate-500 mt-1">Registros salvos neste aparelho e recebidos pela sincronização.</p>
+                </div>
+                <button type="button" onclick="closeHistoryModal()" class="text-slate-500 hover:text-slate-800 text-lg p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="history-list" class="flex-1 overflow-y-auto space-y-3 pr-1"></div>
+            <div class="flex justify-end pt-3 border-t border-slate-100"><button type="button" onclick="closeHistoryModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold px-4 py-2 rounded-xl text-xs">Fechar</button></div>
+        </div>
+    </div>
+
+    <!-- ALERTA PADRONIZADO -->
+    <div id="custom-alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 hidden no-print" role="alertdialog" aria-modal="true">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200">
+            <div class="flex items-start gap-3">
+                <div id="alert-modal-icon" class="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-lg font-bold shrink-0"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div><h3 id="alert-modal-title" class="font-bold text-slate-900 text-base">Atenção</h3><p id="alert-modal-msg" class="text-sm text-slate-600 mt-1 whitespace-pre-line">Mensagem...</p></div>
+            </div>
+            <div class="flex justify-end pt-2"><button type="button" onclick="closeCustomAlert()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-5 py-2 rounded-xl text-xs">Entendido</button></div>
+        </div>
+    </div>
+
+    <script src="vendor/pdf/jspdf.umd.min.js"></script>
+    <script src="vendor/pdf/jspdf.plugin.autotable.min.js"></script>
+    <script src="supabase-config.js"></script>
+    <script src="unified-db.js"></script>
+    <script src="cloud-auth.js"></script>
+    <script src="photo-storage.js"></script>
+    <script src="shared-data.js"></script>
+    <script src="registry-loader.js"></script>
+    <script src="sync-engine.js"></script>
+    <script src="native-pdf.js"></script>
+    <script src="document-code.js"></script>
+    <script src="form-drafts.js"></script>
+    <script src="app-shell.js"></script>
+    <script src="via-solo-engine.js"></script>
+    <script src="via-solo-pdf.js"></script>
+    <script src="via-solo.js"></script>
+</body>
+</html>
+
