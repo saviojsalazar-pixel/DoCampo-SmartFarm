@@ -116,10 +116,10 @@
     const gap = 2;
     const width = (CONTENT_W - gap * 3) / 4;
     const values = [
-      ['Método via solo', (snapshot.methods || []).join(', ') || '--'],
-      ['Total de plantas', `${fmt(snapshot.totals?.plants, 0, 0)} plantas`],
-      ['Área tratada', `${fmt(snapshot.totals?.area, 2, 2)} ha`],
-      ['Tanque utilizado', `${fmt(snapshot.tankCapacity, 0, 1)} L`]
+      ['Método Solo', (snapshot.methods || []).join(', ') || '--'],
+      ['Total Plantas', `${fmt(snapshot.totals?.plants, 0, 0)} plantas`],
+      ['Área Tratada', `${fmt(snapshot.totals?.area, 2, 2)} ha`],
+      ['Tanque Utilizado', `${fmt(snapshot.tankCapacity, 0, 1)} L`]
     ];
     values.forEach((item, index) => {
       const x = LEFT + index * (width + gap);
@@ -141,20 +141,20 @@
   }
 
   function fieldHeight(doc, field) {
-    const load = field.liquidApplication
-      ? `${fmt(field.plants, 0, 0)} plantas | ${fmt(field.mlPerPlant, 0, 1)} mL/planta | Calda: ${fmt(field.syrupLiters, 1, 1)} L | ${field.loadDescription}`
-      : `${fmt(field.plants, 0, 0)} plantas | Aplicação sem tanque`;
-    let height = 13 + lines(doc, load, CONTENT_W - 6, 6.5).length * 3.1;
+    const header = field.liquidApplication
+      ? `Talhão: ${field.name} | ${fmt(field.area, 2, 2)} ha | ${fmt(field.plants, 0, 0)} plantas | ${fmt(field.mlPerPlant, 0, 1)} mL/planta | Calda: ${fmt(field.syrupLiters, 1, 1)} L`
+      : `Talhão: ${field.name} | ${fmt(field.area, 2, 2)} ha | ${fmt(field.plants, 0, 0)} plantas | Aplicação sem tanque`;
+    let height = 5.4 + lines(doc, header, CONTENT_W - 5, 6.4).length * 2.65;
     (field.products || []).forEach(product => {
-      const main = `${product.name} (${fmt(product.dose, 0, 2)} ${product.unit}) • Total: ${fmt(product.total, 2, 2)} ${product.unitBase}`;
+      const main = `${product.name} (${fmt(product.dose, 0, 2)} ${product.unit}) • Total no talhão: ${fmt(product.total, 2, 2)} ${product.unitBase}`;
       const mix = field.liquidApplication
-        ? `Carga cheia: ${fmt(product.fullTankQuantity, 2, 2)} ${product.unitBase}${field.loads.partialLiters ? ` • Carga final: ${fmt(product.partialQuantity, 2, 2)} ${product.unitBase}` : ''}`
+        ? `${field.loadDescription} • Carga cheia (${fmt(field.loads.capacity, 0, 1)} L): ${fmt(product.fullTankQuantity, 2, 2)} ${product.unitBase}${field.loads.partialLiters ? ` • Carga final (${fmt(field.loads.partialLiters, 1, 1)} L): ${fmt(product.partialQuantity, 2, 2)} ${product.unitBase}` : ''}`
         : 'Aplicação sem diluição em tanque';
-      height += lines(doc, main, CONTENT_W - 7, 7.2).length * 3.2;
-      height += lines(doc, mix, CONTENT_W - 7, 6.7).length * 3.0 + 1.2;
+      height += lines(doc, main, CONTENT_W - 5, 6.7).length * 2.7;
+      height += lines(doc, mix, CONTENT_W - 5, 6.1).length * 2.55 + 0.45;
     });
-    if (!(field.products || []).length) height += 5;
-    return Math.max(19, height + 3);
+    if (!(field.products || []).length) height += 3.2;
+    return Math.max(13.5, height + 1.25);
   }
 
   function splitField(doc, field) {
@@ -178,58 +178,223 @@
     }));
   }
 
+  function fieldPartsForAvailableSpace(doc, field, firstAvailable) {
+    const products = field.products || [];
+    if (fieldHeight(doc, field) <= firstAvailable || products.length < 2) return splitField(doc, field);
+    const chunks = [];
+    let remaining = products.slice();
+    let available = firstAvailable;
+    while (remaining.length) {
+      let accepted = [];
+      for (const product of remaining) {
+        const candidate = { ...field, products: [...accepted, product] };
+        if (accepted.length && fieldHeight(doc, candidate) > available) break;
+        if (!accepted.length && fieldHeight(doc, candidate) > available) break;
+        accepted.push(product);
+      }
+      if (!accepted.length) {
+        // Nenhum produto cabe no espaço restante. O chamador iniciará a
+        // primeira parte na página seguinte, onde há a altura completa.
+        if (!chunks.length) return splitField(doc, field);
+        available = PAGE_H - BOTTOM - 31;
+        continue;
+      }
+      chunks.push(accepted);
+      remaining = remaining.slice(accepted.length);
+      available = PAGE_H - BOTTOM - 31;
+    }
+    return chunks.map((chunk, index) => ({
+      ...field,
+      name: index ? `${field.name} (continuação ${index + 1})` : field.name,
+      products: chunk
+    }));
+  }
+
   function drawField(doc, field, y) {
     const height = fieldHeight(doc, field);
     box(doc, LEFT, y, CONTENT_W, height, SOFT, LINE);
-    text(doc, `Talhão: ${field.name} (${fmt(field.area, 2, 2)} ha)`, LEFT + 2.5, y + 4.8, { size: 7.7, bold: true });
-    const load = field.liquidApplication
-      ? `${fmt(field.plants, 0, 0)} plantas | ${fmt(field.mlPerPlant, 0, 1)} mL/planta | Calda: ${fmt(field.syrupLiters, 1, 1)} L | ${field.loadDescription}`
-      : `${fmt(field.plants, 0, 0)} plantas | Aplicação sem tanque`;
-    const loadLines = lines(doc, load, CONTENT_W - 6, 6.5);
-    loadLines.forEach((line, index) => text(doc, line, LEFT + 2.5, y + 9 + index * 3.1, { size: 6.5, bold: true, color: GREEN }));
-    let cursor = y + 10.8 + loadLines.length * 3.1;
+    const header = field.liquidApplication
+      ? `Talhão: ${field.name} | ${fmt(field.area, 2, 2)} ha | ${fmt(field.plants, 0, 0)} plantas | ${fmt(field.mlPerPlant, 0, 1)} mL/planta | Calda: ${fmt(field.syrupLiters, 1, 1)} L`
+      : `Talhão: ${field.name} | ${fmt(field.area, 2, 2)} ha | ${fmt(field.plants, 0, 0)} plantas | Aplicação sem tanque`;
+    const headerLines = lines(doc, header, CONTENT_W - 5, 6.4);
+    headerLines.forEach((line, index) => text(doc, line, LEFT + 2.5, y + 4.2 + index * 2.65, { size: 6.4, bold: true }));
+    let cursor = y + 5.5 + headerLines.length * 2.65;
     doc.setDrawColor(...LINE);
     doc.line(LEFT + 2.5, cursor, PAGE_W - RIGHT - 2.5, cursor);
-    cursor += 3.2;
+    cursor += 2.55;
     if (!(field.products || []).length) {
-      text(doc, 'Nenhum produto selecionado.', LEFT + 2.5, cursor, { size: 7, color: MUTED });
+      text(doc, 'Nenhum produto selecionado.', LEFT + 2.5, cursor, { size: 6.5, color: MUTED });
     }
     (field.products || []).forEach(product => {
       const main = `${product.name} (${fmt(product.dose, 0, 2)} ${product.unit}) • Total no talhão: ${fmt(product.total, 2, 2)} ${product.unitBase}`;
-      lines(doc, main, CONTENT_W - 7, 7.2).forEach(line => {
-        text(doc, line, LEFT + 2.5, cursor, { size: 7.2, bold: true });
-        cursor += 3.2;
+      lines(doc, main, CONTENT_W - 5, 6.7).forEach(line => {
+        text(doc, line, LEFT + 2.5, cursor, { size: 6.7, bold: true });
+        cursor += 2.7;
       });
       const mix = field.liquidApplication
-        ? `Carga cheia (${fmt(field.loads.capacity, 0, 1)} L): ${fmt(product.fullTankQuantity, 2, 2)} ${product.unitBase}${field.loads.partialLiters ? ` • Carga final (${fmt(field.loads.partialLiters, 1, 1)} L): ${fmt(product.partialQuantity, 2, 2)} ${product.unitBase}` : ''}`
+        ? `${field.loadDescription} • Carga cheia (${fmt(field.loads.capacity, 0, 1)} L): ${fmt(product.fullTankQuantity, 2, 2)} ${product.unitBase}${field.loads.partialLiters ? ` • Carga final (${fmt(field.loads.partialLiters, 1, 1)} L): ${fmt(product.partialQuantity, 2, 2)} ${product.unitBase}` : ''}`
         : 'Aplicação sem diluição em tanque.';
-      lines(doc, mix, CONTENT_W - 7, 6.7).forEach(line => {
-        text(doc, line, LEFT + 4, cursor, { size: 6.7, color: GREEN });
+      lines(doc, mix, CONTENT_W - 5, 6.1).forEach(line => {
+        text(doc, line, LEFT + 2.5, cursor, { size: 6.1, color: GREEN });
+        cursor += 2.55;
+      });
+      cursor += 0.45;
+    });
+    return y + height + 1.5;
+  }
+
+  function groupFields(snapshot, group) {
+    const ids = new Set(group.fieldIds || []);
+    return (snapshot.fields || []).filter(field => ids.has(field.id));
+  }
+
+  function groupProducts(fields) {
+    const grouped = new Map();
+    fields.forEach(field => (field.products || []).forEach(product => {
+      const identity = `${product.productId || clean(product.name).toLowerCase()}|${clean(product.unit).toLowerCase()}`;
+      if (!grouped.has(identity)) grouped.set(identity, { ...product, total: 0 });
+      grouped.get(identity).total += Number(product.total || 0);
+    }));
+    return Array.from(grouped.values());
+  }
+
+  function groupHeight(doc, snapshot, group) {
+    const fields = groupFields(snapshot, group);
+    const products = groupProducts(fields);
+    let height = 17;
+    products.forEach(product => {
+      const recipe = `${product.name} (${fmt(product.dose, 0, 2)} ${product.unit}) • Total do grupo: ${fmt(product.total, 2, 2)} ${product.unitBase}`;
+      const technical = [product.active ? `I.A.: ${product.active}` : '', product.target ? `Alvo: ${product.target}` : ''].filter(Boolean).join(' | ');
+      height += lines(doc, recipe, CONTENT_W - 7, 7).length * 3.1;
+      if (technical) height += lines(doc, technical, CONTENT_W - 7, 6.2).length * 2.8;
+    });
+    height += 2;
+    fields.forEach(field => {
+      const fieldLine = `${field.name} | ${fmt(field.area, 2, 2)} ha | ${fmt(field.plants, 0, 0)} plantas | ${fmt(field.density, 0, 0)} plantas/ha`;
+      const loadLine = field.liquidApplication
+        ? `Calda: ${fmt(field.syrupLiters, 1, 1)} L | ${field.loadDescription}`
+        : 'Aplicação sem tanque';
+      height += lines(doc, fieldLine, CONTENT_W - 9, 6.7).length * 3;
+      height += lines(doc, loadLine, CONTENT_W - 9, 6.2).length * 2.8;
+      (field.products || []).forEach(product => {
+        const detail = `${product.name}: ${fmt(product.total, 2, 2)} ${product.unitBase}${field.liquidApplication ? ` | carga cheia ${fmt(product.fullTankQuantity, 2, 2)} ${product.unitBase}${field.loads.partialLiters ? ` | carga final ${fmt(product.partialQuantity, 2, 2)} ${product.unitBase}` : ''}` : ''}`;
+        height += lines(doc, detail, CONTENT_W - 12, 6.1).length * 2.8;
+      });
+      height += 1.7;
+    });
+    return Math.max(28, height + 3);
+  }
+
+  function splitGroup(doc, snapshot, group) {
+    const maximum = PAGE_H - BOTTOM - 31;
+    const fields = groupFields(snapshot, group);
+    if (groupHeight(doc, snapshot, group) <= maximum || fields.length < 2) return [group];
+    const chunks = [];
+    let current = [];
+    fields.forEach(field => {
+      const candidate = { ...group, fieldIds: [...current.map(item => item.id), field.id] };
+      if (current.length && groupHeight(doc, snapshot, candidate) > maximum) {
+        chunks.push(current);
+        current = [field];
+      } else current.push(field);
+    });
+    if (current.length) chunks.push(current);
+    return chunks.map((chunk, index) => ({
+      ...group,
+      label: index ? `${group.label} - continuação ${index + 1}` : group.label,
+      fieldIds: chunk.map(field => field.id),
+      minDensity: Math.min(...chunk.map(field => Number(field.density || 0))),
+      maxDensity: Math.max(...chunk.map(field => Number(field.density || 0)))
+    }));
+  }
+
+  function drawGroup(doc, snapshot, group, y) {
+    const fields = groupFields(snapshot, group);
+    const products = groupProducts(fields);
+    const height = groupHeight(doc, snapshot, group);
+    box(doc, LEFT, y, CONTENT_W, height, MINT, [134, 239, 172]);
+    text(doc, `${group.label || 'Grupo'} - talhões com população semelhante`, LEFT + 2.5, y + 4.8, { size: 7.8, bold: true, color: GREEN_DARK });
+    text(doc, `${fmt(group.minDensity, 0, 0)} a ${fmt(group.maxDensity, 0, 0)} plantas/ha | ${fmt(fields.reduce((sum, field) => sum + field.area, 0), 2, 2)} ha | ${fmt(fields.reduce((sum, field) => sum + field.plants, 0), 0, 0)} plantas`, PAGE_W - RIGHT - 2.5, y + 4.8, { size: 6.4, bold: true, color: GREEN, align: 'right' });
+    let cursor = y + 9;
+    text(doc, 'RECOMENDAÇÃO COMUM DO GRUPO', LEFT + 2.5, cursor, { size: 6.2, bold: true, color: MUTED });
+    cursor += 3.4;
+    products.forEach(product => {
+      const recipe = `${product.name} (${fmt(product.dose, 0, 2)} ${product.unit}) • Total do grupo: ${fmt(product.total, 2, 2)} ${product.unitBase}`;
+      lines(doc, recipe, CONTENT_W - 7, 7).forEach(line => {
+        text(doc, line, LEFT + 2.5, cursor, { size: 7, bold: true });
+        cursor += 3.1;
+      });
+      const technical = [product.active ? `I.A.: ${product.active}` : '', product.target ? `Alvo: ${product.target}` : ''].filter(Boolean).join(' | ');
+      if (technical) lines(doc, technical, CONTENT_W - 7, 6.2).forEach(line => {
+        text(doc, line, LEFT + 4, cursor, { size: 6.2, color: MUTED });
+        cursor += 2.8;
+      });
+    });
+    cursor += 1;
+    doc.setDrawColor(...[134, 239, 172]);
+    doc.line(LEFT + 2.5, cursor, PAGE_W - RIGHT - 2.5, cursor);
+    cursor += 3.2;
+    fields.forEach(field => {
+      const fieldLine = `${field.name} | ${fmt(field.area, 2, 2)} ha | ${fmt(field.plants, 0, 0)} plantas | ${fmt(field.density, 0, 0)} plantas/ha`;
+      lines(doc, fieldLine, CONTENT_W - 9, 6.7).forEach(line => {
+        text(doc, line, LEFT + 4, cursor, { size: 6.7, bold: true });
         cursor += 3;
       });
-      cursor += 1;
+      const loadLine = field.liquidApplication ? `Calda: ${fmt(field.syrupLiters, 1, 1)} L | ${field.loadDescription}` : 'Aplicação sem tanque';
+      lines(doc, loadLine, CONTENT_W - 9, 6.2).forEach(line => {
+        text(doc, line, LEFT + 4, cursor, { size: 6.2, color: GREEN });
+        cursor += 2.8;
+      });
+      (field.products || []).forEach(product => {
+        const detail = `${product.name}: ${fmt(product.total, 2, 2)} ${product.unitBase}${field.liquidApplication ? ` | carga cheia ${fmt(product.fullTankQuantity, 2, 2)} ${product.unitBase}${field.loads.partialLiters ? ` | carga final ${fmt(product.partialQuantity, 2, 2)} ${product.unitBase}` : ''}` : ''}`;
+        lines(doc, detail, CONTENT_W - 12, 6.1).forEach(line => {
+          text(doc, line, LEFT + 6, cursor, { size: 6.1, color: MUTED });
+          cursor += 2.8;
+        });
+      });
+      cursor += 1.7;
     });
     return y + height + 2;
   }
 
   function drawSummary(doc, snapshot, y, logo) {
     y = ensureSpace(doc, y, 18, snapshot, logo, 'RESUMO CONSOLIDADO - VIA SOLO');
-    y = drawSectionTitle(doc, 'Resumo consolidado de insumos', y);
+    y = drawSectionTitle(doc, 'Resumo consolidado de insumos (retirada de estoque)', y);
     const products = snapshot.totals?.products || [];
     if (!products.length) {
       text(doc, 'Nenhum produto prescrito.', LEFT, y + 4, { size: 7.4, color: MUTED });
       return y + 9;
     }
-    for (const product of products) {
-      const nameLines = lines(doc, product.name, CONTENT_W - 5, 7.4).slice(0, 2);
-      const height = 8.5 + nameLines.length * 3.3;
+    const gap = 2;
+    const cardWidth = (CONTENT_W - gap) / 2;
+    for (let index = 0; index < products.length; index += 2) {
+      const row = products.slice(index, index + 2);
+      const heights = row.map(product => {
+        const nameCount = lines(doc, product.name, cardWidth - 5, 6.8).slice(0, 2).length;
+        const technical = [product.active ? `I.A.: ${product.active}` : '', product.target ? `Alvo: ${product.target}` : ''].filter(Boolean).join(' | ');
+        const technicalCount = technical ? lines(doc, technical, cardWidth - 5, 5.7).slice(0, 3).length : 0;
+        return 7.6 + nameCount * 2.75 + technicalCount * 2.3;
+      });
+      const height = Math.max(...heights, 13.2);
       y = ensureSpace(doc, y, height + 2, snapshot, logo, 'RESUMO CONSOLIDADO - VIA SOLO');
-      box(doc, LEFT, y, CONTENT_W, height, MINT, [134, 239, 172]);
-      nameLines.forEach((line, index) => text(doc, line, LEFT + 2.5, y + 4.2 + index * 3.3, { size: 7.4, bold: true }));
-      const totalsY = y + height - 2.7;
-      text(doc, `Total: ${fmt(product.total, 2, 2)} ${product.unitBase}`, LEFT + 2.5, totalsY, { size: 7 });
-      text(doc, `Em estoque: ${fmt(product.inStock, 2, 2)} ${product.unitBase}`, LEFT + 82, totalsY, { size: 7, color: MUTED });
-      text(doc, `A comprar: ${fmt(product.toBuy, 2, 2)} ${product.unitBase}`, PAGE_W - RIGHT - 2.5, totalsY, { size: 7.2, bold: true, color: product.toBuy > 0 ? AMBER : GREEN, align: 'right' });
+      row.forEach((product, column) => {
+        const x = LEFT + column * (cardWidth + gap);
+        box(doc, x, y, cardWidth, height, MINT, [134, 239, 172]);
+        let cursor = y + 3.5;
+        lines(doc, product.name, cardWidth - 5, 6.8).slice(0, 2).forEach(line => {
+          text(doc, line, x + 2.5, cursor, { size: 6.8, bold: true });
+          cursor += 2.75;
+        });
+        const technical = [product.active ? `I.A.: ${product.active}` : '', product.target ? `Alvo: ${product.target}` : ''].filter(Boolean).join(' | ');
+        if (technical) lines(doc, technical, cardWidth - 5, 5.7).slice(0, 3).forEach(line => {
+          text(doc, line, x + 2.5, cursor, { size: 5.7, color: MUTED });
+          cursor += 2.3;
+        });
+        const totalsY = y + height - 2.25;
+        text(doc, `Total: ${fmt(product.total, 2, 2)} ${product.unitBase}`, x + 2.5, totalsY, { size: 5.9, bold: true });
+        text(doc, `Estoque: ${fmt(product.inStock, 2, 2)} ${product.unitBase}`, x + cardWidth / 2, totalsY, { size: 5.7, color: MUTED, align: 'center' });
+        text(doc, `A comprar: ${fmt(product.toBuy, 2, 2)} ${product.unitBase}`, x + cardWidth - 2.5, totalsY, { size: 5.9, bold: true, color: product.toBuy > 0 ? AMBER : GREEN, align: 'right' });
+      });
       y += height + 2;
     }
     return y;
@@ -238,31 +403,32 @@
   function drawAcknowledgement(doc, snapshot, y, logo) {
     const notices = [
       'A não observância das recomendações indicadas é passível das sanções previstas em lei.',
+      'Classes toxicológicas: 1 - Extremamente tóxico; 2 - Altamente tóxico; 3 - Medianamente tóxico; 4 - Pouco tóxico; 5 - Improvável de causar dano agudo.',
       'Em caso de intoxicação, procure atendimento médico levando esta recomendação e a embalagem, o rótulo ou a bula do produto.',
-      'As precauções, os cuidados ambientais, os equipamentos de proteção e as condições de uso devem seguir as bulas dos produtos selecionados.',
-      'As embalagens vazias devem ser lavadas e devolvidas conforme a orientação presente na nota fiscal e na legislação aplicável.'
+      'As precauções de uso, os cuidados ao meio ambiente e os equipamentos de proteção individual obrigatórios foram explicados pelo técnico e constam nesta recomendação.',
+      'As embalagens vazias devem ser lavadas e devolvidas nos postos de coleta conforme a nota fiscal e a legislação aplicável.'
     ];
-    const noticeLines = notices.flatMap((item, index) => lines(doc, `${index + 1}. ${item}`, CONTENT_W - 6, 6.6));
-    const height = 7 + noticeLines.length * 3.2;
-    y = ensureSpace(doc, y, height + 25, snapshot, logo, 'CIÊNCIA E ASSINATURAS - VIA SOLO');
+    const noticeLines = notices.flatMap((item, index) => lines(doc, `${index + 1}. ${item}`, CONTENT_W - 6, 6.1));
+    const height = 6.4 + noticeLines.length * 2.75;
+    y = ensureSpace(doc, y, height + 22, snapshot, logo, 'CIÊNCIA E ASSINATURAS - VIA SOLO');
     box(doc, LEFT, y, CONTENT_W, height, [255, 251, 235], [252, 211, 77]);
     text(doc, 'CIÊNCIA DO USUÁRIO', LEFT + 2.5, y + 4.4, { size: 7.2, bold: true, color: AMBER });
-    let cursor = y + 8;
+    let cursor = y + 7.5;
     noticeLines.forEach(line => {
-      text(doc, line, LEFT + 2.5, cursor, { size: 6.6, color: MUTED });
-      cursor += 3.2;
+      text(doc, line, LEFT + 2.5, cursor, { size: 6.1, color: MUTED });
+      cursor += 2.75;
     });
-    y += height + 4;
-    box(doc, LEFT, y, CONTENT_W, 21, SOFT, LINE);
+    y += height + 3;
+    box(doc, LEFT, y, CONTENT_W, 18, SOFT, LINE);
     const half = CONTENT_W / 2;
     doc.setDrawColor(...INK);
-    doc.line(LEFT + 10, y + 12, LEFT + half - 10, y + 12);
-    doc.line(LEFT + half + 10, y + 12, PAGE_W - RIGHT - 10, y + 12);
-    text(doc, snapshot.responsible?.name || 'Responsável técnico', LEFT + half / 2, y + 16, { size: 7.4, bold: true, align: 'center' });
-    text(doc, snapshot.responsible?.credential || '', LEFT + half / 2, y + 19.2, { size: 6.4, color: MUTED, align: 'center' });
-    text(doc, 'Ciente do Produtor / Aplicador', LEFT + half + half / 2, y + 16, { size: 7.4, bold: true, align: 'center' });
-    text(doc, 'Assinatura do responsável', LEFT + half + half / 2, y + 19.2, { size: 6.4, color: MUTED, align: 'center' });
-    return y + 24;
+    doc.line(LEFT + 10, y + 9.5, LEFT + half - 10, y + 9.5);
+    doc.line(LEFT + half + 10, y + 9.5, PAGE_W - RIGHT - 10, y + 9.5);
+    text(doc, snapshot.responsible?.name || 'Responsável técnico', LEFT + half / 2, y + 13.5, { size: 6.9, bold: true, align: 'center' });
+    text(doc, snapshot.responsible?.credential || '', LEFT + half / 2, y + 16.4, { size: 5.9, color: MUTED, align: 'center' });
+    text(doc, 'Ciente do Produtor / Aplicador', LEFT + half + half / 2, y + 13.5, { size: 6.9, bold: true, align: 'center' });
+    text(doc, 'Assinatura do responsável', LEFT + half + half / 2, y + 16.4, { size: 5.9, color: MUTED, align: 'center' });
+    return y + 21;
   }
 
   function drawInstructions(doc, snapshot, logo) {
@@ -322,11 +488,25 @@
     y = drawFarm(doc, snapshot, y);
     y = drawMetrics(doc, snapshot, y);
     y = drawSectionTitle(doc, 'Detalhamento de produtos, cargas e calda por talhão', y);
+    const groupsById = new Map((snapshot.groups || []).map(group => [group.id, group]));
+    const renderedGroups = new Set();
     for (const field of snapshot.fields || []) {
-      for (const part of splitField(doc, field)) {
-        const needed = fieldHeight(doc, part) + 2;
-        y = ensureSpace(doc, y, needed, snapshot, logo, 'DETALHAMENTO POR TALHÃO - CONTINUAÇÃO');
-        y = drawField(doc, part, y);
+      const group = field.presentationGroupId ? groupsById.get(field.presentationGroupId) : null;
+      if (group) {
+        if (renderedGroups.has(group.id)) continue;
+        renderedGroups.add(group.id);
+        for (const part of splitGroup(doc, snapshot, group)) {
+          const needed = groupHeight(doc, snapshot, part) + 2;
+          y = ensureSpace(doc, y, needed, snapshot, logo, 'GRUPOS DE TALHÕES - CONTINUAÇÃO');
+          y = drawGroup(doc, snapshot, part, y);
+        }
+      } else {
+        const available = PAGE_H - BOTTOM - y - 2;
+        for (const part of fieldPartsForAvailableSpace(doc, field, available)) {
+          const needed = fieldHeight(doc, part) + 2;
+          y = ensureSpace(doc, y, needed, snapshot, logo, 'DETALHAMENTO POR TALHÃO - CONTINUAÇÃO');
+          y = drawField(doc, part, y);
+        }
       }
     }
     y = drawSummary(doc, snapshot, y, logo);

@@ -30,6 +30,11 @@
   assert.ok(!/html2canvas|html2pdf/.test(pdf), 'O PDF via solo não pode rasterizar a tela.');
   assert.ok(html.includes('Ver antes de salvar'));
   assert.ok(html.includes('Salvar e compartilhar PDF'));
+  assert.ok(html.includes('Agrupar talhões semelhantes'));
+  assert.ok(controller.includes('Engine.groupSimilarFields'));
+  assert.ok(controller.includes('Engine.treatmentSignature'));
+  assert.ok(controller.includes('Receituario_Via_Solo_${snapshot.farm}_${snapshot.documentCode}'));
+  assert.ok(pdf.includes('talhões com população semelhante'));
 
   console.log('via-solo-integration.test.js aprovado');
 

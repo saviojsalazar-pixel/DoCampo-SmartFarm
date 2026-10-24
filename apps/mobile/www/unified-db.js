@@ -6,7 +6,7 @@
    * A geração muda somente numa restauração de fábrica planejada. O servidor
    * também valida esse valor, impedindo aparelhos antigos de repovoar a base.
    */
-  const APP_VERSION = '1.9.47';
+  const APP_VERSION = '1.9.48';
   const DATA_GENERATION = '8d487154-0a7b-4d39-9228-7c6cc414d979';
   const SCHEMA_VERSION = 2;
   const IDB_NAME = 'docampo_core_v2';

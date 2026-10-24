@@ -2,7 +2,7 @@
 
 Aplicativo Android híbrido com uma central de acesso aos módulos da Do Campo Agronegócios.
 
-Versão atual: **1.9.47**.
+Versão atual: **1.9.48**.
 
 ## Estrutura atual
 
@@ -24,7 +24,7 @@ Versão atual: **1.9.47**.
 
 ## Geração de dados iniciada na v1.9.46
 
-Essa geração foi iniciada vazia na versão 1.9.46. A atualização 1.9.47 mantém a
+Essa geração foi iniciada vazia na versão 1.9.46. A atualização 1.9.48 mantém a
 mesma geração e não apaga os dados já inseridos. Antes da primeira instalação nos dois aparelhos,
 leia `supabase/CONFIGURACAO.md` e execute uma única vez o script destrutivo
 `supabase/setup-v2.sql`. Depois, importe a planilha oficial em somente um aparelho

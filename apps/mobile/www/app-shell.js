@@ -6,6 +6,52 @@
   const CLEANUP_KEY = 'docampo_factory_cleanup_pending_v2';
   let lastAutomaticSync = 0;
 
+  function installResponsiveLayout() {
+    if (document.getElementById('docampo-responsive-layout')) return;
+    const style = document.createElement('style');
+    style.id = 'docampo-responsive-layout';
+    style.textContent = `
+      :root{--docampo-visible-height:100dvh;--docampo-preview-scale:1}
+      #pdf-content-wrapper,#checklistPdfPreviewModal,.modal,#manage-products-modal,#history-modal,#manage-farms-modal{height:var(--docampo-visible-height,100dvh);max-height:var(--docampo-visible-height,100dvh)}
+      @media(max-width:900px){
+        #pdf-content-wrapper,#checklistPdfPreviewModal{padding:0!important;align-items:stretch!important;overflow:hidden!important}
+        #pdf-content-wrapper>div,#checklistPdfPreviewModal>div{width:100%!important;height:100%!important;max-height:none!important;border-radius:0!important;margin:0!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;padding-bottom:env(safe-area-inset-bottom)!important}
+        #pdf-content-wrapper>div>.no-print:first-child,#pdf-content-wrapper .docampo-preview-toolbar,#checklistPdfPreviewModal>div>div:first-child{position:relative!important;z-index:4!important;flex:0 0 auto!important;background:#fff!important;padding:12px!important;margin:0!important}
+        #pdf-content-wrapper>div>.overflow-x-auto,#pdf-content-wrapper .docampo-preview-scroll,#checklistPdfPreviewPages{flex:1 1 auto!important;min-height:0!important;overflow:auto!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important}
+        #pdf-content-wrapper>div>.overflow-x-auto{display:block!important;padding:10px!important}
+        #pdf-content-wrapper .overflow-x-auto>#pdf-content{width:794px!important;min-width:794px!important;max-width:794px!important;zoom:var(--docampo-preview-scale,1)!important;margin:0 auto!important}
+        #pdf-content-wrapper .overflow-x-auto>#pdf-content>.pdf-page{box-sizing:border-box!important;width:794px!important;max-width:794px!important;min-width:794px!important;margin:0 auto 12px!important;overflow:visible!important}
+        #pdf-content-wrapper .docampo-preview-panel{padding:0!important;gap:0!important}
+        #pdf-content-wrapper .docampo-preview-scroll{border-radius:0!important;border-left:0!important;border-right:0!important;padding:14px!important}
+        #manage-products-modal,#history-modal,#manage-farms-modal{padding:0!important;align-items:stretch!important}
+        #manage-products-modal>div,#history-modal>div,#manage-farms-modal>div{width:100%!important;height:100%!important;max-height:none!important;border-radius:0!important;padding:16px!important;padding-bottom:calc(16px + env(safe-area-inset-bottom))!important}
+      }
+    `;
+    document.head.appendChild(style);
+
+    const updateVisibleHeight = () => {
+      const height = Math.max(280, Math.round(window.visualViewport?.height || window.innerHeight || 0));
+      const width = Math.max(280, Math.round(window.visualViewport?.width || window.innerWidth || 0));
+      const previewScale = Math.min(1, Math.max(0.3, (width - 20) / 794));
+      document.documentElement.style.setProperty('--docampo-visible-height', `${height}px`);
+      document.documentElement.style.setProperty('--docampo-preview-scale', String(previewScale));
+    };
+    updateVisibleHeight();
+    window.addEventListener('resize', updateVisibleHeight, { passive: true });
+    window.addEventListener('orientationchange', updateVisibleHeight, { passive: true });
+    window.visualViewport?.addEventListener('resize', updateVisibleHeight, { passive: true });
+    window.visualViewport?.addEventListener('scroll', updateVisibleHeight, { passive: true });
+
+    document.addEventListener('focusin', event => {
+      const target = event.target;
+      if (window.innerWidth > 900 || !target?.matches?.('input,select,textarea')) return;
+      if (!target.closest('.modal,#manage-products-modal,#history-modal,#manage-farms-modal')) return;
+      setTimeout(() => target.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' }), 180);
+    });
+  }
+
+  installResponsiveLayout();
+
   function registeredPlugin(name) {
     const cap = window.Capacitor;
     if (!cap) return null;

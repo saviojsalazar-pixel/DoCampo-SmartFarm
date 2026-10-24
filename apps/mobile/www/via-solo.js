@@ -28,6 +28,8 @@
   let busy = false;
   let pendingPreviewSnapshot = null;
   let pendingRecommendationId = null;
+  let fieldGroups = [];
+  let pendingGroupProposal = null;
 
   const $ = id => document.getElementById(id);
   const clean = value => String(value == null ? '' : value).trim().replace(/\s+/g, ' ');
@@ -297,6 +299,8 @@
     if (!preserve) {
       selectedFields = new Set();
       fieldState = {};
+      fieldGroups = [];
+      pendingGroupProposal = null;
     }
     (farm?.fields || []).forEach(field => {
       if (!fieldState[field.id]) fieldState[field.id] = defaultFieldState(field);
@@ -305,7 +309,140 @@
       if (!(farm?.fields || []).some(field => field.id === id)) delete fieldState[id];
     });
     selectedFields = new Set(Array.from(selectedFields).filter(id => (farm?.fields || []).some(field => field.id === id)));
+    reconcileFieldGroups();
     renderFields();
+  }
+
+  function populationInputFields() {
+    captureFieldsFromDOM();
+    return (currentFarm?.fields || []).filter(field => selectedFields.has(field.id)).map(field => ({
+      id: field.id,
+      name: field.name,
+      area: Engine.positive(field.area),
+      plants: Engine.calculatePlants(field.area, fieldState[field.id] || defaultFieldState(field))
+    }));
+  }
+
+  function reconcileFieldGroups() {
+    const active = new Set(Array.from(selectedFields));
+    fieldGroups = (fieldGroups || []).map(group => ({
+      ...group,
+      fieldIds: (group.fieldIds || []).filter(id => active.has(id))
+    })).filter(group => group.fieldIds.length >= 2);
+    renderPopulationGroupStatus();
+  }
+
+  function groupForField(fieldId) {
+    return (fieldGroups || []).find(group => (group.fieldIds || []).includes(fieldId)) || null;
+  }
+
+  function renderPopulationGroupStatus(message, kind) {
+    const status = $('population-group-status');
+    const clearButton = $('clear-groups-button');
+    if (clearButton) clearButton.classList.toggle('hidden', !fieldGroups.length);
+    if (!status) return;
+    if (!message && fieldGroups.length) {
+      const fields = new Set(fieldGroups.flatMap(group => group.fieldIds || [])).size;
+      message = `${fieldGroups.length} grupo(s) confirmado(s), envolvendo ${fields} talhão(ões). Os cálculos individuais permanecem separados.`;
+      kind = 'success';
+    }
+    status.className = `text-xs rounded-lg px-3 py-2 border ${kind === 'error' ? 'bg-red-50 border-red-200 text-red-800' : kind === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-white border-emerald-200 text-emerald-900'}`;
+    status.classList.toggle('hidden', !message);
+    status.textContent = message || '';
+  }
+
+  function suggestPopulationGroups() {
+    try {
+      if (!currentFarm) throw new Error('Selecione uma propriedade antes de formar os grupos.');
+      const fields = populationInputFields();
+      if (fields.length < 2) throw new Error('Selecione pelo menos dois talhões.');
+      const proposal = Engine.groupSimilarFields(fields, 500);
+      if (!proposal.groups.length) {
+        pendingGroupProposal = null;
+        $('population-group-review')?.classList.add('hidden');
+        throw new Error('Nenhum grupo com diferença máxima de 500 plantas/ha foi encontrado entre os talhões selecionados.');
+      }
+      pendingGroupProposal = proposal;
+      const review = $('population-group-review');
+      review.innerHTML = `
+        <div class="flex items-start justify-between gap-3"><div><p class="font-black text-emerald-950">Confira antes de aplicar</p><p class="text-xs text-emerald-800 mt-1">Escolha o talhão de referência. Volume por planta e produtos desse talhão serão copiados para os demais membros marcados.</p></div><button type="button" onclick="cancelPopulationGroupReview()" class="text-slate-600 font-bold text-xs">Cancelar</button></div>
+        ${proposal.groups.map((group, groupIndex) => `
+          <div class="bg-white border border-emerald-200 rounded-xl p-3 space-y-2" data-group-review="${groupIndex}">
+            <div class="flex flex-wrap justify-between gap-2"><strong class="text-sm text-emerald-950">Grupo ${groupIndex + 1}</strong><span class="text-[11px] font-bold text-emerald-800">${fmt(group.minDensity, 0, 0)} a ${fmt(group.maxDensity, 0, 0)} plantas/ha</span></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${group.fields.map(field => `
+              <label class="flex items-center gap-2 border border-slate-200 rounded-lg p-2 text-xs"><input type="checkbox" data-group-member="${groupIndex}" value="${esc(field.id)}" checked><span><b>${esc(field.name)}</b><br><small>${fmt(field.density, 0, 0)} plantas/ha</small></span></label>`).join('')}</div>
+            <label class="block text-xs font-bold text-slate-700">Talhão de referência
+              <select data-group-reference="${groupIndex}" class="mt-1 w-full border border-slate-300 rounded-lg px-3 py-2 text-xs">${group.fields.map(field => `<option value="${esc(field.id)}">${esc(field.name)} - ${fmt(field.density, 0, 0)} plantas/ha</option>`).join('')}</select>
+            </label>
+          </div>`).join('')}
+        ${proposal.singles.length ? `<p class="text-xs text-slate-600"><b>Continuarão individuais:</b> ${proposal.singles.map(field => `${esc(field.name)} (${fmt(field.density, 0, 0)} plantas/ha)`).join(', ')}.</p>` : ''}
+        ${proposal.invalid.length ? `<p class="text-xs text-amber-800"><b>Não agrupados por falta de área ou população:</b> ${proposal.invalid.map(field => esc(field.name)).join(', ')}.</p>` : ''}
+        <div class="flex justify-end"><button type="button" onclick="confirmPopulationGroups()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-black rounded-xl px-5 py-2.5 text-xs"><i class="fa-solid fa-circle-check mr-1"></i> Confirmar e aplicar grupos</button></div>`;
+      review.classList.remove('hidden');
+      review.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      renderPopulationGroupStatus('Sugestões calculadas. Confira os membros e o talhão de referência antes de confirmar.', 'warning');
+    } catch (error) {
+      renderPopulationGroupStatus(error.message || 'Não foi possível calcular os grupos.', 'error');
+    }
+  }
+
+  function cancelPopulationGroupReview() {
+    pendingGroupProposal = null;
+    const review = $('population-group-review');
+    if (review) {
+      review.innerHTML = '';
+      review.classList.add('hidden');
+    }
+    renderPopulationGroupStatus();
+  }
+
+  function confirmPopulationGroups() {
+    if (!pendingGroupProposal) return;
+    captureFieldsFromDOM();
+    const confirmed = [];
+    pendingGroupProposal.groups.forEach((proposal, groupIndex) => {
+      const memberIds = Array.from(document.querySelectorAll(`[data-group-member="${groupIndex}"]:checked`)).map(input => input.value);
+      if (memberIds.length < 2) return;
+      const referenceControl = document.querySelector(`[data-group-reference="${groupIndex}"]`);
+      const referenceId = memberIds.includes(referenceControl?.value) ? referenceControl.value : memberIds[0];
+      const referenceState = fieldState[referenceId];
+      if (!referenceState) return;
+      memberIds.forEach(fieldId => {
+        if (fieldId === referenceId || !fieldState[fieldId]) return;
+        fieldState[fieldId].mlPerPlant = Engine.positive(referenceState.mlPerPlant);
+        fieldState[fieldId].products = clone(referenceState.products || []);
+      });
+      const members = proposal.fields.filter(field => memberIds.includes(field.id));
+      const area = members.reduce((sum, field) => sum + Engine.positive(field.area), 0);
+      const plants = members.reduce((sum, field) => sum + Math.round(Engine.positive(field.plants)), 0);
+      confirmed.push({
+        id: `population-group-${Date.now()}-${groupIndex + 1}`,
+        fieldIds: memberIds,
+        referenceFieldId: referenceId,
+        minDensity: Math.min(...members.map(field => field.density)),
+        maxDensity: Math.max(...members.map(field => field.density)),
+        weightedDensity: area > 0 ? plants / area : 0,
+        tolerance: 500
+      });
+    });
+    fieldGroups = confirmed;
+    cancelPopulationGroupReview();
+    renderFields();
+    renderPopulationGroupStatus(fieldGroups.length
+      ? 'Grupos aplicados. A recomendação do talhão de referência foi copiada; áreas, populações, calda e cargas continuam calculadas separadamente.'
+      : 'Nenhum grupo foi confirmado. Marque pelo menos dois talhões em um mesmo grupo.', fieldGroups.length ? 'success' : 'warning');
+  }
+
+  function clearPopulationGroups() {
+    fieldGroups = [];
+    pendingGroupProposal = null;
+    const review = $('population-group-review');
+    if (review) {
+      review.innerHTML = '';
+      review.classList.add('hidden');
+    }
+    renderFields();
+    renderPopulationGroupStatus('Os agrupamentos foram desfeitos. As configurações já preenchidas nos talhões foram mantidas.', 'success');
   }
 
   function productSlotHtml(fieldIndex, productIndex, slot) {
@@ -358,10 +495,11 @@
       const state = fieldState[field.id] || defaultFieldState(field);
       fieldState[field.id] = state;
       const selected = selectedFields.has(field.id);
+      const assignedGroup = groupForField(field.id);
       return `
         <section class="border ${selected ? 'border-emerald-400 ring-1 ring-emerald-100' : 'border-slate-200'} rounded-2xl overflow-hidden bg-white">
           <button type="button" onclick="toggleField(${index})" class="w-full flex items-center justify-between gap-3 p-4 text-left ${selected ? 'bg-emerald-50' : 'bg-slate-50'}">
-            <span class="flex items-center gap-3"><span class="w-5 h-5 rounded border-2 flex items-center justify-center ${selected ? 'bg-emerald-700 border-emerald-700 text-white' : 'bg-white border-slate-300'}">${selected ? '<i class="fa-solid fa-check text-[10px]"></i>' : ''}</span><span><strong class="block text-sm text-slate-900">${esc(field.name)}</strong><small class="text-slate-500">${fmt(field.area, 2, 2)} ha${field.plants ? ` • ${fmt(field.plants, 0, 0)} pés cadastrados` : ''}</small></span></span>
+            <span class="flex items-center gap-3"><span class="w-5 h-5 rounded border-2 flex items-center justify-center ${selected ? 'bg-emerald-700 border-emerald-700 text-white' : 'bg-white border-slate-300'}">${selected ? '<i class="fa-solid fa-check text-[10px]"></i>' : ''}</span><span><strong class="block text-sm text-slate-900">${esc(field.name)}${assignedGroup ? ' <span class="text-[9px] align-middle bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-full px-2 py-0.5">AGRUPADO</span>' : ''}</strong><small class="text-slate-500">${fmt(field.area, 2, 2)} ha${field.plants ? ` • ${fmt(field.plants, 0, 0)} pés cadastrados` : ''}</small></span></span>
             <span class="text-xs font-bold ${selected ? 'text-emerald-800' : 'text-slate-500'}">${selected ? 'Selecionado' : 'Selecionar'}</span>
           </button>
           ${selected ? `
@@ -430,12 +568,14 @@
     if (!field) return;
     if (selectedFields.has(field.id)) selectedFields.delete(field.id);
     else selectedFields.add(field.id);
+    reconcileFieldGroups();
     renderFields();
   }
 
   function selectAllFields(select) {
     captureFieldsFromDOM();
     selectedFields = new Set(select ? (currentFarm?.fields || []).map(field => field.id) : []);
+    reconcileFieldGroups();
     renderFields();
   }
 
@@ -528,6 +668,8 @@
         name: field.name,
         culture: clean($('crop-name')?.value),
         stage: stages(),
+        density: Engine.populationDensity({ area: field.area, plants }),
+        groupId: groupForField(field.id)?.id || '',
         ...calculated,
         loadDescription: Engine.loadDescription(calculated.loads, value => fmt(value, 0, 2))
       };
@@ -648,6 +790,35 @@
       const inStock = Engine.positive(productStockMap[identity]);
       return { ...product, inStock, toBuy: Math.max(0, product.total - inStock) };
     });
+    const presentationGroups = [];
+    fieldGroups.forEach((configured, groupIndex) => {
+      const members = fields.filter(field => configured.fieldIds.includes(field.id));
+      const compatible = new Map();
+      members.forEach(field => {
+        const signature = Engine.treatmentSignature(field);
+        if (!compatible.has(signature)) compatible.set(signature, []);
+        compatible.get(signature).push(field);
+      });
+      Array.from(compatible.values()).filter(items => items.length >= 2).forEach((items, compatibleIndex) => {
+        const area = items.reduce((sum, field) => sum + field.area, 0);
+        const plants = items.reduce((sum, field) => sum + field.plants, 0);
+        presentationGroups.push({
+          id: `${configured.id}-${compatibleIndex + 1}`,
+          label: `Grupo ${presentationGroups.length + 1}`,
+          fieldIds: items.map(field => field.id),
+          fieldNames: items.map(field => field.name),
+          area,
+          plants,
+          minDensity: Math.min(...items.map(field => field.density)),
+          maxDensity: Math.max(...items.map(field => field.density)),
+          weightedDensity: area > 0 ? plants / area : 0,
+          referenceFieldId: configured.referenceFieldId || items[0].id,
+          sourceGroupIndex: groupIndex
+        });
+      });
+    });
+    const groupedFieldIds = new Set(presentationGroups.flatMap(group => group.fieldIds));
+    fields.forEach(field => { field.presentationGroupId = presentationGroups.find(group => group.fieldIds.includes(field.id))?.id || ''; });
     const now = new Date();
     return {
       schemaVersion: 1,
@@ -667,6 +838,8 @@
       methods: methods(),
       tankCapacity: Engine.positive($('tank-capacity')?.value),
       fields: clone(fields),
+      groups: clone(presentationGroups),
+      ungroupedFieldIds: fields.filter(field => !groupedFieldIds.has(field.id)).map(field => field.id),
       totals: { ...clone(result.totals), products: totalProducts },
       notes: notes(),
       responsible: clone(responsible),
@@ -675,11 +848,42 @@
     };
   }
 
+  function previewFieldHtml(field) {
+    return `
+      <div class="border border-slate-200 bg-slate-50 rounded-xl p-3">
+        <div class="flex flex-wrap justify-between gap-2 border-b border-slate-200 pb-2"><strong>Talhão: ${esc(field.name)} (${fmt(field.area, 2, 2)} ha)</strong><span class="text-xs font-bold text-emerald-800">${field.liquidApplication ? esc(field.loadDescription) : 'Aplicação sem tanque'}</span></div>
+        <p class="text-xs text-emerald-800 font-bold mt-2">${fmt(field.plants, 0, 0)} plantas • ${fmt(field.density, 0, 0)} plantas/ha${field.liquidApplication ? ` • ${fmt(field.mlPerPlant, 0, 2)} mL/planta • Calda: ${fmt(field.syrupLiters, 1, 2)} L` : ''}</p>
+        <div class="mt-2 space-y-2">${field.products.map(product => `
+          <div class="bg-white border border-slate-200 rounded-lg p-2 text-xs"><b>${esc(product.name)}</b> • ${fmt(product.dose, 0, 3)} ${esc(product.unit)}${product.active ? ` • <b>I.A.:</b> ${esc(product.active)}` : ''}${product.target ? ` • <b>Alvo:</b> ${esc(product.target)}` : ''}<br>Total no talhão: <b>${fmt(product.total, 2, 3)} ${esc(product.unitBase)}</b>${field.liquidApplication ? `<span class="text-emerald-800"> • Carga cheia: ${fmt(product.fullTankQuantity, 2, 3)} ${esc(product.unitBase)}${field.loads.partialLiters ? ` • Carga final: ${fmt(product.partialQuantity, 2, 3)} ${esc(product.unitBase)}` : ''}</span>` : ''}</div>`).join('')}</div>
+      </div>`;
+  }
+
+  function previewDetailsHtml(snapshot) {
+    const groups = new Map((snapshot.groups || []).map(group => [group.id, group]));
+    const rendered = new Set();
+    return (snapshot.fields || []).map(field => {
+      const group = field.presentationGroupId ? groups.get(field.presentationGroupId) : null;
+      if (!group) return previewFieldHtml(field);
+      if (rendered.has(group.id)) return '';
+      rendered.add(group.id);
+      const members = snapshot.fields.filter(item => group.fieldIds.includes(item.id));
+      const commonProducts = members[0]?.products || [];
+      return `
+        <div class="border-2 border-emerald-300 bg-emerald-50 rounded-xl p-3 space-y-3">
+          <div class="flex flex-wrap justify-between gap-2 border-b border-emerald-200 pb-2"><strong class="text-emerald-950">${esc(group.label)} - talhões com população semelhante</strong><span class="text-xs font-bold text-emerald-800">${fmt(group.minDensity, 0, 0)} a ${fmt(group.maxDensity, 0, 0)} plantas/ha</span></div>
+          <div><p class="text-[10px] font-black uppercase text-emerald-800 mb-1">Recomendação comum do grupo</p>${commonProducts.map(product => `<div class="text-xs bg-white border border-emerald-200 rounded-lg p-2 mb-1"><b>${esc(product.name)}</b> • ${fmt(product.dose, 0, 3)} ${esc(product.unit)}${product.active ? ` • <b>I.A.:</b> ${esc(product.active)}` : ''}${product.target ? ` • <b>Alvo:</b> ${esc(product.target)}` : ''}</div>`).join('')}</div>
+          <div class="space-y-2">${members.map(member => previewFieldHtml(member)).join('')}</div>
+        </div>`;
+    }).join('');
+  }
+
   function previewHtml(snapshot) {
     const productSummary = snapshot.totals.products.length
       ? snapshot.totals.products.map(product => `
           <div class="border border-emerald-200 bg-emerald-50 rounded-lg p-3">
             <strong>${esc(product.name)}</strong>
+            ${product.active ? `<p class="text-[10px] text-emerald-800 mt-1"><b>I.A.:</b> ${esc(product.active)}</p>` : ''}
+            ${product.target ? `<p class="text-[10px] text-slate-600"><b>Alvo:</b> ${esc(product.target)}</p>` : ''}
             <div class="grid grid-cols-3 gap-2 mt-2 text-xs"><span>Total<br><b>${fmt(product.total, 2, 3)} ${esc(product.unitBase)}</b></span><span>Estoque<br><b>${fmt(product.inStock, 2, 3)} ${esc(product.unitBase)}</b></span><span>A comprar<br><b class="${product.toBuy > 0 ? 'text-amber-700' : 'text-emerald-700'}">${fmt(product.toBuy, 2, 3)} ${esc(product.unitBase)}</b></span></div>
           </div>`).join('')
       : '<p class="text-slate-500">Nenhum produto.</p>';
@@ -694,23 +898,28 @@
         <div class="sm:col-span-2"><small class="font-bold text-slate-500 uppercase">Endereço</small><p>${esc(snapshot.address || '--')}</p></div>
       </div>
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-3 text-xs">
-        <div class="border rounded-lg p-3"><span class="text-slate-500">Método</span><strong class="block mt-1">${esc(snapshot.methods.join(', '))}</strong></div>
-        <div class="border rounded-lg p-3"><span class="text-slate-500">Plantas</span><strong class="block mt-1">${fmt(snapshot.totals.plants, 0, 0)}</strong></div>
-        <div class="border rounded-lg p-3"><span class="text-slate-500">Área</span><strong class="block mt-1">${fmt(snapshot.totals.area, 2, 2)} ha</strong></div>
-        <div class="border rounded-lg p-3"><span class="text-slate-500">Calda</span><strong class="block mt-1">${fmt(snapshot.totals.syrupLiters, 1, 2)} L</strong></div>
+        <div class="border rounded-lg p-3"><span class="text-slate-500">Método Solo</span><strong class="block mt-1">${esc(snapshot.methods.join(', '))}</strong></div>
+        <div class="border rounded-lg p-3"><span class="text-slate-500">Total Plantas</span><strong class="block mt-1">${fmt(snapshot.totals.plants, 0, 0)}</strong></div>
+        <div class="border rounded-lg p-3"><span class="text-slate-500">Área Tratada</span><strong class="block mt-1">${fmt(snapshot.totals.area, 2, 2)} ha</strong></div>
+        <div class="border rounded-lg p-3"><span class="text-slate-500">Tanque Utilizado</span><strong class="block mt-1">${fmt(snapshot.tankCapacity, 0, 1)} L</strong></div>
       </div>
       <h3 class="font-black uppercase text-xs tracking-wider mt-5 mb-2 text-slate-700">Detalhamento por talhão</h3>
-      <div class="space-y-3">${snapshot.fields.map(field => `
-        <div class="border border-slate-200 rounded-xl p-4">
-          <div class="flex flex-wrap justify-between gap-2 border-b pb-2"><strong>${esc(field.name)} • ${fmt(field.area, 2, 2)} ha</strong><span class="text-xs font-bold text-emerald-800">${field.liquidApplication ? esc(field.loadDescription) : 'Aplicação sem tanque'}</span></div>
-          <p class="text-xs text-slate-600 mt-2">${fmt(field.plants, 0, 0)} plantas${field.liquidApplication ? ` • ${fmt(field.mlPerPlant, 0, 2)} mL/planta • ${fmt(field.syrupLiters, 1, 2)} L de calda` : ''}</p>
-          <div class="mt-2 space-y-2">${field.products.map(product => `
-            <div class="bg-slate-50 rounded-lg p-2 text-xs"><b>${esc(product.name)}</b> • ${fmt(product.dose, 0, 3)} ${esc(product.unit)} • Total: <b>${fmt(product.total, 2, 3)} ${esc(product.unitBase)}</b>${field.liquidApplication ? `<br><span class="text-emerald-800">Carga cheia: ${fmt(product.fullTankQuantity, 2, 3)} ${esc(product.unitBase)}${field.loads.partialLiters ? ` • Carga final: ${fmt(product.partialQuantity, 2, 3)} ${esc(product.unitBase)}` : ''}</span>` : ''}</div>`).join('')}</div>
-        </div>`).join('')}</div>
-      <h3 class="font-black uppercase text-xs tracking-wider mt-5 mb-2 text-slate-700">Resumo de retirada e compra</h3>
+      <div class="space-y-3">${previewDetailsHtml(snapshot)}</div>
+      <h3 class="font-black uppercase text-xs tracking-wider mt-5 mb-2 text-slate-700">Resumo consolidado de insumos (retirada de estoque)</h3>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${productSummary}</div>
-      <div class="mt-5 border border-amber-200 bg-amber-50 rounded-xl p-4 text-xs text-amber-950"><b>Conferência:</b> valide propriedade, talhões, produtos, doses, capacidade do tanque e quantidades por carga antes de salvar.</div>
-      <div class="grid grid-cols-2 gap-6 mt-10 text-center text-xs"><div class="border-t border-slate-700 pt-2"><b>${esc(snapshot.responsible.name)}</b><br>${esc(snapshot.responsible.credential)}</div><div class="border-t border-slate-700 pt-2"><b>Ciente do Produtor / Aplicador</b></div></div>`;
+      <div class="mt-5 border border-amber-200 bg-amber-50 rounded-xl p-4 text-xs text-amber-950"><b>Ciência do usuário:</b> confira propriedade, talhões, produtos, doses, capacidade do tanque e quantidades por carga.</div>
+      <div class="grid grid-cols-2 gap-6 mt-10 text-center text-xs"><div class="border-t border-slate-700 pt-2"><b>${esc(snapshot.responsible.name)}</b><br>${esc(snapshot.responsible.credential)}</div><div class="border-t border-slate-700 pt-2"><b>Ciente do Produtor / Aplicador</b></div></div>
+      <div class="mt-8 pt-5 border-t-4 border-slate-200 space-y-3">
+        <div class="flex flex-wrap justify-between gap-2"><h3 class="font-black text-emerald-800">INSTRUÇÕES E RECOMENDAÇÕES TÉCNICAS</h3><span class="text-xs font-bold text-emerald-800">${esc(snapshot.documentCode)}</span></div>
+        ${[
+          ['Instruções de segurança e EPI', snapshot.notes?.safety, 'text-emerald-800'],
+          ['Primeiros socorros', snapshot.notes?.firstAid, 'text-rose-700'],
+          ['Aplicação e preparo da calda', snapshot.notes?.technical, 'text-emerald-800'],
+          ['Precauções de uso e aplicação', snapshot.notes?.precautions, 'text-amber-700'],
+          ['Manejo integrado', snapshot.notes?.ipm, 'text-emerald-800'],
+          ['Cuidados ao meio ambiente', snapshot.notes?.environment, 'text-emerald-800']
+        ].map(section => `<div class="bg-slate-50 border border-slate-200 rounded-xl p-3"><b class="text-xs uppercase ${section[2]}">${esc(section[0])}</b><p class="text-xs text-slate-700 whitespace-pre-line mt-1">${esc(section[1] || '--')}</p></div>`).join('')}
+      </div>`;
   }
 
   function renderPreview(snapshot, recommendationId) {
@@ -788,7 +997,7 @@
       }
       setText('preview-save-text', 'Gerando PDF vetorial...');
       const dataUri = await DoCampoViaSoloPDF.generate(snapshot);
-      const filename = DoCampoDocumentCode.arquivo(`${snapshot.documentCode}_${snapshot.farm}_Via_Solo`) + '.pdf';
+      const filename = DoCampoDocumentCode.arquivo(`Receituario_Via_Solo_${snapshot.farm}_${snapshot.documentCode}`) + '.pdf';
       const result = await DoCampoPDF.salvarECompartilhar(dataUri, filename, 'Recomendação Técnica Via Solo', {
         typeLabel: 'Recomendação Via Solo',
         producer: snapshot.producer,
@@ -898,6 +1107,15 @@
     currentFarm = farm;
     selectedFields = new Set();
     fieldState = {};
+    fieldGroups = (snapshot.groups || []).map((group, index) => ({
+      id: group.id || `restored-group-${index + 1}`,
+      fieldIds: clone(group.fieldIds || []),
+      referenceFieldId: group.referenceFieldId || group.fieldIds?.[0] || '',
+      minDensity: group.minDensity || 0,
+      maxDensity: group.maxDensity || 0,
+      weightedDensity: group.weightedDensity || 0,
+      tolerance: 500
+    }));
     (farm.fields || []).forEach(field => {
       const saved = (snapshot.fields || []).find(item => item.id === field.id) ||
         (snapshot.fields || []).find(item => Engine.key(item.name) === Engine.key(field.name));
@@ -967,11 +1185,12 @@
     if (restoring || !initialized) return null;
     captureFieldsFromDOM();
     return {
-      version: 1,
+      version: 2,
       farmId: currentFarm?.id || '',
       selectedFieldIds: Array.from(selectedFields),
       fieldState: clone(fieldState),
       productStockMap: clone(productStockMap),
+      fieldGroups: clone(fieldGroups),
       selectedAgronomistIndex,
       controls: {
         cropName: $('crop-name')?.value || '',
@@ -984,7 +1203,7 @@
   }
 
   function restoreDraft(draft) {
-    if (!draft || draft.version !== 1) return false;
+    if (!draft || ![1, 2].includes(draft.version)) return false;
     const farm = registry.farms.find(item => item.id === draft.farmId);
     if (!farm) return false;
     restoring = true;
@@ -994,6 +1213,7 @@
       selectedFields = new Set(draft.selectedFieldIds || []);
       fieldState = clone(draft.fieldState || {});
       productStockMap = clone(draft.productStockMap || {});
+      fieldGroups = clone(draft.fieldGroups || []);
       onFarmChange({ preserve: true });
       if ($('crop-name')) $('crop-name').value = draft.controls?.cropName || 'Café';
       document.querySelectorAll('.crop-stage-cb').forEach(element => { element.checked = (draft.controls?.cropStages || []).includes(element.value); });
@@ -1075,6 +1295,10 @@
     onFarmChange,
     toggleField,
     selectAllFields,
+    suggestPopulationGroups,
+    cancelPopulationGroupReview,
+    confirmPopulationGroups,
+    clearPopulationGroups,
     onFieldCalcModeChange,
     updateFieldCategory,
     updateFieldProduct,

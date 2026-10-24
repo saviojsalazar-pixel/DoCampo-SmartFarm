@@ -20,6 +20,44 @@
   const plants = engine.calculatePlants(4, { mode: 'spacing', rowSpacing: 3.2, plantSpacing: 0.67 });
   assert.strictEqual(plants, Math.round(40000 / (3.2 * 0.67)));
 
+  const populationGroups = engine.groupSimilarFields([
+    { id: 'a', name: 'A', area: 1, plants: 4000 },
+    { id: 'b', name: 'B', area: 1, plants: 4350 },
+    { id: 'c', name: 'C', area: 1, plants: 4490 },
+    { id: 'd', name: 'D', area: 1, plants: 4520 },
+    { id: 'invalid', name: 'Sem área', area: 0, plants: 5000 }
+  ], 500);
+  assert.deepStrictEqual(populationGroups.groups.map(group => group.fieldIds), [['a', 'b'], ['c', 'd']]);
+  assert.deepStrictEqual(populationGroups.singles.map(field => field.id), []);
+  assert.deepStrictEqual(populationGroups.invalid.map(field => field.id), ['invalid']);
+  assert.ok(populationGroups.groups.every(group => group.maxDensity - group.minDensity <= 500));
+
+  const noAvoidableSingle = engine.groupSimilarFields([
+    { id: 'g1', area: 1, plants: 4000 },
+    { id: 'g2', area: 1, plants: 4400 },
+    { id: 'g3', area: 1, plants: 4500 },
+    { id: 'g4', area: 1, plants: 4900 }
+  ], 500);
+  assert.deepStrictEqual(noAvoidableSingle.groups.map(group => group.fieldIds), [['g1', 'g2'], ['g3', 'g4']]);
+  assert.deepStrictEqual(noAvoidableSingle.singles, [], 'O agrupador não deve deixar um talhão isolado quando existe uma partição válida.');
+
+  const exactTolerance = engine.groupSimilarFields([
+    { id: 'e', area: 2, plants: 8000 },
+    { id: 'f', area: 2, plants: 9000 }
+  ], 500);
+  assert.deepStrictEqual(exactTolerance.groups[0].fieldIds, ['e', 'f'], 'A diferença exata de 500 plantas/ha deve ser aceita.');
+
+  const signatureA = engine.treatmentSignature({ liquidApplication: true, mlPerPlant: 50, products: [
+    { productId: 'p2', dose: 2, unit: 'kg/ha' }, { productId: 'p1', dose: 1, unit: 'L/ha' }
+  ] });
+  const signatureB = engine.treatmentSignature({ liquidApplication: true, mlPerPlant: 50, products: [
+    { productId: 'p1', dose: 1, unit: 'L/ha' }, { productId: 'p2', dose: 2, unit: 'kg/ha' }
+  ] });
+  assert.strictEqual(signatureA, signatureB, 'A ordem de exibição dos mesmos produtos não pode separar um grupo.');
+  assert.notStrictEqual(signatureA, engine.treatmentSignature({ liquidApplication: true, mlPerPlant: 60, products: [
+    { productId: 'p1', dose: 1, unit: 'L/ha' }, { productId: 'p2', dose: 2, unit: 'kg/ha' }
+  ] }), 'Volumes por planta diferentes precisam separar as recomendações.');
+
   const field = engine.calculateField({
     area: 4,
     plants: 18571,

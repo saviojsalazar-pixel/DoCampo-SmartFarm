@@ -74,6 +74,96 @@
     return Math.max(0, Math.round(positive(data.plantsCount)));
   }
 
+  function populationDensity(field) {
+    const area = positive(field && field.area);
+    const plants = Math.max(0, Math.round(positive(field && field.plants)));
+    return area > 0 && plants > 0 ? plants / area : 0;
+  }
+
+  function groupSimilarFields(fields, tolerance) {
+    const limit = Math.max(0, positive(tolerance) || 500);
+    const valid = [];
+    const invalid = [];
+    (Array.isArray(fields) ? fields : []).forEach((field, originalIndex) => {
+      const density = populationDensity(field);
+      const item = { ...field, density, originalIndex };
+      if (!density) invalid.push(item);
+      else valid.push(item);
+    });
+    valid.sort((a, b) => a.density - b.density || a.originalIndex - b.originalIndex);
+
+    // Particiona a lista ordenada procurando abranger o maior número possível
+    // de talhões. Uma estratégia gulosa poderia agrupar 4.000, 4.400 e 4.500,
+    // deixando 4.900 isolado, embora 4.000/4.400 e 4.500/4.900 formem dois
+    // grupos válidos. Em toda opção a amplitude continua limitada a 500.
+    const plans = new Array(valid.length + 1);
+    plans[valid.length] = { buckets: [], singles: [], grouped: 0, spread: 0 };
+    const isBetter = (candidate, current) => {
+      if (!current) return true;
+      if (candidate.grouped !== current.grouped) return candidate.grouped > current.grouped;
+      if (candidate.buckets.length !== current.buckets.length) return candidate.buckets.length < current.buckets.length;
+      if (Math.abs(candidate.spread - current.spread) > EPSILON) return candidate.spread < current.spread;
+      return false;
+    };
+    for (let index = valid.length - 1; index >= 0; index--) {
+      const next = plans[index + 1];
+      let best = {
+        buckets: next.buckets,
+        singles: [valid[index], ...next.singles],
+        grouped: next.grouped,
+        spread: next.spread
+      };
+      for (let end = index + 1; end < valid.length; end++) {
+        const range = valid[end].density - valid[index].density;
+        if (range > limit + EPSILON) break;
+        const remainder = plans[end + 1];
+        const bucket = valid.slice(index, end + 1);
+        const candidate = {
+          buckets: [bucket, ...remainder.buckets],
+          singles: remainder.singles,
+          grouped: bucket.length + remainder.grouped,
+          spread: range + remainder.spread
+        };
+        if (isBetter(candidate, best)) best = candidate;
+      }
+      plans[index] = best;
+    }
+    const buckets = plans[0].buckets;
+    const plannedSingles = plans[0].singles;
+
+    const groups = [];
+    const singles = plannedSingles.slice();
+    buckets.forEach(bucket => {
+      const area = bucket.reduce((sum, field) => sum + positive(field.area), 0);
+      const plants = bucket.reduce((sum, field) => sum + Math.max(0, Math.round(positive(field.plants))), 0);
+      groups.push({
+        id: `population-group-${groups.length + 1}`,
+        fieldIds: bucket.map(field => field.id),
+        fields: bucket,
+        minDensity: bucket[0].density,
+        maxDensity: bucket[bucket.length - 1].density,
+        weightedDensity: area > 0 ? plants / area : 0,
+        area,
+        plants,
+        tolerance: limit
+      });
+    });
+    return { tolerance: limit, groups, singles, invalid };
+  }
+
+  function treatmentSignature(field) {
+    const normalizedProducts = (Array.isArray(field && field.products) ? field.products : []).map(product => ({
+      product: clean(product.productId) || key(product.name),
+      dose: Math.round(positive(product.dose) * 1000000) / 1000000,
+      unit: key(product.unit)
+    })).sort((a, b) => `${a.product}|${a.unit}|${a.dose}`.localeCompare(`${b.product}|${b.unit}|${b.dose}`));
+    return JSON.stringify({
+      liquidApplication: field && field.liquidApplication !== false,
+      mlPerPlant: Math.round(positive(field && field.mlPerPlant) * 1000000) / 1000000,
+      products: normalizedProducts
+    });
+  }
+
   function calculateField(input) {
     const source = input || {};
     const area = positive(source.area);
@@ -156,5 +246,20 @@
     };
   }
 
-  return { number, positive, clean, key, unitBase, calculateLoads, calculatePlants, calculateField, consolidate, loadDescription, totals };
+  return {
+    number,
+    positive,
+    clean,
+    key,
+    unitBase,
+    calculateLoads,
+    calculatePlants,
+    populationDensity,
+    groupSimilarFields,
+    treatmentSignature,
+    calculateField,
+    consolidate,
+    loadDescription,
+    totals
+  };
 });

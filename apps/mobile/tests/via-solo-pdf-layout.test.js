@@ -1,5 +1,6 @@
 'use strict';
   const assert = require('assert');
+  const fs = require('fs');
   const path = require('path');
 
   global.window = { jspdf: require(path.join(__dirname, '..', 'www', 'vendor', 'pdf', 'jspdf.umd.min.js')) };
@@ -40,6 +41,8 @@
       return {
         id: `field-${index}`,
         name: `${index + 1}. Talhão de validação com nome prolongado`,
+        density: (6000 + index * 500) / (1.5 + index / 10),
+        presentationGroupId: index >= 1 && index <= 3 ? 'group-1' : '',
         ...calculated,
         loadDescription: engine.loadDescription(calculated.loads)
       };
@@ -54,6 +57,13 @@
       methods: ['Drench / Esguicho'],
       tankCapacity: 200,
       fields,
+      groups: [{
+        id: 'group-1',
+        label: 'Grupo 1',
+        fieldIds: ['field-1', 'field-2', 'field-3'],
+        minDensity: Math.min(...fields.slice(1, 4).map(field => field.density)),
+        maxDensity: Math.max(...fields.slice(1, 4).map(field => field.density))
+      }],
       totals: engine.totals(fields, {}),
       responsible: { name: 'Responsável técnico', credential: 'CREA TESTE' },
       notes: {
@@ -68,11 +78,12 @@
     const dataUri = await window.DoCampoViaSoloPDF.generate(snapshot);
     assert.ok(dataUri.startsWith('data:application/pdf;'));
     const buffer = Buffer.from(dataUri.split(',')[1], 'base64');
+    if (process.env.VIA_SOLO_PDF_OUTPUT) fs.writeFileSync(process.env.VIA_SOLO_PDF_OUTPUT, buffer);
     assert.strictEqual(buffer.subarray(0, 5).toString(), '%PDF-');
     assert.ok(buffer.length > 12000, 'O PDF vetorial está inesperadamente vazio.');
     const source = buffer.toString('latin1');
     const count = Array.from(source.matchAll(/\/Type \/Page\b/g)).length;
-    assert.ok(count >= 6, 'A paginação automática não foi acionada nos blocos extremos.');
+    assert.ok(count >= 5, 'A paginação automática não foi acionada nos blocos extremos.');
     console.log('via-solo-pdf-layout.test.js aprovado');
   })().catch(error => {
     console.error(error);

@@ -2119,7 +2119,12 @@
 
             for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
                 const page = await pdf.getPage(pageNumber);
-                const viewport = page.getViewport({ scale: 1.6 });
+                const naturalViewport = page.getViewport({ scale: 1 });
+                const availableWidth = Math.max(260, Math.round((window.visualViewport?.width || window.innerWidth || 360) - 24));
+                const cssScale = Math.min(1.35, availableWidth / naturalViewport.width);
+                const pixelRatio = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+                const renderScale = Math.min(1.8, cssScale * pixelRatio);
+                const viewport = page.getViewport({ scale: renderScale });
                 const sheet = document.createElement('div');
                 sheet.className = 'bg-white shadow-lg border border-gray-300 rounded-md overflow-hidden mx-auto';
                 sheet.style.width = 'fit-content';
@@ -2130,8 +2135,8 @@
                 canvas.width = Math.ceil(viewport.width);
                 canvas.height = Math.ceil(viewport.height);
                 canvas.style.display = 'block';
-                canvas.style.width = '100%';
-                canvas.style.height = 'auto';
+                canvas.style.width = `${Math.round(naturalViewport.width * cssScale)}px`;
+                canvas.style.height = `${Math.round(naturalViewport.height * cssScale)}px`;
                 canvas.setAttribute('aria-label', 'Página ' + pageNumber + ' da prévia do checklist');
                 sheet.appendChild(canvas);
                 pages.appendChild(sheet);
